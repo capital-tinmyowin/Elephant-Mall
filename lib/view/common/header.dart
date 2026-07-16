@@ -1,3 +1,4 @@
+import 'package:elephant_mall/view/category_page.dart';
 import 'package:flutter/material.dart';
 import '../home.dart';
 import '../sell.dart';
@@ -48,7 +49,7 @@ class CommonHeader extends StatelessWidget {
                         child: Row(
                           children: [
                             _menuItem(context, "HOME", const HomePage()),
-                            _menuItem(context, "CATEGORIES", const HomePage()),
+                            _menuItem(context, "CATEGORIES", const CategoryPage()),
                             _menuItem(context, "SALE", const SellPage()),
                             _menuItem(context, "NEW IN", const SellPage()),
                             _menuItem(context, "MY ORDERS", const SellPage()),
@@ -204,7 +205,7 @@ class CommonBottomBar extends StatelessWidget {
         break;
 
       case 1:
-        page = const SellPage();
+        page = const CategoryPage();
         break;
 
       case 2:
