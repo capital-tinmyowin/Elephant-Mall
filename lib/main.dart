@@ -6,7 +6,7 @@ import 'view/category_page.dart';
 import 'view/product_detail_page.dart';
 import 'view/sell.dart';
 import 'view/login.dart';
-
+import 'view/seller.dart';
 
 void main() {
   final apiService = ApiService();
