@@ -95,7 +95,7 @@ _isMobile = isMobile;
     children: [
       // Product Gallery + Info - Responsive Row
       isSmallScreen
-          ? Column(  // ✅ Stack vertically on smaller screens
+          ? Column(  //  Stack vertically on smaller screens
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(child: _buildProductGallery(product)),
@@ -168,7 +168,7 @@ _isMobile = isMobile;
   final images = product.proxiedAllImages;
   final mainImage = images.isNotEmpty ? images[_selectedImageIndex] : '';
 
-  // ✅ Responsive image sizes
+  //  Responsive image sizes
   double imageWidth = isMobile ? 180 : (isSmallScreen ? 220 : 200);
   double imageHeight = isMobile ? 250 : (isSmallScreen ? 280 : 300);
   double thumbSize = isMobile ? 60 : (isSmallScreen ? 70 : 80);
@@ -453,7 +453,7 @@ _isMobile = isMobile;
   final double rating = seller?.rating ?? product.rating;
   final String avatarText = sellerName.substring(0, 1).toUpperCase();
   
-  // ✅ Check if screen is smaller than 1100px
+  //  Check if screen is smaller than 1100px
   final bool isSmallScreen = MediaQuery.of(context).size.width < 1100;
 
   return Container(
@@ -464,7 +464,7 @@ _isMobile = isMobile;
       border: Border.all(color: Colors.grey[200]!),
     ),
     child: isSmallScreen
-        ? Column(  // ✅ Stack vertically on screens < 1100px
+        ? Column(  //  Stack vertically on screens < 1100px
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Top row: Avatar + Name + Rating
@@ -552,7 +552,7 @@ _isMobile = isMobile;
               ),
             ],
           )
-        : Row(  // ✅ Desktop - Row layout (unchanged)
+        : Row(  //  Desktop - Row layout (unchanged)
             children: [
               Container(
                 width: 60,
