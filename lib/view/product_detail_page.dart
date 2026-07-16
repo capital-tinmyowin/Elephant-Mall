@@ -15,7 +15,9 @@ class ProductDetailPage extends StatefulWidget {
   @override
   State<ProductDetailPage> createState() => _ProductDetailPageState();
 }
-
+bool mobile(BuildContext context) {
+  return MediaQuery.of(context).size.width < 800;
+}
 class _ProductDetailPageState extends State<ProductDetailPage> {
    late ApiService _apiService;
   int _selectedImageIndex = 0;
@@ -33,8 +35,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    _isMobile = MediaQuery.of(context).size.width < 768;
-
+    final isMobile = mobile(context);
+_isMobile = isMobile; 
     return ChangeNotifierProvider.value(  // ← ADD THIS WRAPPER
     value: _apiService,                  // ← ADD THIS
     child:Scaffold(
@@ -71,122 +73,72 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 ),
               ),
               //  Add Footer for PC view
-              if (!_isMobile) const CommonFooter(),
+              if (!isMobile) const CommonFooter(),
             ],
           );
         },
       ),
       //  ADD BOTTOM NAVIGATION BAR ONLY FOR MOBILE
-      bottomNavigationBar: _isMobile
+      bottomNavigationBar: isMobile
           ? CommonBottomBar(currentIndex: 1)
           : null,
       ),
     );
   }
 
-  // ============= BOTTOM NAVIGATION ITEMS =============
-  Widget _buildNavItem(IconData icon, String label, int index) {
-    return GestureDetector(
-      onTap: () {
-        //  Use onBack callback to go back to MainScreen
-        widget.onBack?.call();
-        // Then navigate to the selected tab
-        Navigator.pushReplacementNamed(context, 
-          index == 0 ? '/home' :
-          index == 1 ? '/categories' :
-          index == 3 ? '/favorite' :
-          '/profile'
-        );
-      },
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            color: Colors.grey[600],
-            size: 24,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 10,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSellNavItem() {
-    return GestureDetector(
-      onTap: () {
-        widget.onBack?.call();
-        Navigator.pushReplacementNamed(context, '/sell');
-      },
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 45,
-            height: 45,
-            decoration: const BoxDecoration(
-              color: Color(0xFFD68247),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.add,
-              color: Colors.white,
-              size: 28,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            'Sell',
-            style: TextStyle(
-              color: const Color(0xFFD68247),
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   // ============= DESKTOP LAYOUT =============
   Widget _buildDesktopLayout(Product product) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Left: Product Gallery
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(flex: 1, child: _buildProductGallery(product)),
-            Expanded(
-              flex: 1,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildProductInfo(product),
-                  const SizedBox(height: 16),
-                  _buildActionButtons(product),
-                  const SizedBox(height: 16),
-                  _buildDescription(product),
-                  _buildSellerInfo(product),
-                ],
-              ),
+  final bool isSmallScreen = MediaQuery.of(context).size.width < 1000;
+  
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // Product Gallery + Info - Responsive Row
+      isSmallScreen
+          ? Column(  //  Stack vertically on smaller screens
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(child: _buildProductGallery(product)),
+                const SizedBox(height: 24),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildProductInfo(product),
+                    const SizedBox(height: 16),
+                    _buildActionButtons(product),
+                    const SizedBox(height: 16),
+                    _buildDescription(product),
+                    _buildSellerInfo(product),
+                  ],
+                ),
+              ],
+            )
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 1, child: _buildProductGallery(product)),
+                Expanded(
+                  flex: 1,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildProductInfo(product),
+                      const SizedBox(height: 16),
+                      _buildActionButtons(product),
+                      const SizedBox(height: 16),
+                      _buildDescription(product),
+                      _buildSellerInfo(product),
+                    ],
+                  ),
+                ),
+                Expanded(flex: 1, child: const SizedBox(width: 24)),
+              ],
             ),
-            Expanded(flex: 1, child: const SizedBox(width: 24)),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _buildMoreFromStore(product),
-      ],
-    );
-  }
+      const SizedBox(height: 16),
+      _buildMoreFromStore(product),
+    ],
+  );
+}
 
   // ============= MOBILE LAYOUT =============
   Widget _buildMobileLayout(Product product) {
@@ -210,93 +162,98 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   // ============= PRODUCT GALLERY =============
   Widget _buildProductGallery(Product product) {
-    final images = product.proxiedAllImages;
-    final mainImage = images.isNotEmpty ? images[_selectedImageIndex] : '';
+  final bool isMobile = MediaQuery.of(context).size.width < 800;
+  final bool isSmallScreen = MediaQuery.of(context).size.width < 1000;
+  
+  final images = product.proxiedAllImages;
+  final mainImage = images.isNotEmpty ? images[_selectedImageIndex] : '';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // Main Image
-        Center(
-          child: Container(
-            width: 200,
-            height: 300,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.grey[50]),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: CachedNetworkImage(
-                imageUrl: mainImage,
-                height: 300,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  height: 300,
-                  color: Colors.grey[200],
-                  child: const Center(child: CircularProgressIndicator()),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  height: 300,
-                  color: Colors.grey[200],
-                  child: const Icon(Icons.image_not_supported, size: 80),
-                ),
+  //  Responsive image sizes
+  double imageWidth = isMobile ? 180 : (isSmallScreen ? 220 : 200);
+  double imageHeight = isMobile ? 250 : (isSmallScreen ? 280 : 300);
+  double thumbSize = isMobile ? 60 : (isSmallScreen ? 70 : 80);
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.center,
+    children: [
+      Center(
+        child: Container(
+          width: imageWidth,
+          height: imageHeight,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: Colors.grey[50]),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: CachedNetworkImage(
+              imageUrl: mainImage,
+              height: imageHeight,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Container(
+                height: imageHeight,
+                color: Colors.grey[200],
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+              errorWidget: (context, url, error) => Container(
+                height: imageHeight,
+                color: Colors.grey[200],
+                child: const Icon(Icons.image_not_supported, size: 80),
               ),
             ),
           ),
         ),
-        const SizedBox(height: 12),
-
-        // Thumbnails
-        if (images.length > 1)
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: images.asMap().entries.map((entry) {
-                final index = entry.key;
-                final imageUrl = entry.value;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedImageIndex = index;
-                    });
-                  },
-                  child: Container(
-                    width: 80,
-                    height: 100,
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: _selectedImageIndex == index
-                            ? const Color(0xFF2B6E3B)
-                            : Colors.transparent,
-                        width: 2,
-                      ),
+      ),
+      const SizedBox(height: 12),
+      if (images.length > 1)
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: images.asMap().entries.map((entry) {
+              final index = entry.key;
+              final imageUrl = entry.value;
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedImageIndex = index;
+                  });
+                },
+                child: Container(
+                  width: thumbSize,
+                  height: thumbSize + 20,
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: _selectedImageIndex == index
+                          ? const Color(0xFF2B6E3B)
+                          : Colors.transparent,
+                      width: 2,
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: CachedNetworkImage(
-                        imageUrl: imageUrl,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.image, size: 20),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.broken_image, size: 20),
-                        ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.image, size: 20),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.broken_image, size: 20),
                       ),
                     ),
                   ),
-                );
-              }).toList(),
-            ),
+                ),
+              );
+            }).toList(),
           ),
-      ],
-    );
-  }
+        ),
+    ],
+  );
+}
 
   // ============= PRODUCT INFO =============
   Widget _buildProductInfo(Product product) {
@@ -491,101 +448,188 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   // ============= SELLER INFO =============
   Widget _buildSellerInfo(Product product) {
-    final seller = product.seller;
-    final String sellerName = seller?.name ?? 'Sarah J.';
-    final double rating = seller?.rating ?? product.rating;
-    final String avatarText = sellerName.substring(0, 1).toUpperCase();
+  final seller = product.seller;
+  final String sellerName = seller?.name ?? 'Sarah J.';
+  final double rating = seller?.rating ?? product.rating;
+  final String avatarText = sellerName.substring(0, 1).toUpperCase();
+  
+  //  Check if screen is smaller than 1100px
+  final bool isSmallScreen = MediaQuery.of(context).size.width < 1100;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Row(
-        children: [
-          // Avatar
-          Container(
-            width: 60,
-            height: 60,
-            decoration: const BoxDecoration(
-              color: Color(0xFFB58B5C),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                avatarText,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+  return Container(
+    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: Colors.grey[200]!),
+    ),
+    child: isSmallScreen
+        ? Column(  //  Stack vertically on screens < 1100px
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top row: Avatar + Name + Rating
+              Row(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFB58B5C),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        avatarText,
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          sellerName,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Text(
+                              '★★★★★',
+                              style: TextStyle(color: Color(0xFFF5B042)),
+                            ),
+                            Text(
+                              rating.toStringAsFixed(1),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-          const SizedBox(width: 10),
-
-          // Seller Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  sellerName,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+              const SizedBox(height: 12),
+              // Bottom row: Follow button full width
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(' You are now following $sellerName!'),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF2B6E3B)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add, size: 16),
+                      SizedBox(width: 4),
+                      Text('Follow Seller'),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Text(
-                      '★★★★★',
-                      style: TextStyle(color: Color(0xFFF5B042)),
+              ),
+            ],
+          )
+        : Row(  //  Desktop - Row layout (unchanged)
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFB58B5C),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    avatarText,
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      rating.toStringAsFixed(1),
+                      sellerName,
                       style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Text(
+                          '★★★★★',
+                          style: TextStyle(color: Color(0xFFF5B042)),
+                        ),
+                        Text(
+                          rating.toStringAsFixed(1),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-
-          // Follow Button
-          OutlinedButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(' You are now following $sellerName!'),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            },
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFF2B6E3B)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
               ),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.add, size: 16),
-                SizedBox(width: 4),
-                Text('Follow Seller'),
-              ],
-            ),
+              OutlinedButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(' You are now following $sellerName!'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFF2B6E3B)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.add, size: 16),
+                    SizedBox(width: 4),
+                    Text('Follow Seller'),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
+  );
+}
 
   // ============= MORE FROM SELLER =============
   Widget _buildMoreFromStore(Product product) {
