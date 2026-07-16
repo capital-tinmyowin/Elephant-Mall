@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../home.dart';
+import '../sell.dart';
 
 class CommonHeader extends StatelessWidget {
   const CommonHeader({super.key});
@@ -12,8 +14,22 @@ class CommonHeader extends StatelessWidget {
     }
 
     return Container(
-      color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+
+        border: Border(
+          bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+        ),
+
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final showSecondRow = constraints.maxWidth < 1000;
@@ -31,12 +47,12 @@ class CommonHeader extends StatelessWidget {
                         scrollDirection: Axis.horizontal,
                         child: Row(
                           children: [
-                            _menuItem("HOME"),
-                            _menuItem("CATEGORIES"),
-                            _menuItem("SALE"),
-                            _menuItem("NEW IN"),
-                            _menuItem("MY ORDERS"),
-                            _menuItem("ABOUT US"),
+                            _menuItem(context, "HOME", const HomePage()),
+                            _menuItem(context, "CATEGORIES", const HomePage()),
+                            _menuItem(context, "SALE", const SellPage()),
+                            _menuItem(context, "NEW IN", const SellPage()),
+                            _menuItem(context, "MY ORDERS", const SellPage()),
+                            _menuItem(context, "ABOUT US", const SellPage()),
                           ],
                         ),
                       ),
@@ -145,12 +161,24 @@ class CommonHeader extends StatelessWidget {
     );
   }
 
-  Widget _menuItem(String text) {
+  Widget _menuItem(BuildContext context, String text, Widget? page) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Text(
-        text,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+      child: InkWell(
+        onTap: () {
+          if (page == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('$text page is not implemented yet')),
+            );
+            return;
+          }
+
+          Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+        },
+        child: Text(
+          text,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
       ),
     );
   }
@@ -165,52 +193,52 @@ class CommonBottomBar extends StatelessWidget {
 
   const CommonBottomBar({super.key, required this.currentIndex});
 
-  // void _navigate(BuildContext context, int index) {
-  //   if (index == currentIndex) return;
-
-  //   Widget page;
-
-  //   switch (index) {
-  //     case 0:
-  //       page = const HomePage();
-  //       break;
-
-  //     case 1:
-  //       page = const CategoryPage();
-  //       break;
-
-  //     case 2:
-  //       page = const SellPage();
-  //       break;
-
-  //     case 3:
-  //       page = const FavoritePage();
-  //       break;
-
-  //     case 4:
-  //       page = const ProfilePage();
-  //       break;
-
-  //     default:
-  //       return;
-  //   }
-
-  //   Navigator.pushReplacement(
-  //     context,
-  //     MaterialPageRoute(builder: (_) => page),
-  //   );
-  // }
-
   void _navigate(BuildContext context, int index) {
     if (index == currentIndex) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Page $index is not implemented yet.'),
-        duration: const Duration(seconds: 1),
-      ),
+    Widget page;
+
+    switch (index) {
+      case 0:
+        page = const HomePage();
+        break;
+
+      case 1:
+        page = const SellPage();
+        break;
+
+      case 2:
+        page = const SellPage();
+        break;
+
+      case 3:
+        page = const SellPage();
+        break;
+
+      case 4:
+        page = const SellPage();
+        break;
+
+      default:
+        return;
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => page),
     );
   }
+
+  // void _navigate(BuildContext context, int index) {
+  //   if (index == currentIndex) return;
+
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(
+  //       content: Text('Page $index is not implemented yet.'),
+  //       duration: const Duration(seconds: 1),
+  //     ),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
