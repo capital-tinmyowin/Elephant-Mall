@@ -48,6 +48,7 @@ class MyApp extends StatelessWidget {
           '/sell': (context) => const MainScreen(initialIndex: 1),
           '/favorite': (context) => const MainScreen(initialIndex: 3),
           '/profile': (context) => const MainScreen(initialIndex: 4),
+          '/seller': (context) => const SellerPage(),
         },
         onGenerateRoute: (settings) {
           if (settings.name != null && settings.name!.startsWith('/product/')) {
