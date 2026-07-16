@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'view/sell.dart';
 import 'view/login.dart';
-
+import 'view/seller.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,6 +16,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       // home: LoginPage(),
       home: SellPage(),
+      // home: SellerPage(),
     );
   }
 }
