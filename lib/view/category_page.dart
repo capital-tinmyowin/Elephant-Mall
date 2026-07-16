@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../services/Category_service.dart';
-import '../widgets/header_widget.dart';
-import '../widgets/footer_widget.dart';
+import 'common/footer.dart';
+import 'common/header.dart';
 import 'product_detail_page.dart';
 
 class CategoryPage extends StatefulWidget {
@@ -16,26 +16,30 @@ class CategoryPage extends StatefulWidget {
 }
 
 class _CategoryPageState extends State<CategoryPage> {
+  late ApiService _apiService;
   final ScrollController _scrollController = ScrollController();
   int _currentSlideIndex = 0;
   @override
   void initState() {
     super.initState();
+    _apiService = ApiService();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ApiService>(context, listen: false).loadProducts();
+      _apiService.loadProducts();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ChangeNotifierProvider.value(  // ← ADD THIS WRAPPER
+    value: _apiService,                  // ← ADD THIS
+    child: Scaffold(                     // ← INDENT EVERYTHING BELOW
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isMobile = constraints.maxWidth < 768;
 
           return Column(
             children: [
-              const HeaderWidget(),
+              const CommonHeader(),
               Expanded(
                 child: SingleChildScrollView(
                   controller: _scrollController,
@@ -51,10 +55,11 @@ class _CategoryPageState extends State<CategoryPage> {
                   ),
                 ),
               ),
-              if (!isMobile) const FooterWidget(),
+              if (!isMobile) const CommonFooter(),
             ],
           );
         },
+      ),
       ),
     );
   }

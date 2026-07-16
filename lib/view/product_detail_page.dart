@@ -4,8 +4,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../models/product.dart';
 import '../services/Category_service.dart';
 import '../services/mock_api_service.dart';
-import '../widgets/footer_widget.dart';
-import '../widgets/header_widget.dart';
+import 'common/footer.dart';
+import 'common/header.dart';
 
 class ProductDetailPage extends StatefulWidget {
   final int productId;
@@ -17,6 +17,7 @@ class ProductDetailPage extends StatefulWidget {
 }
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
+   late ApiService _apiService;
   int _selectedImageIndex = 0;
   bool _isMobile = false;
   List<Product> _sellerProducts = [];
@@ -24,11 +25,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   @override
   void initState() {
     super.initState();
+    _apiService = ApiService();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ApiService>(
-        context,
-        listen: false,
-      ).loadProductDetail(widget.productId);
+      _apiService.loadProductDetail(widget.productId);
     });
   }
 
@@ -36,13 +35,15 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   Widget build(BuildContext context) {
     _isMobile = MediaQuery.of(context).size.width < 768;
 
-    return Scaffold(
+    return ChangeNotifierProvider.value(  // ← ADD THIS WRAPPER
+    value: _apiService,                  // ← ADD THIS
+    child:Scaffold(
       body: Consumer<ApiService>(
         builder: (context, productController, child) {
           if (productController.isLoading) {
             return const Column(
               children: [
-                HeaderWidget(),
+                CommonHeader(),
                 Expanded(child: Center(child: CircularProgressIndicator())),
               ],
             );
@@ -52,7 +53,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           if (product == null) {
             return const Column(
               children: [
-                HeaderWidget(),
+                CommonHeader(),
                 Expanded(child: Center(child: Text('Product not found'))),
               ],
             );
@@ -60,7 +61,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           _sellerProducts = _getSellerProducts(product);
           return Column(
             children: [
-              const HeaderWidget(),
+              const CommonHeader(),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
@@ -70,7 +71,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 ),
               ),
               //  Add Footer for PC view
-              if (!_isMobile) const FooterWidget(),
+              if (!_isMobile) const CommonFooter(),
             ],
           );
         },
@@ -95,6 +96,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               ),
             )
           : null,
+      ),
     );
   }
 
