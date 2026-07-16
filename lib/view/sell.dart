@@ -8,6 +8,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'common/header.dart';
+import 'common/footer.dart';
 
 class SellPage extends StatefulWidget {
   const SellPage({super.key});
@@ -196,183 +198,6 @@ class _SellPageState extends State<SellPage> {
     );
   }
 
-  Widget buildHeader() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 900;
-
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: isMobile
-          ? Column(
-              children: [
-                const SizedBox(height: 10),
-
-                /// TOP ROW
-                Row(
-                  children: [
-                    IconButton(icon: const Icon(Icons.menu), onPressed: () {}),
-
-                    const Spacer(),
-
-                    const Icon(Icons.person_outline),
-                    const SizedBox(width: 10),
-                    const Icon(Icons.favorite_border),
-                    const SizedBox(width: 10),
-                    const Icon(Icons.shopping_cart_outlined),
-                  ],
-                ),
-
-                const SizedBox(height: 10),
-
-                /// SEARCH BAR
-                TextField(
-                  decoration: InputDecoration(
-                    hintText: "Search in Elephant Mall",
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 40,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD09A56),
-                    ),
-                    onPressed: () {},
-                    child: const Text(
-                      "SELL ITEMS",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-              ],
-            )
-          : SizedBox(
-              height: 70,
-              child: Row(
-                children: [
-                  Wrap(
-                    spacing: 15,
-                    children: [
-                      _menuItem("HOME"),
-                      _menuItem("CATEGORIES"),
-                      _menuItem("SALE"),
-                      _menuItem("NEW IN"),
-                      _menuItem("MY ORDERS"),
-                      _menuItem("ABOUT US"),
-                    ],
-                  ),
-
-                  const Spacer(),
-
-                  SizedBox(
-                    width: 320,
-                    height: 40,
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: "Search in Elephant Mall",
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 20),
-
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD09A56),
-                    ),
-                    onPressed: () {},
-                    child: const Text(
-                      "SELL ITEMS",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-
-                  const SizedBox(width: 15),
-
-                  const Icon(Icons.person_outline),
-                  const SizedBox(width: 15),
-
-                  const Icon(Icons.favorite_border),
-                  const SizedBox(width: 15),
-
-                  const Icon(Icons.shopping_cart_outlined),
-                ],
-              ),
-            ),
-    );
-  }
-
-  Widget _menuItem(String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Text(
-        text,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-      ),
-    );
-  }
-
-  Widget buildFooter() {
-    return Container(
-      color: const Color(0xFFFFFFFF),
-      padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 15),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(child: _footerColumn("CUSTOMER CARE", ["Home"])),
-
-          Expanded(child: _footerColumn("ABOUT US", ["About Us"])),
-
-          Expanded(child: _footerColumn("CONNECT WITH US", ["Contact Us"])),
-
-          Expanded(child: _footerColumn("LEGAL", ["Legal"])),
-
-          Expanded(
-            flex: 2,
-            child: Align(
-              alignment: Alignment.centerRight,
-              // child: Text(
-              //   "Copyright © 2022 Connent on convent Limited",
-              //   style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
-              // ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _footerColumn(String title, List<String> items) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-
-        ...items.map(
-          (e) => Padding(
-            padding: const EdgeInsets.only(bottom: 5),
-            child: Text(e),
-          ),
-        ),
-      ],
-    );
-  }
-
   bool isMobile(BuildContext context) =>
       MediaQuery.of(context).size.width < 800;
 
@@ -491,7 +316,7 @@ class _SellPageState extends State<SellPage> {
                     ),
                   );
                 });
-                  _variantSubmitted = false;
+                _variantSubmitted = false;
 
                 variantController.clear();
                 skuController.clear();
@@ -594,7 +419,7 @@ class _SellPageState extends State<SellPage> {
 
       body: Column(
         children: [
-          buildHeader(),
+          const CommonHeader(),
           Expanded(
             child: SingleChildScrollView(
               child: Center(
@@ -650,9 +475,12 @@ class _SellPageState extends State<SellPage> {
             ),
           ),
 
-          if (!isMobile(context)) buildFooter(),
+          if (!isMobile(context)) const CommonFooter(),
         ],
       ),
+      bottomNavigationBar: isMobile(context)
+          ? CommonBottomBar(currentIndex: 2)
+          : null,
     );
   }
 
