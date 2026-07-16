@@ -17,6 +17,7 @@ class CategoryPage extends StatefulWidget {
 
 class _CategoryPageState extends State<CategoryPage> {
   late ApiService _apiService;
+  bool _isMobile = false;
   final ScrollController _scrollController = ScrollController();
   int _currentSlideIndex = 0;
   @override
@@ -25,17 +26,18 @@ class _CategoryPageState extends State<CategoryPage> {
     _apiService = ApiService();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _apiService.loadProducts();
+      _apiService.loadCategories();
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    _isMobile = MediaQuery.of(context).size.width < 768;
     return ChangeNotifierProvider.value(  // ← ADD THIS WRAPPER
     value: _apiService,                  // ← ADD THIS
     child: Scaffold(                     // ← INDENT EVERYTHING BELOW
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final isMobile = constraints.maxWidth < 768;
 
           return Column(
             children: [
@@ -46,20 +48,24 @@ class _CategoryPageState extends State<CategoryPage> {
                   padding: const EdgeInsets.only(bottom: 30.0),
                   child: Padding(
                     padding: EdgeInsets.symmetric(
-                      horizontal: isMobile ? 8.0 : 16.0,
+                      horizontal: _isMobile ? 8.0 : 16.0,
                       vertical: 16.0,
                     ),
-                    child: isMobile
+                    child: _isMobile
                         ? _buildMobileLayout()
                         : _buildDesktopLayout(),
                   ),
                 ),
               ),
-              if (!isMobile) const CommonFooter(),
+              if (!_isMobile) const CommonFooter(),
             ],
           );
         },
       ),
+      bottomNavigationBar: _isMobile
+          ? CommonBottomBar(currentIndex: 1)
+          : null,
+      
       ),
     );
   }
@@ -166,7 +172,7 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 
   // ============= HERO SLIDER =============
-  Widget _buildHeroCarousel(bool isMobile) {
+  Widget _buildHeroCarousel(bool _isMobile) {
     final List<Map<String, dynamic>> slides = [
       {
         'title': 'SUMMER ESSENTIALS!',
@@ -243,7 +249,7 @@ class _CategoryPageState extends State<CategoryPage> {
       children: [
         CarouselSlider(
           options: CarouselOptions(
-            height: isMobile ? 190 : 210,
+            height: _isMobile ? 190 : 210,
             autoPlay: true,
             autoPlayInterval: const Duration(seconds: 20),
             autoPlayAnimationDuration: const Duration(milliseconds: 3000),
@@ -272,10 +278,10 @@ class _CategoryPageState extends State<CategoryPage> {
                   ),
                   child: Padding(
                     padding: EdgeInsets.symmetric(
-                      horizontal: isMobile ? 16.0 : 30.0,
-                      vertical: isMobile ? 12.0 : 20.0,
+                      horizontal: _isMobile ? 16.0 : 30.0,
+                      vertical: _isMobile ? 12.0 : 20.0,
                     ),
-                    child: isMobile
+                    child: _isMobile
                         ? _buildMobileSlide(slide)
                         : _buildDesktopSlide(slide),
                   ),
@@ -660,7 +666,7 @@ class _CategoryPageState extends State<CategoryPage> {
         }
 
         final screenWidth = MediaQuery.of(context).size.width;
-        final isMobile = screenWidth < 768;
+        final _isMobile = screenWidth < 768;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -674,7 +680,7 @@ class _CategoryPageState extends State<CategoryPage> {
               ),
             ),
             const SizedBox(height: 10),
-            isMobile
+            _isMobile
                 ? _buildMobileCategoryChips(categoryController)
                 : _buildDesktopCategoryChips(categoryController),
           ],
@@ -685,89 +691,83 @@ class _CategoryPageState extends State<CategoryPage> {
 
   // ============= MOBILE CATEGORY CHIPS =============
   Widget _buildMobileCategoryChips(ApiService categoryController) {
-    return SizedBox(
-      height: 40,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: categoryController.categories.length,
-        itemBuilder: (context, index) {
-          final category = categoryController.categories[index];
-          final isSelected =
-              categoryController.selectedCategory == category.name;
+  return SizedBox(
+    height: 40,
+    child: ListView.builder(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      itemCount: categoryController.categories.length,
+      itemBuilder: (context, index) {
+        final category = categoryController.categories[index];
+        final isSelected =
+            categoryController.selectedCategory == category.name;
 
-          return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: GestureDetector(
-              onTap: () {
-                categoryController.selectCategory(category.name);
-                Provider.of<ApiService>(
-                  context,
-                  listen: false,
-                ).filterByCategory(category.name);
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 9,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF2B6E3B)
-                      : Colors.grey[200],
-                  borderRadius: BorderRadius.circular(40),
-                ),
-                child: Text(
-                  category.name,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.black87,
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  ),
-                ),
+        return Padding(
+          padding: const EdgeInsets.only(right: 8.0),
+          child: GestureDetector(
+            onTap: () {
+              categoryController.selectCategory(category.name);
+              categoryController.filterByCategory(category.name);  // ← CHANGE THIS
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 9,
               ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // ============= DESKTOP CATEGORY CHIPS =============
-  Widget _buildDesktopCategoryChips(ApiService categoryController) {
-    return Wrap(
-      spacing: 5.0,
-      runSpacing: 8.0,
-      children: categoryController.categories.map((category) {
-        final isSelected = categoryController.selectedCategory == category.name;
-
-        return GestureDetector(
-          onTap: () {
-            categoryController.selectCategory(category.name);
-            Provider.of<ApiService>(
-              context,
-              listen: false,
-            ).filterByCategory(category.name);
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF2B6E3B) : Colors.grey[200],
-              borderRadius: BorderRadius.circular(40),
-            ),
-            child: Text(
-              category.name,
-              style: TextStyle(
-                color: isSelected ? Colors.white : Colors.black87,
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? const Color(0xFF2B6E3B)
+                    : Colors.grey[200],
+                borderRadius: BorderRadius.circular(40),
+              ),
+              child: Text(
+                category.name,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.black87,
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                ),
               ),
             ),
           ),
         );
-      }).toList(),
-    );
-  }
+      },
+    ),
+  );
+}
+
+  // ============= DESKTOP CATEGORY CHIPS =============
+  Widget _buildDesktopCategoryChips(ApiService categoryController) {
+  return Wrap(
+    spacing: 5.0,
+    runSpacing: 8.0,
+    children: categoryController.categories.map((category) {
+      final isSelected = categoryController.selectedCategory == category.name;
+
+      return GestureDetector(
+        onTap: () {
+          categoryController.selectCategory(category.name);
+          categoryController.filterByCategory(category.name);  // ← CHANGE THIS
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF2B6E3B) : Colors.grey[200],
+            borderRadius: BorderRadius.circular(40),
+          ),
+          child: Text(
+            category.name,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.black87,
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            ),
+          ),
+        ),
+      );
+    }).toList(),
+  );
+}
 
   // ============= DESKTOP PRODUCTS =============
   Widget _buildDesktopProducts() {
@@ -855,13 +855,15 @@ class _CategoryPageState extends State<CategoryPage> {
 
   // ============= DESKTOP PRODUCT CARD =============
   Widget _buildDesktopProductCard(Product product) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(
-          context,
-              '/product/${product.id}',
-        );
-      },
+  return GestureDetector(
+    onTap: () {
+      Navigator.push(  // ← CHANGE THIS
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProductDetailPage(productId: product.id),
+        ),
+      );
+    },
       child: Container(
         height: 140,
         decoration: BoxDecoration(
@@ -994,10 +996,14 @@ class _CategoryPageState extends State<CategoryPage> {
                   children: [
                     GestureDetector(
                       onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                              '/product/${firstProduct.id}',
-                        );
+                        Navigator.push(  // ← CHANGE THIS
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ProductDetailPage(
+                            productId: firstProduct.id,
+                            ),
+                        ),
+                      );
                       },
                       child: Container(
                         decoration: BoxDecoration(
@@ -1213,7 +1219,7 @@ class _TrendingSliderWidgetState extends State<TrendingSliderWidget> {
   @override
   Widget build(BuildContext context) {
     //  Check if mobile
-    final bool isMobile = MediaQuery.of(context).size.width < 768;
+    final bool _isMobile = MediaQuery.of(context).size.width < 768;
 
     return Container(
       decoration: BoxDecoration(
@@ -1243,10 +1249,10 @@ class _TrendingSliderWidgetState extends State<TrendingSliderWidget> {
               CarouselSlider(
                 carouselController: _controller,
                 options: CarouselOptions(
-                  height: isMobile ? 270 : 250, // Slightly taller on mobile
+                  height: _isMobile ? 270 : 250, // Slightly taller on mobile
                   autoPlay: false,
                   enlargeCenterPage: false,
-                  viewportFraction: isMobile ? 0.75 : 0.85,
+                  viewportFraction: _isMobile ? 0.75 : 0.85,
                   onPageChanged: (index, reason) {
                     setState(() {
                       _currentIndex = index;
@@ -1279,8 +1285,8 @@ class _TrendingSliderWidgetState extends State<TrendingSliderWidget> {
                       );
                     },
                     child: Container(
-                      width: isMobile ? 24 : 28,
-                      height: isMobile ? 24 : 28,
+                      width: _isMobile ? 24 : 28,
+                      height: _isMobile ? 24 : 28,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
@@ -1294,7 +1300,7 @@ class _TrendingSliderWidgetState extends State<TrendingSliderWidget> {
                       child: Icon(
                         Icons.chevron_left,
                         color: const Color(0xFF2B6E3B),
-                        size: isMobile ? 16 : 20,
+                        size: _isMobile ? 16 : 20,
                       ),
                     ),
                   ),
@@ -1314,8 +1320,8 @@ class _TrendingSliderWidgetState extends State<TrendingSliderWidget> {
                       );
                     },
                     child: Container(
-                      width: isMobile ? 24 : 28,
-                      height: isMobile ? 24 : 28,
+                      width: _isMobile ? 24 : 28,
+                      height: _isMobile ? 24 : 28,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
@@ -1329,7 +1335,7 @@ class _TrendingSliderWidgetState extends State<TrendingSliderWidget> {
                       child: Icon(
                         Icons.chevron_right,
                         color: const Color(0xFF2B6E3B),
-                        size: isMobile ? 16 : 20,
+                        size: _isMobile ? 16 : 20,
                       ),
                     ),
                   ),
@@ -1385,9 +1391,11 @@ class TrendingItemWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(
+         Navigator.push(  // ← CHANGE THIS
           context,
-              '/product/${product.id}',
+          MaterialPageRoute(
+            builder: (context) => ProductDetailPage(productId: product.id),
+          ),
         );
       },
       child: Container(
