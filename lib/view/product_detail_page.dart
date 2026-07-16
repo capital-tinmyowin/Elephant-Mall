@@ -78,23 +78,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       ),
       //  ADD BOTTOM NAVIGATION BAR ONLY FOR MOBILE
       bottomNavigationBar: _isMobile
-          ? Container(
-              height: 70,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Colors.grey[300]!)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem(Icons.home_outlined, 'Home', 0),
-                  _buildNavItem(Icons.category_outlined, 'Categories', 1),
-                  _buildSellNavItem(),
-                  _buildNavItem(Icons.favorite_border, 'Favorite', 3),
-                  _buildNavItem(Icons.person_outline, 'Profile', 4),
-                ],
-              ),
-            )
+          ? CommonBottomBar(currentIndex: 1)
           : null,
       ),
     );
