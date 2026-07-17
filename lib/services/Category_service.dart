@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../models/Category.dart';
 import '../models/product.dart';
-import '../models/categories.dart';
 import '../models/cart_item.dart';
 import 'mock_api_service.dart';
 
@@ -452,8 +452,8 @@ void updateQuantity(int productId, int quantity) {
     }
 
     categories.sort((a, b) {
-      final indexA = orderMap[a.name] ?? 999;
-      final indexB = orderMap[b.name] ?? 999;
+      final indexA = orderMap[a.categoryName] ?? 999;
+      final indexB = orderMap[b.categoryName] ?? 999;
       return indexA.compareTo(indexB);
     });
 
@@ -468,7 +468,7 @@ void updateQuantity(int productId, int quantity) {
 
   // ============= GET CATEGORY NAMES =============
   List<String> getCategoryNames() {
-    return _sortedCategories.map((c) => c.name).toList();
+    return _sortedCategories.map((c) => c.categoryName).toList();
   }
 
   // ============= TOGGLE MOCK DATA =============
