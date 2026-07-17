@@ -1,5 +1,9 @@
 import 'dart:async';
+import '../models/Category.dart';
+import '../models/banner.dart';
+import 'package:elephant_mall/services/home_service.dart';
 import 'package:flutter/material.dart';
+import '../models/promo.dart';
 import 'common/footer.dart';
 import 'common/header.dart';
 
@@ -13,60 +17,57 @@ class _HomePageState extends State<HomePage> {
   final PageController _bannerController = PageController();
   Timer? _timer;
   int currentBanner = 0;
-
-  final List<Map<String, String>> banners = [
-    {
-      "image": "assets/promotion-banner.png",
-      "title": "YANGON SUMMER HEATWAVE SAVINGS!",
-      "desc": "Cool styles for Yangon’s hottest days.",
-    },
-    {
-      "image": "promotion-banner2.png",
-      "title": "NEW ARRIVALS",
-      "desc": "Discover latest fashion trends.",
-    },
-    {
-      "image": "assets/promotion-banner.png",
-      "title": "BIG SALE 50% OFF",
-      "desc": "Don’t miss the best deals.",
-    },
-  ];
-
-  final List<Map<String, String>> categories = [
-    {"name": "T-Shirts", "image": "assets/tshirt.png"},
-    {"name": "Blouses", "image": "assets/blouse.png"},
-    {"name": "Bags", "image": "assets/bag.png"},
-    {"name": "Hats", "image": "assets/hat.png"},
-    {"name": "Jewelry", "image": "assets/jewelry.png"},
-    {"name": "Shoes", "image": "assets/shoe.png"},
-    {"name": "Jeans", "image": "assets/bag.png"},
-    {"name": "Electronic", "image": "assets/hat.png"},
-    {"name": "Blouses", "image": "assets/blouse.png"},
-    {"name": "Bags", "image": "assets/bag.png"},
-    {"name": "Hats", "image": "assets/hat.png"},
-    {"name": "Jewelry", "image": "assets/jewelry.png"},
-  ];
-
-  final List<Map<String, dynamic>> products = [
-    {"name": "Men's Sneakers", "price": 89, "image": "assets/man-sneaker.png"},
-    {
-      "name": "Women's Wristwatch",
-      "price": 65,
-      "image": "assets/woman-watch.png",
-    },
-    {"name": "Leather Backpack", "price": 110, "image": "assets/bagpack.jpg"},
-    {"name": "Linen Shirt", "price": 45, "image": "assets/linen.webp"},
-    {"name": "Straw Hat", "price": 25, "image": "assets/hat.png"},
-    {"name": "Leather Backpack", "price": 110, "image": "assets/bagpack.jpg"},
-    {"name": "Linen Shirt", "price": 45, "image": "assets/linen.webp"},
-    {"name": "Men's Sneakers", "price": 89, "image": "assets/man-sneaker.png"},
-  ];
+  final HomeService _service = HomeService();
+  List<BannerModel> banners = [];
+  List<Category> categories = [];
+  List<Product> products = [];
+  List<Promo> promos = [];
+  bool loading = true;
 
   @override
   void initState() {
     super.initState();
+    loadHome();
     startAutoSlide();
   }
+
+  Future<void> loadHome() async {
+    try {
+      final result = await Future.wait([
+        _service.getBanners(),
+        _service.getCategories(),
+        _service.getProducts(),
+        _service.getPromos(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        banners = result[0] as List<BannerModel>;
+        categories = result[1] as List<Category>;
+        products = result[2] as List<Product>;
+        promos = result[3] as List<Promo>;
+        loading = false;
+      });
+    } catch (e) {
+      debugPrint(e.toString());
+      setState(() {
+        loading = false;
+      });
+    }
+  }
+
+ String imageUrl(dynamic path) {
+  final value = path?.toString() ?? '';
+
+  if (value.isEmpty) {
+    return "";
+  }
+
+  if (value.startsWith("http")) {
+    return value;
+  }
+
+  return "http://localhost:5086$value";
+}
 
   void startAutoSlide() {
     _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
@@ -138,6 +139,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget buildHero() {
+    if (banners.isEmpty) {
+      return const SizedBox(
+        height: 220,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
     final width = MediaQuery.of(context).size.width;
     final isMobile = width < 600;
     return SizedBox(
@@ -147,38 +154,56 @@ class _HomePageState extends State<HomePage> {
         child: PageView.builder(
           controller: _bannerController,
           itemCount: banners.length,
+          onPageChanged: (index) {
+            setState(() {
+              currentBanner = index;
+            });
+          },
           itemBuilder: (context, index) {
             final item = banners[index];
+
             return Stack(
               fit: StackFit.expand,
               children: [
-                Image.asset(item["image"]!, fit: BoxFit.cover),
-                /// DARK OVERLAY
-                Container(color: Colors.black.withValues(alpha: 0.15),),
-                /// TEXT AREA
+                // API IMAGE
+                Image.network(
+                  imageUrl(item.imagePath),
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey.shade300,
+                      child: const Icon(Icons.image_not_supported, size: 50),
+                    );
+                  },
+                ),
+
+                // DARK OVERLAY
+                Container(color: Colors.black.withValues(alpha: 0.25)),
+
+                // TEXT
                 Positioned(
                   left: isMobile ? 15 : 40,
                   top: isMobile ? 15 : 40,
                   right: 10,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        item["title"]!,
+                        item.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.bold,
                           fontSize: isMobile ? 14 : 28,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
 
-                      SizedBox(height: isMobile ? 5 : 10),
+                      const SizedBox(height: 8),
+
                       Text(
-                        item["desc"]!,
-                        maxLines: 1,
+                        item.description,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white,
@@ -186,28 +211,19 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
 
-                      SizedBox(height: isMobile ? 5 : 15),
-                      SizedBox(
-                        height: isMobile ? 25 : 40,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: isMobile ? 10 : 20,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          ),
+                      const SizedBox(height: 15),
 
-                          onPressed: () {},
-                          child: Text(
-                            "SHOP NOW",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: isMobile ? 10 : 14,
-                            ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
                           ),
+                        ),
+                        onPressed: () {},
+                        child: const Text(
+                          "SHOP NOW",
+                          style: TextStyle(color: Colors.white),
                         ),
                       ),
                     ],
@@ -222,19 +238,37 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget buildPromotions() {
+    if (promos.isEmpty) {
+      return const SizedBox();
+    }
     return Row(
-      children: [
-        Expanded(child: promo("assets/promotion-banner.png")),
-        const SizedBox(width: 10),
-        Expanded(child: promo("assets/promotion-banner2.png")),
-      ],
+      children: promos.take(2).map((item) {
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: promo(item),
+          ),
+        );
+      }).toList(),
     );
   }
 
-  Widget promo(String image) {
+  Widget promo(Promo item) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
-      child: Image.asset(image, height: 100, fit: BoxFit.cover),
+      child: Image.network(
+        imageUrl(item.imagePath),
+        height: 100,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            height: 100,
+            color: Colors.grey.shade300,
+            child: const Icon(Icons.image_not_supported, size: 40),
+          );
+        },
+      ),
     );
   }
 
@@ -250,6 +284,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget buildCategories() {
+    if (categories.isEmpty) {
+      return const SizedBox();
+    }
+
     return SizedBox(
       height: 120,
       child: ListView.builder(
@@ -259,7 +297,7 @@ class _HomePageState extends State<HomePage> {
           final item = categories[index];
           return Container(
             width: 90,
-            margin: const EdgeInsets.only(right: 5),
+            margin: const EdgeInsets.only(right: 10),
             child: Column(
               children: [
                 Container(
@@ -269,12 +307,21 @@ class _HomePageState extends State<HomePage> {
                     color: const Color(0xffF3F3F3),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Image.asset(item["image"]!, fit: BoxFit.contain),
+                  child: Image.network(
+                    imageUrl(item.photoPath),
+
+                    fit: BoxFit.contain,
+
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(Icons.image_not_supported);
+                    },
+                  ),
                 ),
 
                 const SizedBox(height: 5),
                 Text(
-                  item["name"]!,
+                  item.categoryName,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 12,
@@ -291,6 +338,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget buildProducts() {
+    if (products.isEmpty) {
+      return const SizedBox();
+    }
     return SizedBox(
       height: 210,
       child: ListView.builder(
@@ -305,19 +355,25 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Image.asset(
-                    p["image"],
+                  Image.network(
+                    imageUrl(p.imagePath),
                     height: 100,
                     width: 180,
                     fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const SizedBox(
+                        height: 100,
+                        child: Icon(Icons.image_not_supported),
+                      );
+                    },
                   ),
-
                   Padding(
                     padding: const EdgeInsets.all(8),
                     child: Text(
-                      p["name"],
+                      p.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
 
@@ -325,80 +381,51 @@ class _HomePageState extends State<HomePage> {
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Row(
                       children: [
-                        // Price
                         Text(
-                          "\$${p["price"]}",
+                          "\$${p.price}",
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontSize: 14,
                           ),
                         ),
-                        const SizedBox(width: 20),
 
-                        // Rating Stars
+                        const Spacer(),
+
                         Row(
                           children: List.generate(
                             5,
-                            (index) => const Icon(
+                            (i) => Icon(
                               Icons.star,
-                              color: Colors.amber,
-                              size: 16,
+                              size: 12,
+                              color: i < p.rating.round()
+                                  ? Colors.amber
+                                  : Colors.grey,
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
+                  const Spacer(),
 
                   Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: Row(
-                      children: [
-                        /// ADD TO FAVORITE Button
-                        Expanded(
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              padding: const EdgeInsets.symmetric(vertical: 2),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            onPressed: () {
-                              // Add to Favorite
-                            },
-                            child: const Text(
-                              "ADD TO CARD",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ),
+                    padding: const EdgeInsets.all(5),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 30,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          padding: EdgeInsets.zero,
                         ),
 
-                        const SizedBox(width: 4),
+                        onPressed: () {},
 
-                        /// Shopping Cart Icon
-                        Container(
-                          width: 34,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: Colors.orange,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: IconButton(
-                            icon: const Icon(
-                              Icons.shopping_cart_outlined,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                            onPressed: () {
-                              // Open Cart
-                            },
-                          ),
+                        child: const Text(
+                          "ADD TO CART",
+                          style: TextStyle(color: Colors.white, fontSize: 11),
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ],
