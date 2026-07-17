@@ -780,14 +780,14 @@ class _CategoryPageState extends State<CategoryPage> {
         itemBuilder: (context, index) {
           final category = categoryController.categories[index];
           final isSelected =
-              categoryController.selectedCategory == category.name;
+              categoryController.selectedCategory == category.categoryName;
 
           return Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: GestureDetector(
               onTap: () {
-                categoryController.selectCategory(category.name);
-                categoryController.filterByCategory(category.name);
+                categoryController.selectCategory(category.categoryName);
+                categoryController.filterByCategory(category.categoryName);
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(
@@ -801,7 +801,7 @@ class _CategoryPageState extends State<CategoryPage> {
                   borderRadius: BorderRadius.circular(40),
                 ),
                 child: Text(
-                  category.name,
+                  category.categoryName,
                   style: TextStyle(
                     color: isSelected ? Colors.white : Colors.black87,
                     fontSize: 13,
@@ -822,12 +822,12 @@ class _CategoryPageState extends State<CategoryPage> {
       spacing: 5.0,
       runSpacing: 8.0,
       children: categoryController.categories.map((category) {
-        final isSelected = categoryController.selectedCategory == category.name;
+        final isSelected = categoryController.selectedCategory == category.categoryName;
 
         return GestureDetector(
           onTap: () {
-            categoryController.selectCategory(category.name);
-            categoryController.filterByCategory(category.name);
+            categoryController.selectCategory(category.categoryName);
+            categoryController.filterByCategory(category.categoryName);
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -836,7 +836,7 @@ class _CategoryPageState extends State<CategoryPage> {
               borderRadius: BorderRadius.circular(40),
             ),
             child: Text(
-              category.name,
+              category.categoryName,
               style: TextStyle(
                 color: isSelected ? Colors.white : Colors.black87,
                 fontSize: 13,
