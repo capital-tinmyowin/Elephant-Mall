@@ -6,7 +6,6 @@ import '../services/Category_service.dart';
 import '../services/mock_api_service.dart';
 import 'common/footer.dart';
 import 'common/header.dart';
-import 'package:elephant_mall/view/seller.dart';
 
 class ProductDetailPage extends StatefulWidget {
   final int productId;
@@ -458,7 +457,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
     //  Check if screen is smaller than 1100px
     final bool isSmallScreen = MediaQuery.of(context).size.width < 1100;
-    bool _isSellerHovered = false;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
