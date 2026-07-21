@@ -305,7 +305,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             children: [
               _buildMetaRow('Category', category, 'Condition', 'New'),
               SizedBox(
-                height: 1.0,
+                height: 0.9,
                 width: double.infinity,
                 child: Container(color: Colors.grey),
               ),
@@ -338,7 +338,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         // Value 1
         Expanded(
           child: Container(
-            padding: EdgeInsets.all(10),
             child: Text(value1),
           ),
         ),
@@ -355,7 +354,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         // Value 2
         Expanded(
           child: Container(
-            padding: EdgeInsets.all(10),child: Text(value2),
+            child: Text(value2),
           ),
         ),
       ],
