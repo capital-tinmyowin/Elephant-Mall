@@ -9,15 +9,19 @@ import 'common/header.dart';
 
 class ProductDetailPage extends StatefulWidget {
   final int productId;
- final VoidCallback? onBack;  //  Add callback
+  final VoidCallback? onBack; //  Add callback
   const ProductDetailPage({super.key, required this.productId, this.onBack});
 
   @override
   State<ProductDetailPage> createState() => _ProductDetailPageState();
 }
 
+bool mobile(BuildContext context) {
+  return MediaQuery.of(context).size.width < 800;
+}
+
 class _ProductDetailPageState extends State<ProductDetailPage> {
-   late ApiService _apiService;
+  late ApiService _apiService;
   int _selectedImageIndex = 0;
   bool _isMobile = false;
   List<Product> _sellerProducts = [];
@@ -33,171 +37,105 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    _isMobile = MediaQuery.of(context).size.width < 768;
-
-    return ChangeNotifierProvider.value(  // ← ADD THIS WRAPPER
-    value: _apiService,                  // ← ADD THIS
-    child:Scaffold(
-      body: Consumer<ApiService>(
-        builder: (context, productController, child) {
-          if (productController.isLoading) {
-            return const Column(
-              children: [
-                CommonHeader(),
-                Expanded(child: Center(child: CircularProgressIndicator())),
-              ],
-            );
-          }
-
-          final product = productController.selectedProduct;
-          if (product == null) {
-            return const Column(
-              children: [
-                CommonHeader(),
-                Expanded(child: Center(child: Text('Product not found'))),
-              ],
-            );
-          }
-          _sellerProducts = _getSellerProducts(product);
-          return Column(
-            children: [
-              const CommonHeader(),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: _isMobile
-                      ? _buildMobileLayout(product)
-                      : _buildDesktopLayout(product),
-                ),
-              ),
-              //  Add Footer for PC view
-              if (!_isMobile) const CommonFooter(),
-            ],
-          );
-        },
-      ),
-      //  ADD BOTTOM NAVIGATION BAR ONLY FOR MOBILE
-      bottomNavigationBar: _isMobile
-          ? Container(
-              height: 70,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Colors.grey[300]!)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+    final isMobile = mobile(context);
+    _isMobile = isMobile;
+    return ChangeNotifierProvider.value(
+      // ← ADD THIS WRAPPER
+      value: _apiService, // ← ADD THIS
+      child: Scaffold(
+        body: Consumer<ApiService>(
+          builder: (context, productController, child) {
+            if (productController.isLoading) {
+              return const Column(
                 children: [
-                  _buildNavItem(Icons.home_outlined, 'Home', 0),
-                  _buildNavItem(Icons.category_outlined, 'Categories', 1),
-                  _buildSellNavItem(),
-                  _buildNavItem(Icons.favorite_border, 'Favorite', 3),
-                  _buildNavItem(Icons.person_outline, 'Profile', 4),
+                  CommonHeader(),
+                  Expanded(child: Center(child: CircularProgressIndicator())),
                 ],
-              ),
-            )
-          : null,
-      ),
-    );
-  }
+              );
+            }
 
-  // ============= BOTTOM NAVIGATION ITEMS =============
-  Widget _buildNavItem(IconData icon, String label, int index) {
-    return GestureDetector(
-      onTap: () {
-        //  Use onBack callback to go back to MainScreen
-        widget.onBack?.call();
-        // Then navigate to the selected tab
-        Navigator.pushReplacementNamed(context, 
-          index == 0 ? '/home' :
-          index == 1 ? '/categories' :
-          index == 3 ? '/favorite' :
-          '/profile'
-        );
-      },
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            color: Colors.grey[600],
-            size: 24,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 10,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSellNavItem() {
-    return GestureDetector(
-      onTap: () {
-        widget.onBack?.call();
-        Navigator.pushReplacementNamed(context, '/sell');
-      },
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 45,
-            height: 45,
-            decoration: const BoxDecoration(
-              color: Color(0xFFD68247),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.add,
-              color: Colors.white,
-              size: 28,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            'Sell',
-            style: TextStyle(
-              color: const Color(0xFFD68247),
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
+            final product = productController.selectedProduct;
+            if (product == null) {
+              return const Column(
+                children: [
+                  CommonHeader(),
+                  Expanded(child: Center(child: Text('Product not found'))),
+                ],
+              );
+            }
+            _sellerProducts = _getSellerProducts(product);
+            return Column(
+              children: [
+                const CommonHeader(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: _isMobile
+                        ? _buildMobileLayout(product)
+                        : _buildDesktopLayout(product),
+                  ),
+                ),
+                //  Add Footer for PC view
+                if (!isMobile) const CommonFooter(),
+              ],
+            );
+          },
+        ),
+        //  ADD BOTTOM NAVIGATION BAR ONLY FOR MOBILE
+        bottomNavigationBar: isMobile ? CommonBottomBar(currentIndex: 1) : null,
       ),
     );
   }
 
   // ============= DESKTOP LAYOUT =============
   Widget _buildDesktopLayout(Product product) {
+    final bool isSmallScreen = MediaQuery.of(context).size.width < 1000;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Left: Product Gallery
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(flex: 1, child: _buildProductGallery(product)),
-            Expanded(
-              flex: 1,
-              child: Column(
+        // Product Gallery + Info - Responsive Row
+        isSmallScreen
+            ? Column(
+                //  Stack vertically on smaller screens
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildProductInfo(product),
-                  const SizedBox(height: 16),
-                  _buildActionButtons(product),
-                  const SizedBox(height: 16),
-                  _buildDescription(product),
-                  _buildSellerInfo(product),
+                  Center(child: _buildProductGallery(product)),
+                  const SizedBox(height: 24),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildProductInfo(product),
+                      const SizedBox(height: 16),
+                      _buildActionButtons(product),
+                      const SizedBox(height: 16),
+                      _buildDescription(product),
+                      _buildSellerInfo(product),
+                    ],
+                  ),
+                ],
+              )
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 1, child: _buildProductGallery(product)),
+                  Expanded(
+                    flex: 1,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildProductInfo(product),
+                        const SizedBox(height: 16),
+                        _buildActionButtons(product),
+                        const SizedBox(height: 16),
+                        _buildDescription(product),
+                        _buildSellerInfo(product),
+                      ],
+                    ),
+                  ),
+                  Expanded(flex: 1, child: const SizedBox(width: 24)),
                 ],
               ),
-            ),
-            Expanded(flex: 1, child: const SizedBox(width: 24)),
-          ],
-        ),
         const SizedBox(height: 16),
         _buildMoreFromStore(product),
       ],
@@ -226,33 +164,40 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   // ============= PRODUCT GALLERY =============
   Widget _buildProductGallery(Product product) {
+    final bool isMobile = MediaQuery.of(context).size.width < 800;
+    final bool isSmallScreen = MediaQuery.of(context).size.width < 1000;
+
     final images = product.proxiedAllImages;
     final mainImage = images.isNotEmpty ? images[_selectedImageIndex] : '';
+
+    //  Responsive image sizes
+    double imageWidth = isMobile ? 180 : (isSmallScreen ? 220 : 200);
+    double imageHeight = isMobile ? 250 : (isSmallScreen ? 280 : 300);
+    double thumbSize = isMobile ? 60 : (isSmallScreen ? 70 : 80);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Main Image
         Center(
           child: Container(
-            width: 200,
-            height: 300,
+            width: imageWidth,
+            height: imageHeight,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(color: Colors.grey[50]),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: CachedNetworkImage(
                 imageUrl: mainImage,
-                height: 300,
+                height: imageHeight,
                 width: double.infinity,
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
-                  height: 300,
+                  height: imageHeight,
                   color: Colors.grey[200],
                   child: const Center(child: CircularProgressIndicator()),
                 ),
                 errorWidget: (context, url, error) => Container(
-                  height: 300,
+                  height: imageHeight,
                   color: Colors.grey[200],
                   child: const Icon(Icons.image_not_supported, size: 80),
                 ),
@@ -261,8 +206,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           ),
         ),
         const SizedBox(height: 12),
-
-        // Thumbnails
         if (images.length > 1)
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -278,8 +221,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     });
                   },
                   child: Container(
-                    width: 80,
-                    height: 100,
+                    width: thumbSize,
+                    height: thumbSize + 20,
                     margin: const EdgeInsets.only(right: 8),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
@@ -512,6 +455,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     final double rating = seller?.rating ?? product.rating;
     final String avatarText = sellerName.substring(0, 1).toUpperCase();
 
+    //  Check if screen is smaller than 1100px
+    final bool isSmallScreen = MediaQuery.of(context).size.width < 1100;
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
       decoration: BoxDecoration(
@@ -519,87 +465,187 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[200]!),
       ),
-      child: Row(
-        children: [
-          // Avatar
-          Container(
-            width: 60,
-            height: 60,
-            decoration: const BoxDecoration(
-              color: Color(0xFFB58B5C),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                avatarText,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-
-          // Seller Details
-          Expanded(
-            child: Column(
+      child: isSmallScreen
+          ? Column(
+              //  Stack vertically on screens < 1100px
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  sellerName,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
+                // Top row: Avatar + Name + Rating
                 Row(
                   children: [
-                    const Text(
-                      '★★★★★',
-                      style: TextStyle(color: Color(0xFFF5B042)),
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFB58B5C),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          avatarText,
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
                     ),
-                    Text(
-                      rating.toStringAsFixed(1),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          InkWell(
+                            onTap: () {
+                              Navigator.pushNamed(context, '/seller');
+                            },
+                            child: Text(
+                              sellerName,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors
+                                    .blue, // Optional: makes it look clickable
+                                decoration:
+                                    TextDecoration.underline, // Optional
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Text(
+                                '★★★★★',
+                                style: TextStyle(color: Color(0xFFF5B042)),
+                              ),
+                              Text(
+                                rating.toStringAsFixed(1),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-
-          // Follow Button
-          OutlinedButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(' You are now following $sellerName!'),
-                  duration: const Duration(seconds: 2),
+                const SizedBox(height: 12),
+                // Bottom row: Follow button full width
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(' You are now following $sellerName!'),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF2B6E3B)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add, size: 16),
+                        SizedBox(width: 4),
+                        Text('Follow Seller'),
+                      ],
+                    ),
+                  ),
                 ),
-              );
-            },
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFF2B6E3B)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Row(
+              ],
+            )
+          : Row(
+              //  Desktop - Row layout (unchanged)
               children: [
-                Icon(Icons.add, size: 16),
-                SizedBox(width: 4),
-                Text('Follow Seller'),
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFB58B5C),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      avatarText,
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      InkWell(
+                        onTap: () {
+                          Navigator.pushNamed(context, '/seller');
+                        },
+                        child:Text(
+                          sellerName,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Text(
+                            '★★★★★',
+                            style: TextStyle(color: Color(0xFFF5B042)),
+                          ),
+                          Text(
+                            rating.toStringAsFixed(1),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                OutlinedButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(' You are now following $sellerName!'),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF2B6E3B)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.add, size: 16),
+                      SizedBox(width: 4),
+                      Text('Follow Seller'),
+                    ],
+                  ),
+                ),
               ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -740,7 +786,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     );
   }
 
-   //  Get products from same seller
+  //  Get products from same seller
   List<Product> _getSellerProducts(Product currentProduct) {
     if (currentProduct.seller == null) return [];
 

@@ -1,6 +1,6 @@
 
+import '../models/Category.dart';
 import '../models/product.dart';
-import '../models/categories.dart';
 
 class MockApiService {
   static List<Product> getMockProducts() {
@@ -556,20 +556,20 @@ class MockApiService {
 
   static List<Category> getMockCategories() {
     return [
-      Category(name: "All Items"),
-      Category(name: "Accessories"),
-      Category(name: "Appliances"),
-      Category(name: "Bags"),
-      Category(name: "Blouses"),
-      Category(name: "Clearance"),
-      Category(name: "Electronics"),
-      Category(name: "Hats"),
-      Category(name: "Headphones"),
-      Category(name: "Home Decor"),
-      Category(name: "Jeans"),
-      Category(name: "Power Banks"),
-      Category(name: "Shoes"),
-      Category(name: "T-Shirts"),
+      Category(categoryId: 1, categoryName: "All Items", photoPath: ""),
+      Category(categoryId: 2, categoryName: "T-Shirts", photoPath: ""),
+      Category(categoryId: 3, categoryName: "Blouses", photoPath: ""),
+      Category(categoryId: 4, categoryName: "Bags", photoPath: ""),
+      Category(categoryId: 5, categoryName: "Hats", photoPath: ""),
+      Category(categoryId: 6, categoryName: "Shoes", photoPath: ""),
+      Category(categoryId: 7, categoryName: "Jeans", photoPath: ""),
+      Category(categoryId: 8, categoryName: "Accessories", photoPath: ""),
+      Category(categoryId: 9, categoryName: "Electronics", photoPath: ""),
+      Category(categoryId: 10, categoryName: "Headphones", photoPath: ""),
+      Category(categoryId: 11, categoryName: "Power Banks", photoPath: ""),
+      Category(categoryId: 12, categoryName: "Clearance", photoPath: ""),
+      Category(categoryId: 13, categoryName: "Home Decor", photoPath: ""),
+      Category(categoryId: 14, categoryName: "Appliances", photoPath: ""),
     ];
   }
 

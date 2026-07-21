@@ -1,4 +1,5 @@
 import 'package:elephant_mall/view/category_page.dart';
+import 'package:elephant_mall/view/category_page.dart';
 import 'package:flutter/material.dart';
 import '../home.dart';
 import '../sell.dart';
@@ -259,6 +260,7 @@ class CommonBottomBar extends StatelessWidget {
         break;
 
       case 1:
+        page = const CategoryPage();
         page = const CategoryPage();
         break;
 
