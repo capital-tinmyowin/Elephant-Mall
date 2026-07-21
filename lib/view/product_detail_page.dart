@@ -338,7 +338,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         // Value 1
         Expanded(
           child: Container(
-            padding: EdgeInsets.all(10),
             child: Text(value1),
           ),
         ),
@@ -355,7 +354,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         // Value 2
         Expanded(
           child: Container(
-            padding: EdgeInsets.all(10),child: Text(value2),
+            child: Text(value2),
           ),
         ),
       ],
