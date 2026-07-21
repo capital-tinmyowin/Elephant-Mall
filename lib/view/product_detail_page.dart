@@ -115,26 +115,29 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   ),
                 ],
               )
-            : Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(flex: 1, child: _buildProductGallery(product)),
-                  Expanded(
-                    flex: 1,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildProductInfo(product),
-                        const SizedBox(height: 16),
-                        _buildActionButtons(product),
-                        const SizedBox(height: 16),
-                        _buildDescription(product),
-                        _buildSellerInfo(product),
-                      ],
+            : Container(
+                padding: EdgeInsetsGeometry.only(right: 250),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 1, child: _buildProductGallery(product)),
+                    Expanded(
+                      flex: 1,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildProductInfo(product),
+                          const SizedBox(height: 16),
+                          _buildActionButtons(product),
+                          const SizedBox(height: 16),
+                          _buildDescription(product),
+                          _buildSellerInfo(product),
+                        ],
+                      ),
                     ),
-                  ),
-                  Expanded(flex: 1, child: const SizedBox(width: 24)),
-                ],
+                    // Expanded(flex: 1, child: const SizedBox(width: 24)),
+                  ],
+                ),
               ),
         const SizedBox(height: 16),
         _buildMoreFromStore(product),
@@ -293,6 +296,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
         // Meta Table - 2x2 grid like HTML
         Container(
+          // padding: EdgeInsets.all(10),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey[300]!),
             borderRadius: BorderRadius.circular(8),
@@ -300,7 +304,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           child: Column(
             children: [
               _buildMetaRow('Category', category, 'Condition', 'New'),
-              _buildMetaRow('SKU', sku, 'Quantity Available', qty),
+              SizedBox(
+                height: 1.0,
+                width: double.infinity,
+                child: Container(color: Colors.grey),
+              ),
+              _buildMetaRow('SKU', sku, 'Quantity', qty),
             ],
           ),
         ),
@@ -319,7 +328,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         // Label 1
         Container(
           width: 100,
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          padding: EdgeInsets.all(10),
           color: Colors.grey[200],
           child: Text(
             label1,
@@ -329,14 +338,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         // Value 1
         Expanded(
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            padding: EdgeInsets.all(10),
             child: Text(value1),
           ),
         ),
         // Label 2
         Container(
           width: 100,
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          padding: EdgeInsets.all(10),
           color: Colors.grey[200],
           child: Text(
             label2,
@@ -346,8 +355,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         // Value 2
         Expanded(
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-            child: Text(value2),
+            padding: EdgeInsets.all(10),child: Text(value2),
           ),
         ),
       ],
@@ -597,8 +605,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         child:Text(
                           sellerName,
                           style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: 28,
                             fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
                         ),
                       ),
