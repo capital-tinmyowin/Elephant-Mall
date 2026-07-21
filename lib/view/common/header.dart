@@ -3,8 +3,30 @@ import 'package:flutter/material.dart';
 import '../home.dart';
 import '../sell.dart';
 
-class CommonHeader extends StatelessWidget {
+class CommonHeader extends StatefulWidget {
   const CommonHeader({super.key});
+
+  @override
+  State<CommonHeader> createState() => _CommonHeaderState();
+}
+
+class _CommonHeaderState extends State<CommonHeader> {
+  bool _isMenuOpen = false;
+  String _activeMenu = "HOME";
+
+  String _getActiveMenu(BuildContext context) {
+    final route = ModalRoute.of(context);
+
+    if (route is MaterialPageRoute) {
+      final page = route.builder(context);
+
+      if (page is HomePage) return "HOME";
+      if (page is CategoryPage) return "CATEGORIES";
+      if (page is SellPage) return "SALE";
+    }
+
+    return "";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,8 +55,7 @@ class CommonHeader extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final showSecondRow = constraints.maxWidth < 1000;
-
+          final isCompact = constraints.maxWidth < 1100;
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -43,41 +64,62 @@ class CommonHeader extends StatelessWidget {
                 height: 70,
                 child: Row(
                   children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _menuItem(context, "HOME", const HomePage()),
-                            _menuItem(context, "CATEGORIES", const CategoryPage()),
-                            _menuItem(context, "SALE", const SellPage()),
-                            _menuItem(context, "NEW IN", const SellPage()),
-                            _menuItem(context, "MY ORDERS", const SellPage()),
-                            _menuItem(context, "ABOUT US", const SellPage()),
-                          ],
+                    if (!isCompact)
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _menuItem(context, "HOME", const HomePage()),
+                              _menuItem(
+                                context,
+                                "CATEGORIES",
+                                const CategoryPage(),
+                              ),
+                              _menuItem(context, "SALE", const SellPage()),
+                              _menuItem(context, "NEW IN", const SellPage()),
+                              _menuItem(context, "MY ORDERS", const SellPage()),
+                              _menuItem(context, "ABOUT US", const SellPage()),
+                            ],
+                          ),
                         ),
+                      )
+                    else ...[
+                      IconButton(
+                        icon: Icon(
+                          _isMenuOpen ? Icons.close : Icons.menu,
+                          size: 30,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isMenuOpen = !_isMenuOpen;
+                          });
+                        },
                       ),
-                    ),
 
-                    if (!showSecondRow)
-                      SizedBox(
-                        width: 320,
-                        height: 42,
-                        child: TextField(
-                          textAlignVertical: TextAlignVertical.center,
-                          decoration: InputDecoration(
-                            hintText: "Search",
-                            prefixIcon: const Icon(Icons.search, size: 20),
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 10,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(25),
-                            ),
+                      const Spacer(),
+                    ],
+
+                    if (!isCompact) const SizedBox(width: 15),
+
+                    SizedBox(
+                      width: 300,
+                      height: 42,
+                      child: TextField(
+                        textAlignVertical: TextAlignVertical.center,
+                        decoration: InputDecoration(
+                          hintText: "Search",
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(25),
                           ),
                         ),
                       ),
+                    ),
 
                     const SizedBox(width: 15),
 
@@ -125,33 +167,23 @@ class CommonHeader extends StatelessWidget {
                   ],
                 ),
               ),
-
-              /// SECOND ROW
-              if (showSecondRow)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(
+              if (isCompact && _isMenuOpen)
+                Container(
+                  width: double.infinity,
+                  color: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Spacer(),
-
-                      SizedBox(
-                        width: 320,
-                        height: 42,
-                        child: TextField(
-                          textAlignVertical: TextAlignVertical.center,
-                          decoration: InputDecoration(
-                            hintText: "Search",
-                            prefixIcon: const Icon(Icons.search, size: 20),
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 10,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(25),
-                            ),
-                          ),
-                        ),
-                      ),
+                      _menuItem(context, "HOME", const HomePage()),
+                      _menuItem(context, "CATEGORIES", const CategoryPage()),
+                      _menuItem(context, "SALE", const SellPage()),
+                      _menuItem(context, "NEW IN", const SellPage()),
+                      _menuItem(context, "MY ORDERS", const SellPage()),
+                      _menuItem(context, "ABOUT US", const SellPage()),
                     ],
                   ),
                 ),
@@ -163,10 +195,20 @@ class CommonHeader extends StatelessWidget {
   }
 
   Widget _menuItem(BuildContext context, String text, Widget? page) {
+    final bool isActive = _getActiveMenu(context) == text;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: InkWell(
         onTap: () {
+          setState(() {
+            _activeMenu = text;
+
+            // Close the hamburger menu after selecting an item
+            if (_isMenuOpen) {
+              _isMenuOpen = false;
+            }
+          });
+
           if (page == null) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('$text page is not implemented yet')),
@@ -176,9 +218,21 @@ class CommonHeader extends StatelessWidget {
 
           Navigator.push(context, MaterialPageRoute(builder: (_) => page));
         },
-        child: Text(
-          text,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: isActive ? const Color(0xFFC77C2E) : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: isActive ? Colors.white : Colors.black,
+            ),
+          ),
         ),
       ),
     );
@@ -224,10 +278,7 @@ class CommonBottomBar extends StatelessWidget {
         return;
     }
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => page),
-    );
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => page));
   }
 
   // void _navigate(BuildContext context, int index) {
@@ -247,24 +298,27 @@ class CommonBottomBar extends StatelessWidget {
       currentIndex: currentIndex,
       onTap: (index) => _navigate(context, index),
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: Colors.green,
-      unselectedItemColor: Colors.grey,
+      selectedItemColor: const Color(0xFFC77C2E),
+      unselectedItemColor: const Color.fromARGB(255, 2, 2, 2),
       items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: "Home"),
         BottomNavigationBarItem(
-          icon: Icon(Icons.grid_view),
+          icon: Icon(Icons.home_outlined, size: 38),
+          label: "Home",
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.grid_view, size: 38),
           label: "Categories",
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.add_circle, size: 38),
+          icon: Icon(Icons.add_circle, size: 45),
           label: "Sell",
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.favorite_border),
+          icon: Icon(Icons.favorite_border, size: 38),
           label: "Favorite",
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
+          icon: Icon(Icons.person_outline, size: 38),
           label: "Profile",
         ),
       ],
