@@ -305,7 +305,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             children: [
               _buildMetaRow('Category', category, 'Condition', 'New'),
               SizedBox(
-                height: 1.0,
+                height: 0.9,
                 width: double.infinity,
                 child: Container(color: Colors.grey),
               ),
