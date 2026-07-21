@@ -56,7 +56,7 @@ class _CommonHeaderState extends State<CommonHeader> {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isCompact = constraints.maxWidth < 1100;
+          final isCompact = constraints.maxWidth < 1250;
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
