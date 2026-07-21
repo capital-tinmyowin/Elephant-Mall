@@ -10,24 +10,13 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'common/header.dart';
 import 'common/footer.dart';
+import '../models/product_variant.dart';
 
 class SellPage extends StatefulWidget {
   const SellPage({super.key});
 
   @override
   State<SellPage> createState() => _SellPageState();
-}
-
-class ProductVariant {
-  String variantName;
-  String sku;
-  double variant_Price;
-
-  ProductVariant({
-    required this.variantName,
-    required this.sku,
-    required this.variant_Price,
-  });
 }
 
 class _SellPageState extends State<SellPage> {
@@ -69,6 +58,12 @@ class _SellPageState extends State<SellPage> {
     loadCategories();
   }
 
+  void _removeImage(int index) {
+    setState(() {
+      images[index] = null;
+    });
+  }
+
   Future<void> loadCategories() async {
     try {
       final result = await productService.getCategories();
@@ -88,14 +83,37 @@ class _SellPageState extends State<SellPage> {
         borderRadius: BorderRadius.circular(6),
       ),
       child: images[index] != null
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: Image.memory(
-                images[index]!,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-              ),
+          ? Stack(
+              children: [
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: Image.memory(images[index]!, fit: BoxFit.cover),
+                  ),
+                ),
+
+                /// Remove button
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: InkWell(
+                    onTap: () => _removeImage(index),
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             )
           : const Center(child: Icon(Icons.image, color: Colors.grey)),
     );
@@ -337,75 +355,78 @@ class _SellPageState extends State<SellPage> {
       return const SizedBox.shrink();
     }
 
-    return SizedBox(
-      height: 220, // Max height for the table
-      child: SingleChildScrollView(
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            columnSpacing: 20,
-            columns: const [
-              DataColumn(label: SizedBox(width: 180, child: Text("Variant"))),
-              DataColumn(label: SizedBox(width: 120, child: Text("SKU"))),
-              DataColumn(label: SizedBox(width: 100, child: Text("Price"))),
-              DataColumn(label: SizedBox(width: 70, child: Text("Action"))),
-            ],
-            rows: List.generate(variants.length, (index) {
-              final item = variants[index];
+    const double rowHeight = 56;
+    const double headingHeight = 56;
+    const int maxVisibleRows = 3;
 
-              return DataRow(
-                cells: [
-                  DataCell(
-                    SizedBox(
-                      width: 180,
-                      child: Tooltip(
-                        message: item.variantName,
+    final double tableHeight =
+        headingHeight +
+        (variants.length > maxVisibleRows
+            ? rowHeight * maxVisibleRows
+            : rowHeight * variants.length);
+
+    return SizedBox(
+      height: tableHeight,
+      child: Scrollbar(
+        thumbVisibility: variants.length > maxVisibleRows,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.vertical,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              headingRowHeight: headingHeight,
+              dataRowMinHeight: rowHeight,
+              dataRowMaxHeight: rowHeight,
+              columnSpacing: 20,
+              columns: const [
+                DataColumn(label: SizedBox(width: 180, child: Text("Variant"))),
+                DataColumn(label: SizedBox(width: 120, child: Text("SKU"))),
+                DataColumn(label: SizedBox(width: 100, child: Text("Price"))),
+                DataColumn(label: SizedBox(width: 70, child: Text("Action"))),
+              ],
+              rows: List.generate(variants.length, (index) {
+                final item = variants[index];
+
+                return DataRow(
+                  cells: [
+                    DataCell(
+                      SizedBox(
+                        width: 180,
                         child: Text(
                           item.variantName,
-                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ),
-                  ),
-
-                  DataCell(
-                    SizedBox(
-                      width: 120,
-                      child: Tooltip(
-                        message: item.sku,
-                        child: Text(
-                          item.sku,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                    DataCell(
+                      SizedBox(
+                        width: 120,
+                        child: Text(item.sku, overflow: TextOverflow.ellipsis),
+                      ),
+                    ),
+                    DataCell(
+                      SizedBox(
+                        width: 100,
+                        child: Text(item.variant_Price.toStringAsFixed(0)),
+                      ),
+                    ),
+                    DataCell(
+                      SizedBox(
+                        width: 70,
+                        child: IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () {
+                            setState(() {
+                              variants.removeAt(index);
+                            });
+                          },
                         ),
                       ),
                     ),
-                  ),
-
-                  DataCell(
-                    SizedBox(
-                      width: 100,
-                      child: Text(item.variant_Price.toStringAsFixed(0)),
-                    ),
-                  ),
-
-                  DataCell(
-                    SizedBox(
-                      width: 70,
-                      child: IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () {
-                          setState(() {
-                            variants.removeAt(index);
-                          });
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }),
+                  ],
+                );
+              }),
+            ),
           ),
         ),
       ),
@@ -926,7 +947,7 @@ class _SellPageState extends State<SellPage> {
               label: const Text("Add Variant"),
             ),
 
-            const SizedBox(height: 15),
+            const SizedBox(height: 5),
 
             buildVariantTable(),
           ],
@@ -1312,6 +1333,7 @@ class _SellPageState extends State<SellPage> {
                 telegram: telegramController.text,
                 viber: viberController.text,
                 images: images,
+                variants: variants,
               );
 
               if (!mounted) return;
