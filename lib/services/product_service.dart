@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/Category.dart';
 import 'dart:typed_data';
+import '../models/product_variant.dart';
+
 
 class ProductService {
   Future<bool> createProduct({
@@ -15,6 +17,7 @@ class ProductService {
     required String telegram,
     required String viber,
     required List<Uint8List?> images,
+    required List<ProductVariant> variants,
   }) async {
     var request = http.MultipartRequest(
       'POST',
@@ -30,6 +33,20 @@ class ProductService {
     request.fields['MessengerLink'] = messengerLink;
     request.fields['Telegram'] = telegram;
     request.fields['Viber'] = viber;
+
+        // Product Variants
+    for(int i = 0; i < variants.length; i++) {
+
+      request.fields['Variants[$i].Variant_Name'] =
+          variants[i].variantName;
+
+      request.fields['Variants[$i].SKU'] =
+          variants[i].sku;
+
+      request.fields['Variants[$i].Price'] =
+          variants[i].variant_Price.toString();
+
+    }
 
     int index = 0;
 
