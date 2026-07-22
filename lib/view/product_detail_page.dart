@@ -604,7 +604,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         child: Text(
                               sellerName,
                               style: const TextStyle(
-                                fontSize: 19,
+                                fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: Colors
                                     .blue, // Optional: makes it look clickable
