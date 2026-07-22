@@ -601,14 +601,17 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         onTap: () {
                           Navigator.pushNamed(context, '/seller');
                         },
-                        child:Text(
-                          sellerName,
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
+                        child: Text(
+                              sellerName,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors
+                                    .blue, // Optional: makes it look clickable
+                                decoration:
+                                    TextDecoration.underline, // Optional
+                              ),
+                            ),
                       ),
                       const SizedBox(height: 4),
                       Row(
