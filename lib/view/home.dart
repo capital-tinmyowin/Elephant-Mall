@@ -96,6 +96,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final isMobile = mobile(context);
+    const sectionGap = SizedBox(height: 10);
     return Scaffold(
       backgroundColor: const Color(0xffFFFFFF),
       body: Column(
@@ -105,24 +106,24 @@ class _HomePageState extends State<HomePage> {
             child: SingleChildScrollView(
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1200),
+                  constraints: const BoxConstraints(maxWidth: 1400),
                   child: Padding(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(20),                  
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        /// HERO
+                      children: [                       
                         buildHero(),
-                        const SizedBox(height: 20),
-                        if (isMobile) buildPromotions(),
-                        const SizedBox(height: 20),
-                        buildTitle("TRENDING CATEGORIES"),
-                        const SizedBox(height: 10),
-                        buildCategories(),
-                        const SizedBox(height: 1),
-                        buildTitle("Trending Now in YANGON"),
-                        const SizedBox(height: 10),
-                        buildProducts(),
+                        sectionGap,
+                        if (isMobile) ...[
+                        buildPromotions(),
+                        sectionGap,
+                      ],
+                      buildTitle("TRENDING CATEGORIES"),
+                      sectionGap,
+                      buildCategories(),                     
+                      buildTitle("Trending Now in YANGON"),
+                      sectionGap,
+                      buildProducts(),
                       ],
                     ),
                   ),
@@ -141,129 +142,161 @@ class _HomePageState extends State<HomePage> {
   Widget buildHero() {
     if (banners.isEmpty) {
       return const SizedBox(
-        height: 220,
+        height: 200,
         child: Center(child: CircularProgressIndicator()),
       );
     }
     final width = MediaQuery.of(context).size.width;
     final isMobile = width < 600;
     return SizedBox(
-      height: isMobile ? 150 : 230,
+      height: isMobile ? 150 : 200,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: PageView.builder(
-          controller: _bannerController,
-          itemCount: banners.length,
-          onPageChanged: (index) {
-            setState(() {
-              currentBanner = index;
-            });
-          },
-          itemBuilder: (context, index) {
-            final item = banners[index];
+        child: Stack(
+          children: [
+            // BANNER SLIDER
+            PageView.builder(
+              controller: _bannerController,
+              itemCount: banners.length,
+              onPageChanged: (index) {
+                setState(() {
+                  currentBanner = index;
+                });
+              },
+              itemBuilder: (context, index) {
+                final item = banners[index];
 
-            return Stack(
-              fit: StackFit.expand,
-              children: [
-                // API IMAGE
-                Image.network(
-                  imageUrl(item.imagePath),
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Colors.grey.shade300,
-                      child: const Icon(Icons.image_not_supported, size: 50),
-                    );
-                  },
-                ),
-
-                // DARK OVERLAY
-                Container(color: Colors.black.withValues(alpha: 0.25)),
-
-                // TEXT
-                Positioned(
-                  left: isMobile ? 15 : 40,
-                  top: isMobile ? 15 : 40,
-                  right: 10,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: isMobile ? 14 : 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      Text(
-                        item.description,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: isMobile ? 11 : 16,
-                        ),
-                      ),
-
-                      const SizedBox(height: 15),
-
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // IMAGE
+                    Image.network(
+                      imageUrl(item.imagePath),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey.shade300,
+                          child: const Icon(
+                            Icons.image_not_supported,
+                            size: 40,
                           ),
-                        ),
-                        onPressed: () {},
-                        child: const Text(
-                          "SHOP NOW",
-                          style: TextStyle(color: Colors.white),
-                        ),
+                        );
+                      },
+                    ),
+
+                    // OVERLAY
+                    Container(color: Colors.black.withValues(alpha: 0.25)),
+
+                    // TEXT
+                    Positioned(
+                      left: isMobile ? 15 : 40,
+                      top: isMobile ? 15 : 40,
+                      right: 10,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: isMobile ? 14 : 28,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          Text(
+                            item.description,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: isMobile ? 11 : 16,
+                            ),
+                          ),
+
+                          const SizedBox(height: 15),
+
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            onPressed: () {},
+                            child: const Text(
+                              "SHOP NOW",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
+                  ],
+                );
+              },
+            ),
+
+            Positioned(
+              bottom: 12,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  banners.length,
+                  (i) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: currentBanner == i ? 18 : 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: currentBanner == i
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                   ),
                 ),
-              ],
-            );
-          },
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget buildPromotions() {
-    if (promos.isEmpty) {
-      return const SizedBox();
-    }
-    return Row(
-      children: promos.take(2).map((item) {
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(right: 10),
+  if (promos.isEmpty) return const SizedBox();
+
+  return Row(
+    spacing: 10,
+    children: promos
+        .take(2)
+        .map(
+          (item) => Expanded(
             child: promo(item),
           ),
-        );
-      }).toList(),
-    );
-  }
+        )
+        .toList(),
+  );
+}
 
   Widget promo(Promo item) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: Image.network(
         imageUrl(item.imagePath),
-        height: 100,
+        height: 110,
         width: double.infinity,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
           return Container(
-            height: 100,
+            height: 110,
             color: Colors.grey.shade300,
             child: const Icon(Icons.image_not_supported, size: 40),
           );
@@ -297,11 +330,11 @@ class _HomePageState extends State<HomePage> {
           final item = categories[index];
           return Container(
             width: 90,
-            margin: const EdgeInsets.only(right: 10),
+            margin: const EdgeInsets.only(right: 0),
             child: Column(
               children: [
                 Container(
-                  height: 60,
+                  height: 90,
                   width: 80,
                   decoration: BoxDecoration(
                     color: const Color(0xffF3F3F3),
@@ -313,7 +346,7 @@ class _HomePageState extends State<HomePage> {
                     fit: BoxFit.contain,
 
                     errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.image_not_supported);
+                      return const Icon(Icons.image_not_supported,size: 30);
                     },
                   ),
                 ),
@@ -350,7 +383,7 @@ class _HomePageState extends State<HomePage> {
           final p = products[index];
           return Container(
             width: 180,
-            margin: const EdgeInsets.only(right: 10),
+            margin: const EdgeInsets.only(right: 4),
             child: Card(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -359,11 +392,12 @@ class _HomePageState extends State<HomePage> {
                     imageUrl(p.imagePath),
                     height: 100,
                     width: 180,
-                    fit: BoxFit.contain,
+                    fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return const SizedBox(
                         height: 100,
-                        child: Icon(Icons.image_not_supported),
+                        width: double.infinity,                     
+                        child: Icon(Icons.image_not_supported,size: 40),
                       );
                     },
                   ),
@@ -389,7 +423,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
 
-                        const Spacer(),
+                        const SizedBox(width: 10),
 
                         Row(
                           children: List.generate(
