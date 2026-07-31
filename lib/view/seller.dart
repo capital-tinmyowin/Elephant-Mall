@@ -158,7 +158,7 @@ class _SellerHeaderWidgetState extends State<SellerHeaderWidget> {
 
                 /// Desktop view
                 if (!isMobile) ...[
-                  const VerticalDivider(width: 40),
+                  const VerticalDivider(width: 40,),
 
                   Expanded(
                     flex: 2,
@@ -216,8 +216,8 @@ class _SellerHeaderWidgetState extends State<SellerHeaderWidget> {
             //Mobile view
             if (isMobile)
               Positioned(
-                top: -10,
-                right: -10,
+                top: -5,
+                right: -7,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -595,7 +595,7 @@ class _SellerPageState extends State<SellerPage> {
   }
 }
 
-bool isMobile(BuildContext context) => MediaQuery.of(context).size.width < 425;
+bool isMobile(BuildContext context) => MediaQuery.of(context).size.width < 430;
 
 Widget filterDropdown(String label, List<String> options) {
   String? selectedValue;
@@ -624,7 +624,11 @@ Widget filterDropdown(String label, List<String> options) {
           items: options.map((opt) {
             return DropdownMenuItem(
               value: opt,
-              child: Text(opt, overflow: TextOverflow.ellipsis),
+              child: Text(
+                opt,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12, color: Colors.black),
+              ),
             );
           }).toList(),
 
