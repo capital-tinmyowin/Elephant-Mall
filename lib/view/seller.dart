@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'common/header.dart';
 import 'common/footer.dart';
 
-// Example JSON data structure
 final Map<String, dynamic> sellerData = {
-  "name": "John Corner's Full Store",
+  "name": "John Corner",
   "items": [
     {
       "title": "Straw Sun Hat ",
@@ -50,7 +49,8 @@ int getCrossAxisCount(double width) {
   if (width >= 1100) return 5;
   if (width >= 850) return 4;
   if (width >= 650) return 3;
-  return 3;
+
+  return 2;
 }
 
 // Seller Header Widget
@@ -91,7 +91,6 @@ class _SellerHeaderWidgetState extends State<SellerHeaderWidget> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Avatar
                 CircleAvatar(
                   radius: isMobile ? 25 : 45,
                   backgroundImage: const AssetImage("assets/avatar.jpg"),
@@ -106,9 +105,11 @@ class _SellerHeaderWidgetState extends State<SellerHeaderWidget> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.sellerName,
-                        style: const TextStyle(
-                          fontSize: 28,
+                        isMobile
+                            ? "${widget.sellerName}'s\nFull Store"
+                            : "${widget.sellerName}'s Full Store",
+                        style: TextStyle(
+                          fontSize: isMobile ? 20 : 28,
                           fontWeight: FontWeight.bold,
                           color: Colors.green,
                         ),
@@ -117,8 +118,8 @@ class _SellerHeaderWidgetState extends State<SellerHeaderWidget> {
                       const SizedBox(height: 12),
 
                       Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
+                        spacing: 5,
+                        runSpacing: 5,
                         children: [
                           ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
@@ -155,7 +156,7 @@ class _SellerHeaderWidgetState extends State<SellerHeaderWidget> {
                   ),
                 ),
 
-                /// Desktop only
+                /// Desktop view
                 if (!isMobile) ...[
                   const VerticalDivider(width: 40),
 
@@ -206,28 +207,17 @@ class _SellerHeaderWidgetState extends State<SellerHeaderWidget> {
                   ),
 
                   const SizedBox(width: 20),
-
-                  Expanded(
-                    flex: 2,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.asset(
-                        "assets/store_banner.jpg",
-                        height: 120,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
                 ],
 
                 /// Mobile icons
               ],
             ),
 
+            //Mobile view
             if (isMobile)
               Positioned(
-                top: 0,
-                right: 0,
+                top: -10,
+                right: -10,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -303,7 +293,7 @@ class _SellerHeaderWidgetState extends State<SellerHeaderWidget> {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Icon(icon, size: 20),
+            Icon(icon, size: 16),
 
             AnimatedSize(
               duration: const Duration(milliseconds: 250),
@@ -401,7 +391,7 @@ class SellerItemWidget extends StatelessWidget {
                         children: [
                           Expanded(
                             child: SizedBox(
-                              height: isSmall ? 28 : 36,
+                              height: isSmall ? 20 : 36,
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.orange,
@@ -426,7 +416,7 @@ class SellerItemWidget extends StatelessWidget {
 
                           Expanded(
                             child: SizedBox(
-                              height: isSmall ? 28 : 36,
+                              height: isSmall ? 24 : 36,
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   padding: EdgeInsets.zero,
@@ -449,6 +439,7 @@ class SellerItemWidget extends StatelessWidget {
                               ),
                             ),
                           ),
+                          const SizedBox(height: 4),
                         ],
                       ),
                     ],
@@ -473,77 +464,122 @@ class SellerPage extends StatefulWidget {
 
 class _SellerPageState extends State<SellerPage> {
   int? expandedInfo;
+
+  bool menuExpanded = true;
+
   @override
   Widget build(BuildContext context) {
     final items = sellerData["items"] as List<dynamic>;
     final width = MediaQuery.of(context).size.width;
+    final mobile = isMobile(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F3F3),
-      bottomNavigationBar: isMobile(context)
+      backgroundColor: const Color(0xffF3F3F3),
+      bottomNavigationBar: mobile
           ? const CommonBottomBar(currentIndex: 2)
           : null,
 
       body: GestureDetector(
         behavior: HitTestBehavior.translucent,
-
         onTap: () {
           if (expandedInfo != null) {
-            setState(() {
-              expandedInfo = null;
-            });
+            setState(() => expandedInfo = null);
           }
         },
-
         child: Column(
           children: [
-            // Header
             const CommonHeader(),
 
-            // Page Content
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
+                    /// Seller Header
                     SellerHeaderWidget(
                       sellerName: sellerData["name"],
                       expandedInfo: expandedInfo,
-
-                      onExpandChanged: (value) {
-                        setState(() {
-                          expandedInfo = value;
-                        });
+                      onExpandChanged: (v) {
+                        setState(() => expandedInfo = v);
                       },
                     ),
 
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 16),
 
+                    /// Body
                     Expanded(
-                      child: GridView.builder(
-                        itemCount: items.length,
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: getCrossAxisCount(
-                            MediaQuery.of(context).size.width,
-                          ),
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: width < 500
-                              ? 0.65
-                              : width < 800
-                              ? 0.72
-                              : 0.80,
-                        ),
-                        itemBuilder: (context, index) {
-                          final item = items[index];
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          /// Category Menu
+                          Align(
+                            alignment: Alignment.topLeft,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 320),
+                              curve: Curves.easeInOutCubic,
+                              width: menuExpanded ? (mobile ? 150 : 200) : 60,
 
-                          return SellerItemWidget(
-                            title: item["title"],
-                            price: item["price"],
-                            rating: item["rating"],
-                            image: item["image"],
-                          );
-                        },
+                              child: SellerSideMenu(
+                                expanded: menuExpanded,
+                                onMenuPressed: () {
+                                  setState(() {
+                                    menuExpanded = !menuExpanded;
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(width: 16),
+
+                          /// Right Side
+                          Expanded(
+                            child: Column(
+                              children: [
+                                const SearchBars(),
+
+                                const SizedBox(height: 10),
+
+                                const FilterBar(),
+
+                                const SizedBox(height: 16),
+
+                                Expanded(
+                                  child: GridView.builder(
+                                    itemCount: items.length,
+                                    gridDelegate:
+                                        SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount:
+                                              (mobile && menuExpanded)
+                                              ? 1
+                                              : getCrossAxisCount(width),
+
+                                          crossAxisSpacing: 16,
+                                          mainAxisSpacing: 16,
+
+                                          childAspectRatio: width < 500
+                                              ? .65
+                                              : width < 800
+                                              ? .72
+                                              : .80,
+                                        ),
+                                    itemBuilder: (context, index) {
+                                      final item = items[index];
+
+                                      return SellerItemWidget(
+                                        title: item["title"],
+                                        price: item["price"],
+                                        rating: item["rating"],
+                                        image: item["image"],
+                                      );
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(height: 5),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -551,8 +587,7 @@ class _SellerPageState extends State<SellerPage> {
               ),
             ),
 
-            // Footer (desktop only)
-            if (!isMobile(context)) const CommonFooter(),
+            if (!mobile) const CommonFooter(),
           ],
         ),
       ),
@@ -560,7 +595,7 @@ class _SellerPageState extends State<SellerPage> {
   }
 }
 
-bool isMobile(BuildContext context) => MediaQuery.of(context).size.width < 800;
+bool isMobile(BuildContext context) => MediaQuery.of(context).size.width < 425;
 
 Widget filterDropdown(String label, List<String> options) {
   String? selectedValue;
@@ -568,22 +603,31 @@ Widget filterDropdown(String label, List<String> options) {
   return StatefulBuilder(
     builder: (context, setState) {
       return SizedBox(
-        width: 160,
+        width: MediaQuery.of(context).size.width < 800 ? 120 : 160,
         child: DropdownButtonFormField<String>(
-          initialValue: selectedValue,
+          value: selectedValue,
+
+          isExpanded: true,
+
           decoration: InputDecoration(
             labelText: label,
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(
               vertical: 2,
-              horizontal: 10,
+              horizontal: 8,
             ),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           ),
-          style: const TextStyle(fontSize: 13), // smaller text
+
+          style: const TextStyle(fontSize: 12),
+
           items: options.map((opt) {
-            return DropdownMenuItem(value: opt, child: Text(opt));
+            return DropdownMenuItem(
+              value: opt,
+              child: Text(opt, overflow: TextOverflow.ellipsis),
+            );
           }).toList(),
+
           onChanged: (val) {
             setState(() {
               selectedValue = val;
@@ -593,4 +637,147 @@ Widget filterDropdown(String label, List<String> options) {
       );
     },
   );
+}
+
+class SellerSideMenu extends StatelessWidget {
+  final bool expanded;
+  final VoidCallback onMenuPressed;
+
+  const SellerSideMenu({
+    super.key,
+    required this.expanded,
+    required this.onMenuPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Row(
+              children: [
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 250),
+                    transitionBuilder: (child, animation) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SizeTransition(
+                          sizeFactor: animation,
+                          axis: Axis.horizontal,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: expanded
+                        ? const Text(
+                            "Categories",
+                            key: ValueKey("title"),
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        : const SizedBox(key: ValueKey("empty")),
+                  ),
+                ),
+                IconButton(
+                  onPressed: onMenuPressed,
+                  icon: const Icon(Icons.menu),
+                  splashRadius: 20,
+                ),
+              ],
+            ),
+          ),
+
+          const Divider(height: 1),
+
+          _menuItem(Icons.checkroom, "Men"),
+          _menuItem(Icons.woman, "Women"),
+          _menuItem(Icons.shopping_bag, "Bags"),
+          _menuItem(Icons.watch, "Watch"),
+          _menuItem(Icons.hiking, "Shoes"),
+        ],
+      ),
+    );
+  }
+
+  Widget _menuItem(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 20),
+
+          AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            child: expanded
+                ? Padding(
+                    padding: const EdgeInsets.only(left: 12),
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 200),
+                      opacity: expanded ? 1 : 0,
+                      child: Text(text, overflow: TextOverflow.ellipsis),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SearchBars extends StatelessWidget {
+  const SearchBars({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 35,
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: "Search in Sarah J.'s Store",
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: IconButton(
+            icon: const Icon(Icons.grid_view),
+            onPressed: () {},
+          ),
+          isDense: true,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      ),
+    );
+  }
+}
+
+class FilterBar extends StatelessWidget {
+  const FilterBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        filterDropdown("By Category", ["Men", "Women", "Shoes"]),
+
+        filterDropdown("Price Range", ["0 - 500,000 Kyat", "500,000+"]),
+
+        filterDropdown("Sort by Price", ["Low to High", "High to Low"]),
+
+        filterDropdown("Location", ["All", "Yangon", "Mandalay"]),
+      ],
+    );
+  }
 }
