@@ -1,3 +1,4 @@
+import 'package:elephant_mall/services/auth_service.dart';
 import 'package:elephant_mall/view/home.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -22,13 +23,22 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      initialRoute: '/',
-      routes: {
-        '/': (context) => const SellPage(),
-        '/seller': (context) => const SellerPage(),
-      },
+    return MultiProvider(
+      providers: [
+        // 🔥 ADD THIS - AuthService at root level
+        ChangeNotifierProvider(create: (_) => AuthService()),
+        
+        // Keep existing providers
+        ChangeNotifierProvider.value(value: apiService),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const SellPage(),
+          '/seller': (context) => const SellerPage(),
+        },
+      ),
     );
   }
 }
