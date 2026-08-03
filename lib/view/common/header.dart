@@ -80,7 +80,7 @@ class _CommonHeaderState extends State<CommonHeader> {
                               ),
                               _menuItem(context, "SALE", const SellPage()),
                               _menuItem(context, "NEW IN", const SellPage()),
-                              _menuItem(context, "MY ORDERS", const SellPage()),
+                              _menuItem(context, "MY FAVORITE", const SellPage()),
                               _menuItem(context, "ABOUT US", const SellPage()),
                             ],
                           ),
