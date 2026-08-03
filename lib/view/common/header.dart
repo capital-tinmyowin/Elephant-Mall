@@ -3,6 +3,7 @@ import 'package:elephant_mall/view/category_page.dart';
 import 'package:flutter/material.dart';
 import '../home.dart';
 import '../sell.dart';
+import '../login.dart'; // Change the path if your LoginPage is in another folder
 
 class CommonHeader extends StatefulWidget {
   const CommonHeader({super.key});
@@ -164,6 +165,26 @@ class _CommonHeaderState extends State<CommonHeader> {
                       onPressed: () {
                         //  Open Cart
                       },
+                    ),
+
+                    const SizedBox(width: 15),
+
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LoginPage(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        "Sign In",
+                        style: TextStyle(
+                          color: Color(0xff2f6b2f),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ],
                 ),

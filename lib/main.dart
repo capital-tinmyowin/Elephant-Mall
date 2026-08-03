@@ -7,6 +7,7 @@ import 'view/product_detail_page.dart';
 import 'view/sell.dart';
 import 'view/login.dart';
 import 'view/seller.dart';
+import 'view/signup.dart';
 
 void main() {
   final apiService = ApiService();
@@ -25,7 +26,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       initialRoute: '/',
       routes: {
-        '/': (context) => const HomePage(),
+        '/': (context) => const SellPage(),
         '/seller': (context) => const SellerPage(),
       },
     );
