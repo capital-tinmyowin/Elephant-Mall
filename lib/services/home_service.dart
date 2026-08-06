@@ -113,7 +113,7 @@ class HomeService {
       {
         "categoryId":2,
         "categoryName":"Blouses",
-        "photoPath":"assets/blouse.png",
+        "photoPath":"assets/store_banner.jpg",
         "sortOrder":2,
         "isActive":true
       },
@@ -141,7 +141,7 @@ class HomeService {
       {
         "categoryId":6,
         "categoryName":"Blouses",
-        "photoPath":"assets/blouse.png",
+        "photoPath":"assets/store_banner.jpg",
         "sortOrder":2,
         "isActive":true
       },
@@ -169,7 +169,7 @@ class HomeService {
       {
         "categoryId":10,
         "categoryName":"Blouses",
-        "photoPath":"assets/blouse.png",
+        "photoPath":"assets/store_banner.jpg",
         "sortOrder":2,
         "isActive":true
       },
@@ -199,7 +199,7 @@ class HomeService {
         "productId":1,
         "name":"Men's Sneakers",
         "description":"Comfort shoes",
-        "price":89,
+        "price":15,
         "imagePath":"assets/man-sneaker.png",
         "quantity":20,
         "rating":5
@@ -217,8 +217,8 @@ class HomeService {
         "productId":3,
         "name":"Leather Backpack",
         "description":"Travel bag",
-        "price":110,
-        "imagePath":"assets/bagpack.jpg",
+        "price":11,
+        "imagePath":"assets/leatherBag.jpg",
         "quantity":15,
         "rating":3
       },
@@ -253,8 +253,8 @@ class HomeService {
         "productId":7,
         "name":"Leather Backpack",
         "description":"Travel bag",
-        "price":110,
-        "imagePath":"assets/bagpack.jpg",
+        "price":11,
+        "imagePath":"assets/leatherBag.jpg",
         "quantity":15,
         "rating":5
       },
@@ -289,8 +289,8 @@ class HomeService {
         "productId":11,
         "name":"Leather Backpack",
         "description":"Travel bag",
-        "price":110,
-        "imagePath":"assets/bagpack.jpg",
+        "price":11,
+        "imagePath":"assets/leatherBag.jpg",
         "quantity":15,
         "rating":5
       },
