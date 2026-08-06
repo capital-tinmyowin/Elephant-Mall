@@ -1,6 +1,9 @@
+import 'package:elephant_mall/services/auth_service.dart';
 import 'package:elephant_mall/view/category_page.dart';
 import 'package:elephant_mall/view/category_page.dart';
+import 'package:elephant_mall/view/favourite_page.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../home.dart';
 import '../sell.dart';
 import '../login.dart'; // Change the path if your LoginPage is in another folder
@@ -33,7 +36,8 @@ class _CommonHeaderState extends State<CommonHeader> {
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 800;
-
+    final authService = Provider.of<AuthService>(context);
+    final isLoggedIn = authService.isLoggedIn;
     if (isMobile) {
       return const SizedBox.shrink(); // hide desktop header
     }
@@ -80,7 +84,7 @@ class _CommonHeaderState extends State<CommonHeader> {
                               ),
                               _menuItem(context, "SALE", const SellPage()),
                               _menuItem(context, "NEW IN", const SellPage()),
-                              _menuItem(context, "MY ORDERS", const SellPage()),
+                              _menuItem(context, "MY FAVORITE", const SellPage()),
                               _menuItem(context, "ABOUT US", const SellPage()),
                             ],
                           ),
@@ -142,19 +146,25 @@ class _CommonHeaderState extends State<CommonHeader> {
 
                     const SizedBox(width: 10),
 
-                    IconButton(
-                      icon: const Icon(Icons.person_outline, size: 28),
-                      onPressed: () {
-                        //  Open Profile
-                      },
-                    ),
+                    // 🔥 PROFILE BUTTON - Shows Login/Logout based on state
+                    _buildProfileButton(context, isLoggedIn),
 
                     const SizedBox(width: 10),
 
                     IconButton(
                       icon: const Icon(Icons.favorite_border, size: 28),
                       onPressed: () {
-                        //  Open Favorite
+                        // Open Favorite
+                        // if (!isLoggedIn) {
+                        //   _showLoginRequiredDialog(context);
+                        //   return;
+                        // }
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MyFavouritePage(),
+                          ),
+                        );
                       },
                     ),
 
@@ -212,6 +222,195 @@ class _CommonHeaderState extends State<CommonHeader> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  // ============= PROFILE BUTTON =============
+  Widget _buildProfileButton(BuildContext context, bool isLoggedIn) {
+    return GestureDetector(
+      onTap: () {
+        if (isLoggedIn) {
+          // Show logout dialog
+          _showLogoutDialog(context);
+        } else {
+          // Navigate to login page
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const LoginPage()),
+          );
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isLoggedIn
+              ? const Color(0xFF2B6E3B).withOpacity(0.1)
+              : Colors.transparent,
+        ),
+        child: Stack(
+          children: [
+            const Icon(Icons.person_outline, size: 28),
+            if (isLoggedIn)
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ============= LOGOUT DIALOG =============
+  void _showLogoutDialog(BuildContext context) {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final user = authService.currentUser;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Account'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '👋 ${user?.fullName ?? user?.username ?? 'User'}',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              user?.email ?? '',
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            _buildLogoutMenuItem(
+              icon: Icons.person_outline,
+              title: 'Profile',
+              onTap: () {
+                Navigator.pop(context);
+                // Navigate to profile
+              },
+            ),
+            _buildLogoutMenuItem(
+              icon: Icons.favorite_border,
+              title: 'My Favorites',
+              onTap: () {
+                Navigator.pop(context);
+                // Navigate to favorites
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MyFavouritePage(),
+                  ),
+                );
+              },
+            ),
+            _buildLogoutMenuItem(
+              icon: Icons.shopping_bag_outlined,
+              title: 'My Orders',
+              onTap: () {
+                Navigator.pop(context);
+                // Navigate to orders
+              },
+            ),
+            const Divider(),
+            _buildLogoutMenuItem(
+              icon: Icons.logout,
+              title: 'Logout',
+              isDestructive: true,
+              onTap: () async {
+                Navigator.pop(context);
+                authService.logout();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Logged out successfully'),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                  setState(() {});
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogoutMenuItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isDestructive ? Colors.red : Colors.grey[700],
+        size: 22,
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: isDestructive ? Colors.red : Colors.black87,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      trailing: const Icon(Icons.chevron_right, size: 18),
+      contentPadding: EdgeInsets.zero,
+      onTap: onTap,
+    );
+  }
+
+  // ============= LOGIN REQUIRED DIALOG =============
+  void _showLoginRequiredDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Login Required'),
+        content: const Text(
+          'Please sign in to access this feature.',
+          style: TextStyle(fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginPage()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2B6E3B),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Sign In'),
+          ),
+        ],
       ),
     );
   }
