@@ -476,8 +476,8 @@ class SellerItemWidget extends StatelessWidget {
 }
 
 double getAspectRatio(double width) {
-  if (width >= 1600) return 0.85;
-  if (width >= 1400) return 0.80;
+  if (width >= 1600) return 0.75;
+  if (width >= 1400) return 0.70;
   if (width >= 1100) return 0.75;
   if (width >= 800) return 0.68;
   if (width >= 600) return 0.65;
