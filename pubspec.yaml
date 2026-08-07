@@ -68,6 +68,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+    - lib/uploads/
     - images/
     - lib/uploads/login.png
     - lib/uploads/logo.png
