@@ -18,66 +18,70 @@ class LoginPage extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1400),
-              child: isMobile
-                  ? SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 40,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          _leftSide(true),
-
-                          const SizedBox(height: 50),
-
-                          _rightSide(context, true),
-
-                          const SizedBox(height: 30),
-                        ],
-                      ),
-                    )
-                  : SizedBox.expand(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Align(
-                              alignment: const Alignment(-2, 0),
-                              child: SizedBox(
-                                width: 600,
-                                child: _leftSide(false),
-                              ),
-                            ),
-                          ),
-
-                          Container(
-                            width: 1,
-                            margin: const EdgeInsets.symmetric(vertical: 50),
-                            color: Colors.grey.shade300,
-                          ),
-
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                left: 250,
-                              ), // Adjust this value
-                              child: Center(
-                                child: SizedBox(
-                                  width: 460,
-                                  child: _rightSide(context, false),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+          child: isMobile
+              ? _mobileLogin(context)
+              : Row(
+                  children: [
+                    Expanded(
+                      flex: 1,
+                      child: Container(
+                        color: Color(0xfffdfaf4),
+                        child: Center(
+                          child: SizedBox(width: 600, child: _leftSide(false)),
+                        ),
                       ),
                     ),
-            ),
-          ),
+                    Container(
+                      width: 1,
+                      margin: const EdgeInsets.symmetric(vertical: 50),
+                      color: Colors.black,
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Container(
+                        color: Color(0xfffdfaf4),
+                        child: Center(
+                          child: SizedBox(
+                            width: 460,
+                            child: _rightSide(context, false),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
         ),
+      ),
+    );
+  }
+
+  Widget _mobileLogin(BuildContext context) {
+    return SafeArea(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Container(
+                width: double.infinity,
+                color: const Color(0xfffdfaf4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 30,
+                ),
+                child: Column(
+                  children: [
+                    Image.asset("lib/uploads/logo.png", width: 140),
+
+                    const SizedBox(height: 35),
+
+                    _rightSide(context, true),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -128,20 +132,22 @@ class LoginPage extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 20 : 35,
-        vertical: isMobile ? 30 : 40,
+        horizontal: isMobile ? 0 : 35,
+        vertical: isMobile ? 0 : 40,
       ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 25,
-            color: Colors.black.withOpacity(.12),
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+      decoration: isMobile
+          ? null
+          : BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: 25,
+                  color: Colors.black.withOpacity(.12),
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,

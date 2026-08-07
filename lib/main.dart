@@ -24,11 +24,21 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      initialRoute: '/',
-      routes: {
-        '/': (context) => const SellPage(),
-        '/seller': (context) => const SellerPage(),
-      },
+      theme: ThemeData(
+        fontFamily: 'NotoSansMyanmar', // or your preferred font
+        textTheme: const TextTheme(
+          bodyLarge: TextStyle(fontSize: 15),
+          bodyMedium: TextStyle(fontSize: 15),
+          bodySmall: TextStyle(fontSize: 15),
+
+          titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+
+          titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+
+          labelLarge: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
+      ),
+      home: const SellPage(),
     );
   }
 }
