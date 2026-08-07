@@ -27,12 +27,26 @@ class MyApp extends StatelessWidget {
       providers: [
         // 🔥 ADD THIS - AuthService at root level
         ChangeNotifierProvider(create: (_) => AuthService()),
-        
+
         // Keep existing providers
         ChangeNotifierProvider.value(value: apiService),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          fontFamily: 'NotoSansMyanmar', 
+          textTheme: const TextTheme(
+            bodyLarge: TextStyle(fontSize: 15),
+            bodyMedium: TextStyle(fontSize: 15),
+            bodySmall: TextStyle(fontSize: 15),
+
+            titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+
+            titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+
+            labelLarge: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          ),
+        ),
         initialRoute: '/',
         routes: {
           '/': (context) => const SellPage(),

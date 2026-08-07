@@ -84,7 +84,11 @@ class _CommonHeaderState extends State<CommonHeader> {
                               ),
                               _menuItem(context, "SALE", const SellPage()),
                               _menuItem(context, "NEW IN", const SellPage()),
-                              _menuItem(context, "MY FAVORITE", const SellPage()),
+                              _menuItem(
+                                context,
+                                "MY FAVORITE",
+                                const SellPage(),
+                              ),
                               _menuItem(context, "ABOUT US", const SellPage()),
                             ],
                           ),
@@ -161,8 +165,12 @@ class _CommonHeaderState extends State<CommonHeader> {
                         // }
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => const MyFavouritePage(),
+                          PageRouteBuilder(
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) =>
+                                    MyFavouritePage(),
+                            transitionDuration: Duration.zero,
+                            reverseTransitionDuration: Duration.zero,
                           ),
                         );
                       },
@@ -183,8 +191,12 @@ class _CommonHeaderState extends State<CommonHeader> {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginPage(),
+                          PageRouteBuilder(
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) =>
+                                    LoginPage(),
+                            transitionDuration: Duration.zero,
+                            reverseTransitionDuration: Duration.zero,
                           ),
                         );
                       },
@@ -237,7 +249,12 @@ class _CommonHeaderState extends State<CommonHeader> {
           // Navigate to login page
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const LoginPage()),
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  LoginPage(),
+              transitionDuration: Duration.zero,
+              reverseTransitionDuration: Duration.zero,
+            ),
           );
         }
       },
@@ -313,8 +330,12 @@ class _CommonHeaderState extends State<CommonHeader> {
                 // Navigate to favorites
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const MyFavouritePage(),
+
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        MyFavouritePage(),
+                    transitionDuration: Duration.zero,
+                    reverseTransitionDuration: Duration.zero,
                   ),
                 );
               },
@@ -401,7 +422,12 @@ class _CommonHeaderState extends State<CommonHeader> {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const LoginPage()),
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      LoginPage(),
+                  transitionDuration: Duration.zero,
+                  reverseTransitionDuration: Duration.zero,
+                ),
               );
             },
             style: ElevatedButton.styleFrom(
@@ -437,7 +463,14 @@ class _CommonHeaderState extends State<CommonHeader> {
             return;
           }
 
-          Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+          Navigator.push(
+            context,
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) => page,
+              transitionDuration: Duration.zero,
+              reverseTransitionDuration: Duration.zero,
+            ),
+          );
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -500,7 +533,14 @@ class CommonBottomBar extends StatelessWidget {
         return;
     }
 
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => page));
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => page,
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+      ),
+    );
   }
 
   // void _navigate(BuildContext context, int index) {
