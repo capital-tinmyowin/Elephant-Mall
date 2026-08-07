@@ -170,8 +170,8 @@ class _HomePageState extends State<HomePage> {
                   fit: StackFit.expand,
                   children: [
                     // IMAGE
-                    Image.network(
-                      imageUrl(item.imagePath),
+                    Image.asset(
+                      item.imagePath,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
@@ -285,8 +285,8 @@ class _HomePageState extends State<HomePage> {
   Widget promo(Promo item) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
-      child: Image.network(
-        imageUrl(item.imagePath),
+      child: Image.asset(
+        item.imagePath,
         height: 110,
         width: double.infinity,
         fit: BoxFit.cover,
@@ -388,11 +388,9 @@ class _HomePageState extends State<HomePage> {
                             color: const Color(0xffF3F3F3),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Image.network(
-                            imageUrl(item.photoPath),
-
+                          child: Image.asset(
+                            item.photoPath,
                             fit: BoxFit.contain,
-
                             errorBuilder: (context, error, stackTrace) {
                               return const Icon(
                                 Icons.image_not_supported,
@@ -482,8 +480,8 @@ class _HomePageState extends State<HomePage> {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(8),
                 ),
-                child: Image.network(
-                  imageUrl(p.imagePath),
+                child: Image.asset(
+                  p.imagePath,
                   height: 120,
                   width: double.infinity,
                   fit: BoxFit.contain,
