@@ -23,14 +23,36 @@ class _CategoryPageState extends State<CategoryPage> {
   late ApiService _apiService;
   final ScrollController _scrollController = ScrollController();
   int _currentSlideIndex = 0;
- int _currentTrendingIndex = 0;
+  final Map<String, int> _sliderIndexes = {};
+  final Map<String, CarouselSliderController> _sliderControllers = {};
+  // 🔥 ADD method to get or create a slider index
+  int _getSliderIndex(String id) {
+    if (!_sliderIndexes.containsKey(id)) {
+      _sliderIndexes[id] = 0;
+    }
+    return _sliderIndexes[id]!;
+  }
+  
+  // 🔥 ADD method to update slider index
+  void _updateSliderIndex(String id, int index) {
+    _sliderIndexes[id] = index;
+  }
+
+  // 🔥 ADD method to get or create a controller for a specific slider
+  CarouselSliderController _getController(String id) {
+    if (!_sliderControllers.containsKey(id)) {
+      _sliderControllers[id] = CarouselSliderController();
+    }
+    return _sliderControllers[id]!;
+  }
+
   @override
   void initState() {
     super.initState();
     _apiService = ApiService();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _apiService.loadProducts();
-      _apiService.loadCategories();
+      // _apiService.loadCategories();
     });
   }
 
@@ -90,8 +112,6 @@ class _CategoryPageState extends State<CategoryPage> {
             children: [
               _buildHeroCarousel(false),
               const SizedBox(height: 16),
-              _buildCategorySection(),
-              const SizedBox(height: 16),
               _buildDesktopProducts(),
             ],
           ),
@@ -112,8 +132,6 @@ class _CategoryPageState extends State<CategoryPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeroCarousel(true),
-        const SizedBox(height: 12),
-        _buildCategorySection(),
         const SizedBox(height: 12),
         _buildMobileProducts(),
         const SizedBox(height: 20),
@@ -152,20 +170,54 @@ class _CategoryPageState extends State<CategoryPage> {
             )
             .take(5)
             .toList();
+        // 🔥 Check if mobile
+      final bool isMobile = MediaQuery.of(context).size.width < 768;
 
+      // 🔥 If mobile, show in a row (side by side)
+      if (isMobile) {
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (fashionTrending.isNotEmpty)
+              Expanded(
+                child: _buildTrendingSlider(
+                  title: 'New Arrivals',
+                  products: fashionTrending,
+                  sliderId: 'fashion_mobile',
+                  isCompact: true, // 🔥 Add compact mode
+                ),
+              ),
+            if (fashionTrending.isNotEmpty && electronicsTrending.isNotEmpty)
+              const SizedBox(width: 8),
+            if (electronicsTrending.isNotEmpty)
+              Expanded(
+                child: _buildTrendingSlider(
+                  title: 'Trending Now',
+                  products: electronicsTrending,
+                  sliderId: 'electronics_mobile',
+                  isCompact: true, // 🔥 Add compact mode
+                ),
+              ),
+          ],
+        );
+      }
+
+      // 🔥 Desktop view - stacked vertically
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (fashionTrending.isNotEmpty)
               _buildTrendingSlider(
-                title: ' Trending Now In Category',
+                title: ' New Arrivals',
                 products: fashionTrending,
+                sliderId: 'fashion_mobile',
               ),
             const SizedBox(height: 20),
             if (electronicsTrending.isNotEmpty)
               _buildTrendingSlider(
                 title: ' Trending Now In Category',
                 products: electronicsTrending,
+                 sliderId: 'electronics_mobile', 
               ),
           ],
         );
@@ -179,7 +231,7 @@ class _CategoryPageState extends State<CategoryPage> {
       {
         'title': 'SUMMER ESSENTIALS!',
         'subtitle':
-            'Get the latest dresses, shorts, lightweight fabrics,\nand accessories for your sunny days.',
+            'Get the latest dresses, shorts, lightweight,\nand accessories',
         'offer': 'Up to 30% off on selected items',
         'images': [
           ApiService.getProxiedImageUrl(
@@ -250,10 +302,10 @@ class _CategoryPageState extends State<CategoryPage> {
     return Column(
       children: [
         SizedBox(
-          height: isMobile ? 180 : 200, //  Proper height
+          height: isMobile ? 110 : 140, //  Proper height
           child: CarouselSlider(
             options: CarouselOptions(
-              height: isMobile ? 180 : 200,
+              height: isMobile ? 110 : 150,
               autoPlay: true,
               autoPlayInterval: const Duration(seconds: 20),
               autoPlayAnimationDuration: const Duration(milliseconds: 3000),
@@ -275,7 +327,7 @@ class _CategoryPageState extends State<CategoryPage> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       gradient: const LinearGradient(
-                        colors: [Color(0xFFD68247), Color(0xFF2B6E3B)],
+                        colors: [Color(0xFF2B6E3B), Color(0xFFD68247)],
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
                       ),
@@ -295,31 +347,33 @@ class _CategoryPageState extends State<CategoryPage> {
             }).toList(),
           ),
         ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: slides.asMap().entries.map((entry) {
-            final isActive = _currentSlideIndex == entry.key;
-            return Container(
-              width: isActive ? 20 : 8,
-              height: 8,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
-                color: isActive
-                    ? const Color(0xFFFFD966)
-                    : Colors.grey.withOpacity(0.4),
-                boxShadow: isActive
-                    ? [
-                        BoxShadow(
-                          color: Colors.white.withOpacity(0.3),
-                          blurRadius: 4,
-                        ),
-                      ]
-                    : null,
-              ),
-            );
-          }).toList(),
+        Transform.translate(
+          offset: Offset(0, -12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: slides.asMap().entries.map((entry) {
+              final isActive = _currentSlideIndex == entry.key;
+              return Container(
+                width: isActive ? (isMobile ? 6 : 20) : (isMobile ? 5 : 7),
+                height: isMobile ? 6 : 6,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: isActive
+                      ? Colors.white
+                      : Colors.grey.withOpacity(0.7),
+                  boxShadow: isActive
+                      ? [
+                          BoxShadow(
+                            color: Colors.white.withOpacity(0.3),
+                            blurRadius: 4,
+                          ),
+                        ]
+                      : null,
+                ),
+              );
+            }).toList(),
+          ),
         ),
       ],
     );
@@ -356,20 +410,6 @@ class _CategoryPageState extends State<CategoryPage> {
                 ),
               ),
               const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 3,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  slide['offer']!,
-                  style: const TextStyle(fontSize: 11, color: Colors.white),
-                ),
-              ),
             ],
           ),
         ),
@@ -540,26 +580,13 @@ class _CategoryPageState extends State<CategoryPage> {
               Text(
                 slide['subtitle']!.replaceAll('\n', ' '),
                 style: TextStyle(
-                  fontSize: 8,
+                  fontSize: 11,
                   color: Colors.white.withOpacity(0.9),
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 2),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  slide['offer']!,
-                  style: const TextStyle(fontSize: 7, color: Colors.white),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
             ],
           ),
         ),
@@ -647,208 +674,6 @@ class _CategoryPageState extends State<CategoryPage> {
     );
   }
 
-  // ============= CATEGORY SECTION =============
-  Widget _buildCategorySection() {
-    return Consumer<ApiService>(
-      builder: (context, categoryController, child) {
-        if (categoryController.isLoading) {
-          return const SizedBox(
-            height: 60,
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        final bool isMobile = MediaQuery.of(context).size.width < 768;
-
-        // If categories are empty, show fallback
-        if (categoryController.categories.isEmpty) {
-          final categories = categoryController.allProducts
-              .map((p) => p.category)
-              .toSet()
-              .toList();
-
-          if (categories.isEmpty) {
-            return const SizedBox.shrink();
-          }
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                '📂 Shop by Category',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2D3E2B),
-                ),
-              ),
-              const SizedBox(height: 10),
-              isMobile
-                  ? _buildFallbackMobileChips(categories)
-                  : _buildFallbackDesktopChips(categories),
-            ],
-          );
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '📂 Shop by Category',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2D3E2B),
-              ),
-            ),
-            const SizedBox(height: 10),
-            isMobile
-                ? _buildMobileCategoryChips(categoryController)
-                : _buildDesktopCategoryChips(categoryController),
-          ],
-        );
-      },
-    );
-  }
-
-  // ============= FALLBACK MOBILE CATEGORY CHIPS =============
-  Widget _buildFallbackMobileChips(List<String> categories) {
-    return SizedBox(
-      height: 40,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: categories.length,
-        itemBuilder: (context, index) {
-          final category = categories[index];
-          return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(40),
-              ),
-              child: Text(
-                category,
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // ============= FALLBACK DESKTOP CATEGORY CHIPS =============
-  Widget _buildFallbackDesktopChips(List<String> categories) {
-    return Wrap(
-      spacing: 5.0,
-      runSpacing: 8.0,
-      children: categories.map((category) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(40),
-          ),
-          child: Text(
-            category,
-            style: const TextStyle(
-              color: Colors.black87,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  // ============= MOBILE CATEGORY CHIPS =============
-  Widget _buildMobileCategoryChips(ApiService categoryController) {
-    return SizedBox(
-      height: 40,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: categoryController.categories.length,
-        itemBuilder: (context, index) {
-          final category = categoryController.categories[index];
-          final isSelected =
-              categoryController.selectedCategory == category.categoryName;
-
-          return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: GestureDetector(
-              onTap: () {
-                categoryController.selectCategory(category.categoryName);
-                categoryController.filterByCategory(category.categoryName);
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 9,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF2B6E3B)
-                      : Colors.grey[200],
-                  borderRadius: BorderRadius.circular(40),
-                ),
-                child: Text(
-                  category.categoryName,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.black87,
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // ============= DESKTOP CATEGORY CHIPS =============
-  Widget _buildDesktopCategoryChips(ApiService categoryController) {
-    return Wrap(
-      spacing: 5.0,
-      runSpacing: 8.0,
-      children: categoryController.categories.map((category) {
-        final isSelected = categoryController.selectedCategory == category.categoryName;
-
-        return GestureDetector(
-          onTap: () {
-            categoryController.selectCategory(category.categoryName);
-            categoryController.filterByCategory(category.categoryName);
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF2B6E3B) : Colors.grey[200],
-              borderRadius: BorderRadius.circular(40),
-            ),
-            child: Text(
-              category.categoryName,
-              style: TextStyle(
-                color: isSelected ? Colors.white : Colors.black87,
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
   // ============= DESKTOP PRODUCTS =============
   Widget _buildDesktopProducts() {
     return Consumer<ApiService>(
@@ -884,7 +709,7 @@ class _CategoryPageState extends State<CategoryPage> {
 
         return Wrap(
           spacing: 20,
-          runSpacing: 10,
+          runSpacing: 5,
           children: categoryEntries.map((entry) {
             final productCount = entry.value.length;
             final dynamicWidth = (productCount * 90.0) + 20.0;
@@ -896,7 +721,7 @@ class _CategoryPageState extends State<CategoryPage> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   SizedBox(
-                    height: 140,
+                    height: 120,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       itemCount: entry.value.length,
@@ -905,7 +730,7 @@ class _CategoryPageState extends State<CategoryPage> {
                         final product = entry.value[index];
                         return Container(
                           width: 100.0,
-                          padding: const EdgeInsets.only(right: 10.0),
+                          padding: const EdgeInsets.only(right: 5.0),
                           child: Center(
                             child: _buildDesktopProductCard(product),
                           ),
@@ -913,14 +738,14 @@ class _CategoryPageState extends State<CategoryPage> {
                       },
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 2),
                   Center(
                     child: Text(
                       entry.key,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFC2410C),
+                        color: Color(0xFF2B6E3B),
                       ),
                     ),
                   ),
@@ -945,7 +770,7 @@ class _CategoryPageState extends State<CategoryPage> {
         );
       },
       child: Container(
-        height: 140,
+        height: 130,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
@@ -961,7 +786,7 @@ class _CategoryPageState extends State<CategoryPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Padding(
-              padding: const EdgeInsets.all(6.0),
+              padding: const EdgeInsets.all(2.0),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: CachedNetworkImage(
@@ -998,7 +823,7 @@ class _CategoryPageState extends State<CategoryPage> {
               padding: const EdgeInsets.all(2.0),
               child: SizedBox(
                 width: double.infinity,
-                height: 30,
+                height: 20,
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.push(
@@ -1038,7 +863,7 @@ class _CategoryPageState extends State<CategoryPage> {
         if (productController.isLoading) {
           return const Center(
             child: Padding(
-              padding: EdgeInsets.all(32.0),
+              padding: EdgeInsets.all(12.0),
               child: CircularProgressIndicator(),
             ),
           );
@@ -1048,7 +873,7 @@ class _CategoryPageState extends State<CategoryPage> {
         if (products.isEmpty) {
           return const Center(
             child: Padding(
-              padding: EdgeInsets.all(32.0),
+              padding: EdgeInsets.all(12.0),
               child: Text('✨ No products found ✨'),
             ),
           );
@@ -1101,7 +926,7 @@ class _CategoryPageState extends State<CategoryPage> {
                               borderRadius: BorderRadius.circular(8),
                               child: Image.network(
                                 firstProduct.proxiedImageUrl,
-                                height: 85,
+                                height: 75,
                                 width: 85,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
@@ -1118,11 +943,11 @@ class _CategoryPageState extends State<CategoryPage> {
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.all(4.0),
+                              padding: const EdgeInsets.all(1.0),
                               child: Text(
                                 entry.key,
                                 style: const TextStyle(
-                                  fontSize: 10,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                   color: Color(0xFF2B6E3B),
                                 ),
@@ -1181,14 +1006,16 @@ class _CategoryPageState extends State<CategoryPage> {
           children: [
             if (fashionTrending.isNotEmpty)
               _buildTrendingSlider(
-                title: ' Trending Now In Category',
+                title: ' New Arrivals',
                 products: fashionTrending,
+                 sliderId: 'fashion', 
               ),
-            const SizedBox(height: 20),
+            // const SizedBox(height: 20),
             if (electronicsTrending.isNotEmpty)
               _buildTrendingSlider(
                 title: ' Trending Now In Category',
                 products: electronicsTrending,
+                sliderId: 'electronics',
               ),
           ],
         );
@@ -1200,11 +1027,14 @@ class _CategoryPageState extends State<CategoryPage> {
   Widget _buildTrendingSlider({
     required String title,
     required List<Product> products,
+    required String sliderId,
+    bool isCompact = false,
   }) {
     final bool isMobile = MediaQuery.of(context).size.width < 768;
+    final controller = _getController(sliderId);
 
     return Container(
-      width: double.infinity,
+      width: MediaQuery.of(context).size.width,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -1215,7 +1045,7 @@ class _CategoryPageState extends State<CategoryPage> {
       ),
       padding: EdgeInsets.all(isMobile ? 8 : 16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Padding(
             padding: EdgeInsets.symmetric(horizontal: isMobile ? 4 : 0),
@@ -1227,58 +1057,129 @@ class _CategoryPageState extends State<CategoryPage> {
                   style: TextStyle(
                     fontSize: isMobile ? 14 : 16,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFFC2410C),
+                    color: Colors.black,
                   ),
                 ),
-                
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          _buildCarouselSlider(products),
-          const SizedBox(height: 8),
-          _buildDotIndicator(products),
+          // const SizedBox(height: 12),
+          _buildCarouselSlider(products, controller, sliderId,isCompact),
         ],
       ),
     );
   }
 
   // ============= CAROUSEL SLIDER =============
-  Widget _buildCarouselSlider(List<Product> products) {
+  Widget _buildCarouselSlider(List<Product> products,CarouselSliderController controller,
+  String sliderId,bool isCompact,) {
     final bool isMobile = MediaQuery.of(context).size.width < 768;
 
-    return CarouselSlider(
-      options: CarouselOptions(
-        height: isMobile ? 300 : 250,
-        autoPlay: false,
-        // enlargeCenterPage: true, // Enlarge center item
-        viewportFraction: isMobile
-            ? 0.7
-            : 0.9, //  0.7 = show 70% width on mobile
-        padEnds: false,
-        scrollDirection: Axis.horizontal,
-        onPageChanged: (index, reason) {  //  ADD THIS
-        setState(() {
-          _currentTrendingIndex = index;
-        });
-      },
-      ),
-      items: products.map((product) {
-        return Builder(
-          builder: (BuildContext context) {
-            return Container(
-              width: double.infinity,
-              margin: EdgeInsets.symmetric(horizontal: isMobile ? 4.0 : 5.0),
-              child: _buildTrendingItem(product),
-            );
+    return Stack(
+      children: [
+        CarouselSlider(
+          carouselController: controller,
+          options: CarouselOptions(
+            height:isMobile ? 240 : 200,
+            autoPlay: false,
+            viewportFraction: isMobile
+                ? 0.5
+                : 0.32, //  0.7 = show 70% width on mobile
+            padEnds: false,
+            scrollDirection: Axis.horizontal,
+            onPageChanged: (index, reason) {  //  ADD THIS
+            setState(() {
+              _updateSliderIndex(sliderId, index);
+            });
           },
-        );
-      }).toList(),
+          ),
+          items: products.map((product) {
+            return Builder(
+              builder: (BuildContext context) {
+                return Container(
+                  margin: EdgeInsets.symmetric(horizontal: isMobile ? 1.0 : 5.0),
+                  child: _buildTrendingItem(product,isCompact),
+                );
+              },
+            );
+          }).toList(),
+        ),
+        // 🔥 LEFT ARROW - Positioned at center-left
+      Positioned(
+        left: 0,
+        top: 0,
+        bottom: 0,
+        child: Center(
+          child: GestureDetector(
+            onTap: () {
+              controller.previousPage(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            },
+            child: Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.8),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.chevron_left,
+                color: Color(0xFF2B6E3B),
+                size: 20,
+              ),
+            ),
+          ),
+        ),
+      ),
+      // 🔥 RIGHT ARROW - Positioned at center-right
+      Positioned(
+        right: 0,
+        top: 0,
+        bottom: 0,
+        child: Center(
+          child: GestureDetector(
+            onTap: () {
+              controller.nextPage(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            },
+            child: Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.8),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.chevron_right,
+                color: Color(0xFF2B6E3B),
+                size: 20,
+              ),
+            ),
+          ),
+        ),
+      ),
+      ],
     );
   }
 
   // ============= TRENDING ITEM =============
-  Widget _buildTrendingItem(Product product) {
+  Widget _buildTrendingItem(Product product, bool isCompact) {
     final bool isMobile = MediaQuery.of(context).size.width < 768;
 
     return GestureDetector(
@@ -1291,8 +1192,8 @@ class _CategoryPageState extends State<CategoryPage> {
         );
       },
       child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.all(isMobile ? 12 : 16),
+        // width: double.infinity,
+        padding: EdgeInsets.all(isMobile ? 8 : 5),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -1313,11 +1214,11 @@ class _CategoryPageState extends State<CategoryPage> {
               child: CachedNetworkImage(
                 imageUrl: product.proxiedImageUrl,
                 height: isMobile ? 110 : 80,
-                width: isMobile ? 110 : 80,
+                // width: isMobile ? 110 : 80,
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
                   height: isMobile ? 110 : 80,
-                  width: isMobile ? 110 : 80,
+                  // width: isMobile ? 110 : 80,
                   color: Colors.grey[200],
                   child: const Center(
                     child: CircularProgressIndicator(color: Color(0xFF2B6E3B)),
@@ -1335,28 +1236,25 @@ class _CategoryPageState extends State<CategoryPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              product.name,
+                product.name,
+                style: TextStyle(
+                  fontSize: isMobile ? 13 : 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: true,
+              ),
+            Text(
+              '\MMK${product.price.toStringAsFixed(2)}',
               style: TextStyle(
-                fontSize: isMobile ? 13 : 12,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '\$${product.price.toStringAsFixed(2)}',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF2B6E3B),
-                fontSize: isMobile ? 15 : 14,
+                fontSize: isMobile ? 11 : 12,
               ),
             ),
-            const SizedBox(height: 4),
             _buildRatingRow(product),
-            const SizedBox(height: 8),
             _buildFavoriteButton(product),
           ],
         ),
@@ -1375,10 +1273,6 @@ class _CategoryPageState extends State<CategoryPage> {
         const Icon(Icons.star, color: Color(0xFFFFD700), size: 12),
         const Icon(Icons.star_half, color: Color(0xFFFFD700), size: 12),
         const SizedBox(width: 4),
-        Text(
-          '(${product.ratingCount})',
-          style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-        ),
       ],
     );
   }
@@ -1391,7 +1285,7 @@ class _CategoryPageState extends State<CategoryPage> {
       builder: (context, cartController, child) {
         final inCart = cartController.isInCart(product.id);
         return SizedBox(
-          width: double.infinity,
+          width: 100,
           child: ElevatedButton(
             onPressed: () {
               if (inCart) {
@@ -1419,7 +1313,7 @@ class _CategoryPageState extends State<CategoryPage> {
                 vertical: isMobile ? 10 : 8,
               ), //  Larger on mobile
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(5),
               ),
               minimumSize: Size(
                 double.infinity,
@@ -1427,11 +1321,13 @@ class _CategoryPageState extends State<CategoryPage> {
               ), //  Taller on mobile
             ),
             child: Text(
-              inCart ? 'REMOVED' : 'ADD TO Favourite',
+              inCart ? 'REMOVED' : 'ADD TO FAVOURITE',
               style: TextStyle(
-                fontSize: isMobile ? 12 : 10, //  Larger text on mobile
+                fontSize: isMobile ? 11 : 9, //  Larger text on mobile
                 fontWeight: FontWeight.bold,
               ),
+              maxLines: isMobile ? 2 : 2,
+              textAlign: TextAlign.center,
             ),
           ),
         );
@@ -1440,11 +1336,12 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 
   // ============= DOT INDICATOR =============
-  Widget _buildDotIndicator(List<Product> products) {
+  Widget _buildDotIndicator(List<Product> products,String sliderId) {
+    final currentIndex = _getSliderIndex(sliderId);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: products.asMap().entries.map((entry) {
-        final bool isActive = entry.key == _currentTrendingIndex;
+        final bool isActive = entry.key == currentIndex;
         return Container(
           width: isActive ? 20 : 8,
           height: 8,

@@ -39,10 +39,10 @@ class ApiService extends ChangeNotifier {
           .timeout(const Duration(seconds: 10));
 
       final data = json.decode(response.body);
-      print('📝 Register response: $data');
+      print('Register response: $data');
       return data;
     } catch (e) {
-      print('❌ Register error: $e');
+      print('Register error: $e');
       rethrow;
     }
   }
@@ -58,10 +58,10 @@ class ApiService extends ChangeNotifier {
           .timeout(const Duration(seconds: 10));
 
       final data = json.decode(response.body);
-      print('📝 Login response: $data');
+      print('Login response: $data');
       return data;
     } catch (e) {
-      print('❌ Login error: $e');
+      print('Login error: $e');
       rethrow;
     }
   }
@@ -260,7 +260,7 @@ void updateQuantity(int productId, int quantity) {
     notifyListeners();
 
     try {
-      print('🔄 LOADING PRODUCTS...');
+      print('LOADING PRODUCTS...');
       _allProducts = await _getProductsFromApi();
       _filteredProducts = _allProducts;
       print(' SUCCESS: Loaded ${_allProducts.length} products');
@@ -426,24 +426,6 @@ void updateQuantity(int productId, int quantity) {
       print(' API Error: $e');
       return MockApiService.getMockProductById(id);
     }
-  }
-
-  // ============= FILTER BY CATEGORY =============
-  void filterByCategory(String category) {
-    _currentCategory = category;
-    _selectedCategory = category;
-    if (category == "All" || category == "All Items") {
-      _filteredProducts = _allProducts;
-    } else {
-      _filteredProducts = _allProducts.where((p) => p.category == category).toList();
-    }
-    print(' Filtered to ${_filteredProducts.length} products');
-    notifyListeners();
-  }
-
-  void selectCategory(String category) {
-    _selectedCategory = category;
-    filterByCategory(category);
   }
 
   // ============= LOAD PRODUCTS BY CATEGORY =============
