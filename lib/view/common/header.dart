@@ -17,21 +17,6 @@ class CommonHeader extends StatefulWidget {
 
 class _CommonHeaderState extends State<CommonHeader> {
   bool _isMenuOpen = false;
-  String _activeMenu = "HOME";
-
-  String _getActiveMenu(BuildContext context) {
-    final route = ModalRoute.of(context);
-
-    if (route is MaterialPageRoute) {
-      final page = route.builder(context);
-
-      if (page is HomePage) return "HOME";
-      if (page is CategoryPage) return "CATEGORIES";
-      if (page is SellPage) return "SALE";
-    }
-
-    return "";
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -238,6 +223,31 @@ class _CommonHeaderState extends State<CommonHeader> {
     );
   }
 
+  bool isCurrentPage(String menuName) {
+    final currentRoute = ModalRoute.of(context)?.settings.name;
+
+    switch (currentRoute) {
+      case "/":
+      case "/home":
+        return menuName == "HOME";
+
+      case "/category":
+        return menuName == "CATEGORIES";
+
+      case "/sell":
+        return menuName == "SALE";
+
+      case "/favorite":
+        return menuName == "MY FAVORITE";
+
+      case "/about":
+        return menuName == "ABOUT US";
+
+      default:
+        return false;
+    }
+  }
+
   // ============= PROFILE BUTTON =============
   Widget _buildProfileButton(BuildContext context, bool isLoggedIn) {
     return GestureDetector(
@@ -442,48 +452,82 @@ class _CommonHeaderState extends State<CommonHeader> {
   }
 
   Widget _menuItem(BuildContext context, String text, Widget? page) {
-    final bool isActive = _getActiveMenu(context) == text;
+    final bool isActive = isCurrentPage(text);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+
       child: InkWell(
         onTap: () {
-          setState(() {
-            _activeMenu = text;
-
-            // Close the hamburger menu after selecting an item
-            if (_isMenuOpen) {
+          if (_isMenuOpen) {
+            setState(() {
               _isMenuOpen = false;
-            }
-          });
-
-          if (page == null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('$text page is not implemented yet')),
-            );
-            return;
+            });
           }
 
-          Navigator.push(
+          if (page == null) return;
+
+          String routeName;
+
+          switch (text) {
+            case "HOME":
+              routeName = "/home";
+              break;
+
+            case "CATEGORIES":
+              routeName = "/category";
+              break;
+
+            case "SALE":
+              routeName = "/sell";
+              break;
+
+            case "MY FAVORITE":
+              routeName = "/favorite";
+              break;
+
+            case "ABOUT US":
+              routeName = "/about";
+              break;
+
+            default:
+              routeName = "/";
+          }
+
+          Navigator.pushReplacement(
             context,
+
             PageRouteBuilder(
+              settings: RouteSettings(name: routeName),
+
               pageBuilder: (context, animation, secondaryAnimation) => page,
+
               transitionDuration: Duration.zero,
+
               reverseTransitionDuration: Duration.zero,
             ),
           );
         },
+
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
+
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+
           decoration: BoxDecoration(
             color: isActive ? const Color(0xFFC77C2E) : Colors.transparent,
+
             borderRadius: BorderRadius.circular(6),
           ),
+
           child: Text(
             text,
+
             style: TextStyle(
               fontSize: 14,
+
               fontWeight: FontWeight.bold,
+
               color: isActive ? Colors.white : Colors.black,
             ),
           ),

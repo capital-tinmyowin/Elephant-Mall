@@ -211,7 +211,7 @@ class _SellPageState extends State<SellPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Checkbox(value: sameAsPhone, onChanged: onChanged),
-            const Text("Same as Phone"),
+            const Text("Same as Ph"),
           ],
         ),
       ],
@@ -235,7 +235,35 @@ class _SellPageState extends State<SellPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Add Product Variant"),
+          backgroundColor: const Color(0xfffdfaf4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          titlePadding: EdgeInsets.zero,
+          title: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: const BoxDecoration(
+              color: Color(0xFFC77C2E), 
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(18),
+                topRight: Radius.circular(18),
+              ),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.inventory_2_outlined, color: Colors.white, size: 28),
+                SizedBox(width: 12),
+                Text(
+                  "Add Product Variant",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
           content: SizedBox(
             width: 400,
             child: Form(
@@ -1263,7 +1291,7 @@ class _SellPageState extends State<SellPage> {
                         });
                       },
                       child: const Text(
-                        "Same as Phone Number",
+                        "Same as Ph",
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -1350,7 +1378,7 @@ class _SellPageState extends State<SellPage> {
                         });
                       },
                       child: const Text(
-                        "Same as Phone Number",
+                        "Same as Ph",
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
