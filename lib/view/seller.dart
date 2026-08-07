@@ -564,89 +564,111 @@ class _SellerPageState extends State<SellerPage> {
 
                           /// Right Side
                           Expanded(
-                            child: SingleChildScrollView(
-                              child: Column(
-                                children: [
-                                  /// Seller Items
-                                  GridView.builder(
-                                    shrinkWrap: true,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                /// Fixed
+                                const Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: SearchBars(),
+                                ),
 
-                                    itemCount: items.length,
+                                const SizedBox(height: 12),
 
-                                    gridDelegate:
-                                        SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: getCrossAxisCount(
-                                            width,
-                                          ),
-                                          crossAxisSpacing: 5,
-                                          mainAxisSpacing: 5,
-                                          childAspectRatio: getAspectRatio(width,),
-                                        ),
+                                /// Filter Bar
+                                const Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: FilterBar(),
+                                ),
 
-                                    itemBuilder: (context, index) {
-                                      final item = items[index];
-
-                                      return SellerItemWidget(
-                                        title: item["title"],
-                                        price: item["price"],
-                                        rating: item["rating"],
-                                        description: item["description"],
-                                        image: item["image"],
-                                      );
-                                    },
-                                  ),
-
-                                  const SizedBox(height: 20),
-
-                                  /// Product Sections
-                                  if (desktop)
-                                    Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                const SizedBox(height: 16),
+                                Expanded(
+                                  child: SingleChildScrollView(
+                                    child: Column(
                                       children: [
-                                        Expanded(
-                                          child: ProductSection(
-                                            title: "Newest Arrivals",
-                                            products: newestProducts,
-                                          ),
+                                        /// Seller Items
+                                        GridView.builder(
+                                          shrinkWrap: true,
+                                          physics:
+                                              const NeverScrollableScrollPhysics(),
+
+                                          itemCount: items.length,
+
+                                          gridDelegate:
+                                              SliverGridDelegateWithFixedCrossAxisCount(
+                                                crossAxisCount:
+                                                    getCrossAxisCount(width),
+                                                crossAxisSpacing: 5,
+                                                mainAxisSpacing: 5,
+                                                childAspectRatio:
+                                                    getAspectRatio(width),
+                                              ),
+
+                                          itemBuilder: (context, index) {
+                                            final item = items[index];
+
+                                            return SellerItemWidget(
+                                              title: item["title"],
+                                              price: item["price"],
+                                              rating: item["rating"],
+                                              description: item["description"],
+                                              image: item["image"],
+                                            );
+                                          },
                                         ),
 
-                                        const SizedBox(width: 10),
+                                        const SizedBox(height: 20),
 
-                                        Expanded(
-                                          child: ProductSection(
-                                            title: "Best Sellers",
-                                            products: bestSellerProducts,
-                                          ),
-                                        ),
-                                      ],
-                                    )
-                                  else
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: ProductSection(
-                                            title: "Newest Arrivals",
-                                            products: newestProducts,
-                                          ),
-                                        ),
+                                        /// Product Sections
+                                        if (desktop)
+                                          Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Expanded(
+                                                child: ProductSection(
+                                                  title: "Newest Arrivals",
+                                                  products: newestProducts,
+                                                ),
+                                              ),
 
-                                        const SizedBox(width: 8),
+                                              const SizedBox(width: 10),
 
-                                        Expanded(
-                                          child: ProductSection(
-                                            title: "Best Sellers",
-                                            products: bestSellerProducts,
+                                              Expanded(
+                                                child: ProductSection(
+                                                  title: "Best Sellers",
+                                                  products: bestSellerProducts,
+                                                ),
+                                              ),
+                                            ],
+                                          )
+                                        else
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: ProductSection(
+                                                  title: "Newest Arrivals",
+                                                  products: newestProducts,
+                                                ),
+                                              ),
+
+                                              const SizedBox(width: 8),
+
+                                              Expanded(
+                                                child: ProductSection(
+                                                  title: "Best Sellers",
+                                                  products: bestSellerProducts,
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ),
+
+                                        const SizedBox(height: 20),
                                       ],
                                     ),
-
-                                  const SizedBox(height: 20),
-                                ],
-                              ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
