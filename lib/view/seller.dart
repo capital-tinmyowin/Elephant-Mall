@@ -1012,6 +1012,7 @@ class ProductSection extends StatelessWidget {
         children: [
           /// HEADER
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 title,
