@@ -1,55 +1,14 @@
 import 'package:flutter/material.dart';
 import 'common/header.dart';
 import 'common/footer.dart';
-
-final Map<String, dynamic> sellerData = {
-  "name": "John Corner",
-  "items": [
-    {
-      "title": "Straw Sun Hat ",
-      "price": 45000,
-      "rating": 4.7,
-      "image": "assets/sunhat.jpg",
-    },
-    {
-      "title": "Straw Sun Hat ",
-      "price": 45000,
-      "rating": 4.7,
-      "image": "assets/sunhat.jpg",
-    },
-    {
-      "title": "Straw Sun Hat ",
-      "price": 45000,
-      "rating": 4.7,
-      "image": "assets/sunhat.jpg",
-    },
-    {
-      "title": "Men's Wool Coat",
-      "price": 45000,
-      "rating": 4.8,
-      "image": "assets/woolhat.jpg",
-    },
-    {
-      "title": "Leather Tote Bag",
-      "price": 120000,
-      "rating": 4.8,
-      "image": "assets/leatherBag.jpg",
-    },
-    {
-      "title": "Leather Tote Bag",
-      "price": 120000,
-      "rating": 4.8,
-      "image": "assets/leatherBag.jpg",
-    },
-  ],
-};
+import 'package:carousel_slider/carousel_slider.dart';
+import '../services/seller_service.dart';
 
 int getCrossAxisCount(double width) {
-  if (width >= 1400) return 6;
-  if (width >= 1100) return 5;
-  if (width >= 850) return 4;
-  if (width >= 650) return 3;
-
+  if (width >= 1600) return 6;
+  if (width >= 1400) return 5;
+  if (width >= 1100) return 4;
+  if (width >= 380) return 3;
   return 2;
 }
 
@@ -76,6 +35,8 @@ class _SellerHeaderWidgetState extends State<SellerHeaderWidget> {
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 800;
+    final isSmall = MediaQuery.of(context).size.width <= 380;
+    final isTiny = MediaQuery.of(context).size.width <= 320;
 
     return SafeArea(
       bottom: false,
@@ -105,11 +66,9 @@ class _SellerHeaderWidgetState extends State<SellerHeaderWidget> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isMobile
-                            ? "${widget.sellerName}'s\nFull Store"
-                            : "${widget.sellerName}'s Full Store",
+                        "${widget.sellerName}'s Full Store",
                         style: TextStyle(
-                          fontSize: isMobile ? 20 : 28,
+                          fontSize: isSmall ? 16 : (isMobile ? 20 : 28),
                           fontWeight: FontWeight.bold,
                           color: Colors.green,
                         ),
@@ -121,33 +80,68 @@ class _SellerHeaderWidgetState extends State<SellerHeaderWidget> {
                         spacing: 5,
                         runSpacing: 5,
                         children: [
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                isFollowing = !isFollowing;
-                              });
-                            },
-                            icon: isFollowing
-                                ? null
-                                : const Icon(Icons.add, color: Colors.white),
-                            label: Text(
-                              isFollowing ? "Following" : "Follow",
-                              style: const TextStyle(color: Colors.white),
+                          SizedBox(
+                            width: isSmall ? 80 : (isMobile ? 120 : 140),
+                            height: isSmall ? 25 : 30,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isSmall ? 5 : 12,
+                                ),
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  isFollowing = !isFollowing;
+                                });
+                              },
+                              icon: isFollowing
+                                  ? null
+                                  : Icon(
+                                      Icons.add,
+                                      color: Colors.white,
+                                      size: isSmall ? 14 : 20,
+                                    ),
+                              label: Text(
+                                isFollowing ? "Following" : "Follow",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: isSmall ? 11 : (isMobile ? 14 : 16),
+                                ),
+                              ),
                             ),
                           ),
 
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                            ),
-                            onPressed: () {},
-                            icon: const Icon(Icons.chat_bubble_outline),
-                            label: Text(
-                              isMobile ? "Chat" : "Chat Seller",
-                              style: const TextStyle(color: Colors.white),
+                          const SizedBox(width: 5),
+
+                          SizedBox(
+                            width: isSmall ? 80 : (isMobile ? 120 : 140),
+                            height: isSmall ? 25 : 30,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isSmall ? 5 : 12,
+                                ),
+                              ),
+                              onPressed: () {},
+                              icon: Icon(
+                                Icons.chat_bubble_outline,
+                                size: isSmall ? 14 : 20,
+                              ),
+                              label: Text(
+                                isMobile ? "Chat" : "Chat Seller",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: isSmall ? 11 : (isMobile ? 14 : 16),
+                                ),
+                              ),
                             ),
                           ),
                         ],
@@ -158,7 +152,7 @@ class _SellerHeaderWidgetState extends State<SellerHeaderWidget> {
 
                 /// Desktop view
                 if (!isMobile) ...[
-                  const VerticalDivider(width: 40,),
+                  const VerticalDivider(width: 40),
 
                   Expanded(
                     flex: 2,
@@ -199,7 +193,7 @@ class _SellerHeaderWidgetState extends State<SellerHeaderWidget> {
                           children: [
                             Icon(Icons.schedule, size: 16),
                             SizedBox(width: 5),
-                            Text("Usually responds within 2 hours"),
+                            Text("Usually responds \n within 2 hours"),
                           ],
                         ),
                       ],
@@ -207,6 +201,17 @@ class _SellerHeaderWidgetState extends State<SellerHeaderWidget> {
                   ),
 
                   const SizedBox(width: 20),
+                  Expanded(
+                    flex: 2,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.asset(
+                        "assets/store_banner.jpg",
+                        height: 120,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
                 ],
 
                 /// Mobile icons
@@ -214,52 +219,52 @@ class _SellerHeaderWidgetState extends State<SellerHeaderWidget> {
             ),
 
             //Mobile view
-            if (isMobile)
-              Positioned(
-                top: -5,
-                right: -7,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: infoIcon(
-                        index: 0,
-                        icon: Icons.location_on_outlined,
-                        text: "Yangon, Myanmar",
-                      ),
-                    ),
+            // if (isMobile)
+            //   Positioned(
+            //     top: -5,
+            //     right: -7,
+            //     child: Column(
+            //       mainAxisSize: MainAxisSize.min,
+            //       crossAxisAlignment: CrossAxisAlignment.end,
+            //       children: [
+            //         Align(
+            //           alignment: Alignment.centerRight,
+            //           child: infoIcon(
+            //             index: 0,
+            //             icon: Icons.location_on_outlined,
+            //             text: "Yangon, Myanmar",
+            //           ),
+            //         ),
 
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: infoIcon(
-                        index: 1,
-                        icon: Icons.people_outline,
-                        text: "1,235 Followers",
-                      ),
-                    ),
+            //         Align(
+            //           alignment: Alignment.centerRight,
+            //           child: infoIcon(
+            //             index: 1,
+            //             icon: Icons.people_outline,
+            //             text: "1,235 Followers",
+            //           ),
+            //         ),
 
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: infoIcon(
-                        index: 2,
-                        icon: Icons.inventory_2_outlined,
-                        text: "124 Products",
-                      ),
-                    ),
+            //         Align(
+            //           alignment: Alignment.centerRight,
+            //           child: infoIcon(
+            //             index: 2,
+            //             icon: Icons.inventory_2_outlined,
+            //             text: "124 Products",
+            //           ),
+            //         ),
 
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: infoIcon(
-                        index: 3,
-                        icon: Icons.schedule,
-                        text: "Usually responds within 2 hours",
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            //         Align(
+            //           alignment: Alignment.centerRight,
+            //           child: infoIcon(
+            //             index: 3,
+            //             icon: Icons.schedule,
+            //             text: "Usually responds within 2 hours",
+            //           ),
+            //         ),
+            //       ],
+            //     ),
+            //   ),
           ],
         ),
       ),
@@ -317,6 +322,7 @@ class SellerItemWidget extends StatelessWidget {
   final String title;
   final int price;
   final double rating;
+  final String description;
   final String image;
 
   const SellerItemWidget({
@@ -324,6 +330,7 @@ class SellerItemWidget extends StatelessWidget {
     required this.title,
     required this.price,
     required this.rating,
+    required this.description,
     required this.image,
   });
 
@@ -363,7 +370,7 @@ class SellerItemWidget extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: isSmall ? 11 : 14,
+                                fontSize: isSmall ? 10 : 14,
                               ),
                             ),
                           ),
@@ -374,24 +381,38 @@ class SellerItemWidget extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 4),
+                      SizedBox(
+                        child: Text(
+                          description,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontSize: isSmall ? 9 : 12,
+                          ),
+                        ),
+                      ),
+
+                      const Spacer(),
+
                       // Price
                       Text(
                         "$price Kyat",
                         maxLines: 1,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Colors.orange,
-                          fontSize: isSmall ? 11 : 14,
+                          color: Colors.black,
+                          fontSize: isSmall ? 9 : 14,
                         ),
                       ),
 
-                      const Spacer(),
+                      const SizedBox(height: 10),
                       // Buttons side by side
                       Row(
                         children: [
                           Expanded(
                             child: SizedBox(
-                              height: isSmall ? 20 : 36,
+                              height: isSmall ? 22 : 32,
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.orange,
@@ -412,11 +433,11 @@ class SellerItemWidget extends StatelessWidget {
                               ),
                             ),
                           ),
-                          SizedBox(width: isSmall ? 4 : 8),
+                          SizedBox(width: 8),
 
                           Expanded(
                             child: SizedBox(
-                              height: isSmall ? 24 : 36,
+                              height: isSmall ? 22 : 32,
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   padding: EdgeInsets.zero,
@@ -439,9 +460,9 @@ class SellerItemWidget extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 4),
                         ],
                       ),
+                      const SizedBox(height: 4),
                     ],
                   ),
                 ),
@@ -452,6 +473,15 @@ class SellerItemWidget extends StatelessWidget {
       },
     );
   }
+}
+
+double getAspectRatio(double width) {
+  if (width >= 1600) return 0.85;
+  if (width >= 1400) return 0.80;
+  if (width >= 1100) return 0.75;
+  if (width >= 800) return 0.68;
+  if (width >= 600) return 0.65;
+  return 0.62;
 }
 
 // Seller Page
@@ -465,13 +495,12 @@ class SellerPage extends StatefulWidget {
 class _SellerPageState extends State<SellerPage> {
   int? expandedInfo;
 
-  bool menuExpanded = true;
-
   @override
   Widget build(BuildContext context) {
     final items = sellerData["items"] as List<dynamic>;
     final width = MediaQuery.of(context).size.width;
     final mobile = isMobile(context);
+    final desktop = isDesktop(context);
 
     return Scaffold(
       backgroundColor: const Color(0xffF3F3F3),
@@ -512,57 +541,50 @@ class _SellerPageState extends State<SellerPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           /// Category Menu
-                          Align(
-                            alignment: Alignment.topLeft,
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 320),
-                              curve: Curves.easeInOutCubic,
-                              width: menuExpanded ? (mobile ? 150 : 200) : 60,
+                          if (desktop) ...[
+                            SizedBox(
+                              width: 220,
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  children: [
+                                    SizedBox(
+                                      width: 220, // fixed desktop width
+                                      child: const SellerSideMenu(),
+                                    ),
+                                    const SizedBox(width: 16, height: 16),
 
-                              child: SellerSideMenu(
-                                expanded: menuExpanded,
-                                onMenuPressed: () {
-                                  setState(() {
-                                    menuExpanded = !menuExpanded;
-                                  });
-                                },
+                                    const SellerFilterSidebar(),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
 
-                          const SizedBox(width: 16),
+                            const SizedBox(width: 16),
+                          ],
 
                           /// Right Side
                           Expanded(
-                            child: Column(
-                              children: [
-                                const SearchBars(),
+                            child: SingleChildScrollView(
+                              child: Column(
+                                children: [
+                                  /// Seller Items
+                                  GridView.builder(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
 
-                                const SizedBox(height: 10),
-
-                                const FilterBar(),
-
-                                const SizedBox(height: 16),
-
-                                Expanded(
-                                  child: GridView.builder(
                                     itemCount: items.length,
+
                                     gridDelegate:
                                         SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount:
-                                              (mobile && menuExpanded)
-                                              ? 1
-                                              : getCrossAxisCount(width),
-
-                                          crossAxisSpacing: 16,
-                                          mainAxisSpacing: 16,
-
-                                          childAspectRatio: width < 500
-                                              ? .65
-                                              : width < 800
-                                              ? .72
-                                              : .80,
+                                          crossAxisCount: getCrossAxisCount(
+                                            width,
+                                          ),
+                                          crossAxisSpacing: 5,
+                                          mainAxisSpacing: 5,
+                                          childAspectRatio: getAspectRatio(width,),
                                         ),
+
                                     itemBuilder: (context, index) {
                                       final item = items[index];
 
@@ -570,13 +592,61 @@ class _SellerPageState extends State<SellerPage> {
                                         title: item["title"],
                                         price: item["price"],
                                         rating: item["rating"],
+                                        description: item["description"],
                                         image: item["image"],
                                       );
                                     },
                                   ),
-                                ),
-                                const SizedBox(height: 5),
-                              ],
+
+                                  const SizedBox(height: 20),
+
+                                  /// Product Sections
+                                  if (desktop)
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                          child: ProductSection(
+                                            title: "Newest Arrivals",
+                                            products: newestProducts,
+                                          ),
+                                        ),
+
+                                        const SizedBox(width: 10),
+
+                                        Expanded(
+                                          child: ProductSection(
+                                            title: "Best Sellers",
+                                            products: bestSellerProducts,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  else
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: ProductSection(
+                                            title: "Newest Arrivals",
+                                            products: newestProducts,
+                                          ),
+                                        ),
+
+                                        const SizedBox(width: 8),
+
+                                        Expanded(
+                                          child: ProductSection(
+                                            title: "Best Sellers",
+                                            products: bestSellerProducts,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+
+                                  const SizedBox(height: 20),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -595,19 +665,19 @@ class _SellerPageState extends State<SellerPage> {
   }
 }
 
-bool isMobile(BuildContext context) => MediaQuery.of(context).size.width < 430;
+bool isMobile(BuildContext context) => MediaQuery.of(context).size.width < 450;
+bool isDesktop(BuildContext context) => MediaQuery.of(context).size.width > 800;
 
 Widget filterDropdown(String label, List<String> options) {
   String? selectedValue;
 
   return StatefulBuilder(
     builder: (context, setState) {
-      return SizedBox(
-        width: MediaQuery.of(context).size.width < 800 ? 120 : 160,
+      return IntrinsicWidth(
         child: DropdownButtonFormField<String>(
           value: selectedValue,
 
-          isExpanded: true,
+          isExpanded: false,
 
           decoration: InputDecoration(
             labelText: label,
@@ -619,14 +689,13 @@ Widget filterDropdown(String label, List<String> options) {
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           ),
 
-          style: const TextStyle(fontSize: 12),
+          style: const TextStyle(fontSize: 12, color: Colors.black),
 
           items: options.map((opt) {
             return DropdownMenuItem(
               value: opt,
               child: Text(
                 opt,
-                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 12, color: Colors.black),
               ),
             );
@@ -644,14 +713,7 @@ Widget filterDropdown(String label, List<String> options) {
 }
 
 class SellerSideMenu extends StatelessWidget {
-  final bool expanded;
-  final VoidCallback onMenuPressed;
-
-  const SellerSideMenu({
-    super.key,
-    required this.expanded,
-    required this.onMenuPressed,
-  });
+  const SellerSideMenu({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -663,80 +725,31 @@ class SellerSideMenu extends StatelessWidget {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: Row(
-              children: [
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    transitionBuilder: (child, animation) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: SizeTransition(
-                          sizeFactor: animation,
-                          axis: Axis.horizontal,
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: expanded
-                        ? const Text(
-                            "Categories",
-                            key: ValueKey("title"),
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          )
-                        : const SizedBox(key: ValueKey("empty")),
-                  ),
-                ),
-                IconButton(
-                  onPressed: onMenuPressed,
-                  icon: const Icon(Icons.menu),
-                  splashRadius: 20,
-                ),
-              ],
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Text(
+              'Categories',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
-
           const Divider(height: 1),
-
-          _menuItem(Icons.checkroom, "Men"),
-          _menuItem(Icons.woman, "Women"),
-          _menuItem(Icons.shopping_bag, "Bags"),
-          _menuItem(Icons.watch, "Watch"),
-          _menuItem(Icons.hiking, "Shoes"),
+          _menuItem(Icons.checkroom, 'Men'),
+          _menuItem(Icons.woman, 'Women'),
+          _menuItem(Icons.shopping_bag, 'Bags'),
+          _menuItem(Icons.watch, 'Watch'),
+          _menuItem(Icons.hiking, 'Shoes'),
         ],
       ),
     );
   }
 
-  Widget _menuItem(IconData icon, String text) {
+  static Widget _menuItem(IconData icon, String text) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
-        children: [
-          Icon(icon, size: 20),
-
-          AnimatedSize(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            child: expanded
-                ? Padding(
-                    padding: const EdgeInsets.only(left: 12),
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 200),
-                      opacity: expanded ? 1 : 0,
-                      child: Text(text, overflow: TextOverflow.ellipsis),
-                    ),
-                  )
-                : const SizedBox.shrink(),
-          ),
-        ],
+        children: [Icon(icon, size: 20), const SizedBox(width: 12), Text(text)],
       ),
     );
   }
@@ -770,18 +783,281 @@ class FilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 150,
+            child: filterDropdown("By Category", ["Men", "Women", "Shoes"]),
+          ),
+
+          const SizedBox(width: 10),
+
+          SizedBox(
+            width: 240,
+            child: filterDropdown("Price: 0 to 500,000 Kyats", [
+              "0 - 500,000 Kyats",
+              "500,000+",
+            ]),
+          ),
+
+          const SizedBox(width: 10),
+
+          SizedBox(
+            width: 250,
+            child: filterDropdown("Sort by Price: Low to High", [
+              "Low to High",
+              "High to Low",
+            ]),
+          ),
+
+          const SizedBox(width: 10),
+
+          SizedBox(
+            width: 150,
+            child: filterDropdown("Location: All", [
+              "All",
+              "Yangon",
+              "Mandalay",
+            ]),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SellerFilterSidebar extends StatelessWidget {
+  const SellerFilterSidebar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 220,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "FILTERS",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+
+          const SizedBox(height: 15),
+
+          //CATEGORY
+          const Text("Category", style: TextStyle(fontWeight: FontWeight.w600)),
+
+          const SizedBox(height: 8),
+
+          DropdownButtonFormField<String>(
+            value: "All Categories",
+            decoration: InputDecoration(
+              isDense: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            items: const [
+              DropdownMenuItem(
+                value: "All Categories",
+                child: Text("All Categories"),
+              ),
+            ],
+            onChanged: (_) {},
+          ),
+
+          const SizedBox(height: 15),
+
+          //PRICE
+          const Text(
+            "Price Range (Kyat)",
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+
+          const SizedBox(height: 10),
+
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: "Min",
+                    isDense: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Text("-"),
+              ),
+
+              Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: "Max",
+                    isDense: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 15),
+
+          //---------------- TAGS ----------------
+          const Text("Tags", style: TextStyle(fontWeight: FontWeight.w600)),
+
+          const SizedBox(height: 10),
+
+          checkbox("New"),
+          checkbox("Pre-owned"),
+          checkbox("Premium"),
+          checkbox("Handmade"),
+
+          const SizedBox(height: 10),
+
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.orange,
+                side: const BorderSide(color: Colors.orange),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () {},
+              child: const Text("Clear Filters"),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget checkbox(String title) {
+    return Row(
       children: [
-        filterDropdown("By Category", ["Men", "Women", "Shoes"]),
-
-        filterDropdown("Price Range", ["0 - 500,000 Kyat", "500,000+"]),
-
-        filterDropdown("Sort by Price", ["Low to High", "High to Low"]),
-
-        filterDropdown("Location", ["All", "Yangon", "Mandalay"]),
+        Checkbox(value: false, onChanged: (_) {}),
+        Expanded(child: Text(title)),
       ],
+    );
+  }
+}
+
+class ProductSection extends StatelessWidget {
+  final String title;
+  final List<Map<String, dynamic>> products;
+
+  const ProductSection({
+    super.key,
+    required this.title,
+    required this.products,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final mobile = MediaQuery.of(context).size.width < 800;
+
+    // Show 1 item per page on mobile, 4 on desktop
+    final itemsPerPage = mobile ? 1 : 4;
+    final viewportFraction = 1 / itemsPerPage;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        children: [
+          /// HEADER
+          Row(
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: mobile ? 12 : 22,
+                ),
+              ),
+              const SizedBox(height: 20),
+              TextButton(
+                onPressed: () {},
+                child: Text(
+                  "View All",
+                  style: TextStyle(fontSize: mobile ? 10 : 18),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          /// CAROUSEL
+          /// CONTENT
+          if (mobile)
+            CarouselSlider(
+              options: CarouselOptions(
+                height: 120,
+                viewportFraction: 1,
+                enableInfiniteScroll: true,
+                enlargeCenterPage: false,
+                autoPlay: false,
+              ),
+              items: products.map((item) {
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.asset(
+                    item["image"],
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                  ),
+                );
+              }).toList(),
+            )
+          else
+            SizedBox(
+              height: 180,
+              child: Row(
+                children: List.generate(
+                  products.length > 4 ? 4 : products.length,
+                  (index) {
+                    return Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(right: index == 3 ? 0 : 10),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.asset(
+                            products[index]["image"],
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
