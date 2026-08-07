@@ -1,3 +1,4 @@
+import 'package:elephant_mall/services/auth_service.dart';
 import 'package:elephant_mall/view/home.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -22,23 +23,36 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'NotoSansMyanmar', // or your preferred font
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(fontSize: 15),
-          bodyMedium: TextStyle(fontSize: 15),
-          bodySmall: TextStyle(fontSize: 15),
+    return MultiProvider(
+      providers: [
+        // 🔥 ADD THIS - AuthService at root level
+        ChangeNotifierProvider(create: (_) => AuthService()),
 
-          titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        // Keep existing providers
+        ChangeNotifierProvider.value(value: apiService),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          fontFamily: 'NotoSansMyanmar', 
+          textTheme: const TextTheme(
+            bodyLarge: TextStyle(fontSize: 15),
+            bodyMedium: TextStyle(fontSize: 15),
+            bodySmall: TextStyle(fontSize: 15),
 
-          titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
 
-          labelLarge: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+
+            labelLarge: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          ),
         ),
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const SellPage(),
+          '/seller': (context) => const SellerPage(),
+        },
       ),
-      home: const SellPage(),
     );
   }
 }

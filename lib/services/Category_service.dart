@@ -18,6 +18,105 @@ class ApiService extends ChangeNotifier {
   //  Getter for useMockData
   bool get useMockData => _useMockData;
   
+  Future<Map<String, dynamic>> register(
+    String username,
+    String email,
+    String password, {
+    String? fullName,
+  }) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/auth/register'),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({
+              'username': username,
+              'email': email,
+              'password': password,
+              'fullName': fullName ?? username,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      final data = json.decode(response.body);
+      print('📝 Register response: $data');
+      return data;
+    } catch (e) {
+      print('❌ Register error: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> login(String username, String password) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/auth/login'),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({'username': username, 'password': password}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      final data = json.decode(response.body);
+      print('📝 Login response: $data');
+      return data;
+    } catch (e) {
+      print('❌ Login error: $e');
+      rethrow;
+    }
+  }
+
+  // ============= FAVORITE METHODS =============
+  Future<Map<String, dynamic>> getUserFavorites(int userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/Favorites/user/$userId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return {
+          'success': true,
+          'data': data['data'] ?? [],
+          'message': data['message'] ?? 'Success',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to get favorites: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Failed to get favorites: ${e.toString()}',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> addFavorite(int userId, int productId) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/Favorites?userId=$userId&productId=$productId'), // ✅ Send as query params
+      headers: {'Content-Type': 'application/json'},
+    );
+    
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return json.decode(response.body) as Map<String, dynamic>;
+    } else {
+      return {
+        'success': false,
+        'message': 'Failed to add favorite: ${response.statusCode}'
+      };
+    }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Failed to add favorite: ${e.toString()}'
+    };
+  }
+}
   //  Setter for useMockData
   set useMockData(bool value) {
     _useMockData = value;
