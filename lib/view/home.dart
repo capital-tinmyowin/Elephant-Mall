@@ -13,6 +13,7 @@ class HomePage extends StatefulWidget {
   @override
   State<HomePage> createState() => _HomePageState();
 }
+
 class _HomePageState extends State<HomePage> {
   final PageController _bannerController = PageController();
   Timer? _timer;
@@ -29,17 +30,6 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     loadHome();
     startAutoSlide();
-    _categoryController.addListener(() {
-      if (!_categoryController.hasClients) return;
-
-      setState(() {
-        _showCategoryLeft = _categoryController.offset > 0;
-
-        _showCategoryRight =
-            _categoryController.offset <
-            _categoryController.position.maxScrollExtent;
-      });
-    });
   }
 
   Future<void> loadHome() async {
@@ -66,20 +56,20 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
- String imageUrl(dynamic path) {
-  final value = path?.toString() ?? '';
+  String imageUrl(dynamic path) {
+    final value = path?.toString() ?? '';
 
-  if (value.isEmpty) {
-    return "";
-  }
+    if (value.isEmpty) {
+      return "";
+    }
 
-  if (value.startsWith("http")) {
+    if (value.startsWith("http")) {
+      return value;
+    }
+
+    // return "http://localhost:5086$value";
     return value;
   }
-
-  // return "http://localhost:5086$value";
-  return value;
-}
 
   void startAutoSlide() {
     _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
@@ -121,22 +111,19 @@ class _HomePageState extends State<HomePage> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1400),
                   child: Padding(
-                    padding: const EdgeInsets.all(20),                  
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [                       
+                      children: [
                         buildHero(),
                         sectionGap,
-                        if (isMobile) ...[
-                        buildPromotions(),
+                        if (isMobile) ...[buildPromotions(), sectionGap],
+                        buildTitle("TRENDING CATEGORIES"),
                         sectionGap,
-                      ],
-                      buildTitle("TRENDING CATEGORIES"),
-                      sectionGap,
-                      buildCategories(),                     
-                      buildTitle("Trending Now in YANGON"),
-                      sectionGap,
-                      buildProducts(),
+                        buildCategories(),
+                        buildTitle("Trending Now in YANGON"),
+                        sectionGap,
+                        buildProducts(),
                       ],
                     ),
                   ),
@@ -183,8 +170,8 @@ class _HomePageState extends State<HomePage> {
                   fit: StackFit.expand,
                   children: [
                     // IMAGE
-                    Image.network(
-                      imageUrl(item.imagePath),
+                    Image.asset(
+                      item.imagePath,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
@@ -284,26 +271,22 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget buildPromotions() {
-  if (promos.isEmpty) return const SizedBox();
+    if (promos.isEmpty) return const SizedBox();
 
-  return Row(
-    spacing: 10,
-    children: promos
-        .take(2)
-        .map(
-          (item) => Expanded(
-            child: promo(item),
-          ),
-        )
-        .toList(),
-  );
-}
+    return Row(
+      spacing: 10,
+      children: promos
+          .take(2)
+          .map((item) => Expanded(child: promo(item)))
+          .toList(),
+    );
+  }
 
   Widget promo(Promo item) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
-      child: Image.network(
-        imageUrl(item.imagePath),
+      child: Image.asset(
+        item.imagePath,
         height: 110,
         width: double.infinity,
         fit: BoxFit.cover,
@@ -322,26 +305,38 @@ class _HomePageState extends State<HomePage> {
     return Text(
       text,
       style: const TextStyle(
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: FontWeight.bold,
-        color: Color.fromARGB(255, 9, 11, 1),
+        color: Colors.black,
       ),
     );
   }
+
   final ScrollController _categoryController = ScrollController();
   bool _showCategoryLeft = false;
   bool _showCategoryRight = false;
 
   void _scrollCategoryLeft() {
+    final width = MediaQuery.of(context).size.width;
+
     _categoryController.animateTo(
-      _categoryController.offset - 150,
+      (_categoryController.offset - width * 0.6).clamp(
+        0.0,
+        _categoryController.position.maxScrollExtent,
+      ),
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
   }
+
   void _scrollCategoryRight() {
+    final width = MediaQuery.of(context).size.width;
+
     _categoryController.animateTo(
-      _categoryController.offset + 150,
+      (_categoryController.offset + width * 0.6).clamp(
+        0.0,
+        _categoryController.position.maxScrollExtent,
+      ),
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
@@ -351,92 +346,111 @@ class _HomePageState extends State<HomePage> {
     if (categories.isEmpty) {
       return const SizedBox();
     }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!_categoryController.hasClients) return;
 
-    return SizedBox(
-      height: 120,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Category List
-          ListView.builder(
-            controller: _categoryController,
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: categories.length,
-            itemBuilder: (context, index) {
-              final item = categories[index];
-              return Container(
-                width: 90,
-                margin: const EdgeInsets.only(right: 0),
-                child: Column(
-                  children: [
-                    Container(
-                      height: 90,
-                      width: 80,
-                      decoration: BoxDecoration(
-                        color: const Color(0xffF3F3F3),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Image.network(
-                        imageUrl(item.photoPath),
+          final position = _categoryController.position;
 
-                        fit: BoxFit.contain,
+          final canScroll = position.maxScrollExtent > 0;
 
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Icon(Icons.image_not_supported,size: 30);
-                        },
-                      ),
+          if (mounted) {
+            setState(() {
+              _showCategoryLeft = position.pixels > 0;
+              _showCategoryRight = canScroll;
+            });
+          }
+        });
+
+        return SizedBox(
+          height: 120,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Category List
+              ListView.builder(
+                controller: _categoryController,
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: categories.length,
+                itemBuilder: (context, index) {
+                  final item = categories[index];
+                  return Container(
+                    width: 90,
+                    margin: const EdgeInsets.only(right: 0),
+                    child: Column(
+                      children: [
+                        Container(
+                          height: 90,
+                          width: 80,
+                          decoration: BoxDecoration(
+                            color: const Color(0xffF3F3F3),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Image.asset(
+                            item.photoPath,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(
+                                Icons.image_not_supported,
+                                size: 30,
+                              );
+                            },
+                          ),
+                        ),
+
+                        const SizedBox(height: 5),
+                        Text(
+                          item.categoryName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xff6c8855),
+                          ),
+                        ),
+                      ],
                     ),
-
-                    const SizedBox(height: 5),
-                    Text(
-                      item.categoryName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xff6c8855),
-                      ),
+                  );
+                },
+              ),
+              // Left Arrow
+              if (_showCategoryLeft)
+                Positioned(
+                  left: 0,
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Colors.white,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      color: Colors.black,
+                      icon: const Icon(Icons.chevron_left, size: 35),
+                      onPressed: _scrollCategoryLeft,
                     ),
-                  ],
+                  ),
                 ),
-              );
-            },
+
+              // Right Arrow
+              if (_showCategoryRight)
+                Positioned(
+                  right: 0,
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Colors.white,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      color: Colors.black,
+                      icon: const Icon(Icons.chevron_right, size: 35),
+                      onPressed: _scrollCategoryRight,
+                    ),
+                  ),
+                ),
+            ],
           ),
-          // Left Arrow
-          if (_showCategoryLeft)
-            Positioned(
-              left: 0,
-              child: CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.white,              
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  color: Colors.black,
-                  icon: const Icon(Icons.chevron_left, size: 35),
-                  onPressed: _scrollCategoryLeft,
-                ),
-              ),
-            ),
-
-          // Right Arrow
-          if (_showCategoryRight)
-            Positioned(
-              right: 0,
-              child: CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.white,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  color: Colors.black,
-                  icon: const Icon(Icons.chevron_right, size: 35),
-                  onPressed: _scrollCategoryRight,
-                ),
-              ),
-            ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -466,14 +480,14 @@ class _HomePageState extends State<HomePage> {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(8),
                 ),
-                child: Image.network(
-                  imageUrl(p.imagePath),
-                  height: 115,
+                child: Image.asset(
+                  p.imagePath,
+                  height: 120,
                   width: double.infinity,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
                     return const SizedBox(
-                      height: 115,
+                      height: 120,
                       child: Center(
                         child: Icon(Icons.image_not_supported, size: 40),
                       ),
@@ -482,7 +496,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 child: Text(
                   p.name,
                   maxLines: 1,
@@ -491,20 +505,25 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(                    
-                      "${p.price} MMK",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                    // Price
+                    Flexible(
+                      child: Text(
+                        "${p.price} MMK",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
 
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
 
+                    // Rating
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: List.generate(
@@ -521,9 +540,9 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ),
-              const Spacer(),
+
               Padding(
-                padding: const EdgeInsets.all(5),
+                padding: const EdgeInsets.all(4),
                 child: SizedBox(
                   width: double.infinity,
                   height: 30,
@@ -531,6 +550,9 @@ class _HomePageState extends State<HomePage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange,
                       padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                     onPressed: () {},
                     child: const Text(

@@ -85,13 +85,15 @@ class CommonFooter extends StatelessWidget {
         const SizedBox(height: 10),
 
         ...items.map(
-          (item) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
+          (item) => 
+          // Padding(
+            // padding: const EdgeInsets.only(bottom: 8),
+            // child: 
+            Text(
               item,
               style: const TextStyle(fontSize: 14),
             ),
-          ),
+          // ),
         ),
       ],
     );

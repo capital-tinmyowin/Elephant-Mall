@@ -144,7 +144,7 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
                     child: Row(
                       children: [
                         const Text(
-                          'My Favorites',
+                          'My Favourites',
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
@@ -152,22 +152,6 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
                           ),
                         ),
                         const Spacer(),
-                        if (!isLoggedIn)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.orange[100],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              'Demo Mode',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.orange[800],
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
                       ],
                     ),
                   ),
