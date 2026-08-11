@@ -68,20 +68,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
-    - assets/images/categories/
-    - assets/images/categories/tshirts/
-    - assets/images/categories/blouses/
-    - assets/images/categories/bags/
-    - assets/images/categories/hats/
-    - assets/images/categories/shoes/
-    - assets/images/categories/jeans/
-    - assets/images/categories/accessories/
-    - assets/images/categories/electronics/
-    - assets/images/categories/headphones/
-    - assets/images/categories/powerbanks/
-    - assets/images/categories/clearance/
-    - assets/images/categories/homedecor/
-    - assets/images/categories/appliances/
+    - assets/images/heroslider/
+    - assets/images/categories/*
     - images/
     - lib/uploads/login.png
 

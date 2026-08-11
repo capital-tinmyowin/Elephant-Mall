@@ -98,7 +98,7 @@ Widget _buildImage(String imageUrl, double height, double width) {
     );
   }
 
-  // 🔥 TRY BOTH WAYS - This will work no matter what
+  //  TRY BOTH WAYS - This will work no matter what
   return Image.network(
     imageUrl,
     height: height,
@@ -134,7 +134,7 @@ Widget _buildImage(String imageUrl, double height, double width) {
   );
 }
 
-// 🔥 Helper to check if asset exists
+// Helper to check if asset exists
 Future<bool> _assetExists(String path) async {
   try {
     await rootBundle.load(path);
@@ -144,7 +144,7 @@ Future<bool> _assetExists(String path) async {
   }
 }
 
-// 🔥 Helper to find alternative paths
+// Helper to find alternative paths
 String _findAlternativePath(String path) {
   // Try different casing
   String fileName = path.split('/').last;
@@ -257,99 +257,6 @@ Widget _buildPlaceholder(double height, double width) {
   }
 
   // ============= PRODUCT GALLERY =============
-  // Widget _buildProductGallery(Product product) {
-  //   final bool isMobile = MediaQuery.of(context).size.width < 800;
-  //   final bool isSmallScreen = MediaQuery.of(context).size.width < 1000;
-
-  //   final images = product.proxiedAllImages;
-  //   final mainImage = images.isNotEmpty ? images[_selectedImageIndex] : '';
-
-  //   //  Responsive image sizes
-  //   double imageWidth = isMobile ? 180 : (isSmallScreen ? 220 : 200);
-  //   double imageHeight = isMobile ? 250 : (isSmallScreen ? 280 : 300);
-  //   double thumbSize = isMobile ? 60 : (isSmallScreen ? 70 : 80);
-
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.center,
-  //     children: [
-  //       Center(
-  //         child: Container(
-  //           width: imageWidth,
-  //           height: imageHeight,
-  //           padding: const EdgeInsets.all(16),
-  //           decoration: BoxDecoration(color: Colors.grey[50]),
-  //           child: ClipRRect(
-  //             borderRadius: BorderRadius.circular(8),
-  //             child: CachedNetworkImage(
-  //               imageUrl: mainImage,
-  //               height: imageHeight,
-  //               width: double.infinity,
-  //               fit: BoxFit.cover,
-  //               placeholder: (context, url) => Container(
-  //                 height: imageHeight,
-  //                 color: Colors.grey[200],
-  //                 child: const Center(child: CircularProgressIndicator()),
-  //               ),
-  //               errorWidget: (context, url, error) => Container(
-  //                 height: imageHeight,
-  //                 color: Colors.grey[200],
-  //                 child: const Icon(Icons.image_not_supported, size: 80),
-  //               ),
-  //             ),
-  //           ),
-  //         ),
-  //       ),
-  //       const SizedBox(height: 12),
-  //       if (images.length > 1)
-  //         SingleChildScrollView(
-  //           scrollDirection: Axis.horizontal,
-  //           child: Row(
-  //             mainAxisAlignment: MainAxisAlignment.center,
-  //             children: images.asMap().entries.map((entry) {
-  //               final index = entry.key;
-  //               final imageUrl = entry.value;
-  //               return GestureDetector(
-  //                 onTap: () {
-  //                   setState(() {
-  //                     _selectedImageIndex = index;
-  //                   });
-  //                 },
-  //                 child: Container(
-  //                   width: thumbSize,
-  //                   height: thumbSize + 20,
-  //                   margin: const EdgeInsets.only(right: 8),
-  //                   decoration: BoxDecoration(
-  //                     borderRadius: BorderRadius.circular(8),
-  //                     border: Border.all(
-  //                       color: _selectedImageIndex == index
-  //                           ? const Color(0xFF2B6E3B)
-  //                           : Colors.transparent,
-  //                       width: 2,
-  //                     ),
-  //                   ),
-  //                   child: ClipRRect(
-  //                     borderRadius: BorderRadius.circular(8),
-  //                     child: CachedNetworkImage(
-  //                       imageUrl: imageUrl,
-  //                       fit: BoxFit.cover,
-  //                       placeholder: (context, url) => Container(
-  //                         color: Colors.grey[200],
-  //                         child: const Icon(Icons.image, size: 20),
-  //                       ),
-  //                       errorWidget: (context, url, error) => Container(
-  //                         color: Colors.grey[200],
-  //                         child: const Icon(Icons.broken_image, size: 20),
-  //                       ),
-  //                     ),
-  //                   ),
-  //                 ),
-  //               );
-  //             }).toList(),
-  //           ),
-  //         ),
-  //     ],
-  //   );
-  // }
 Widget _buildProductGallery(Product product) {
   final bool isMobile = MediaQuery.of(context).size.width < 800;
   final bool isSmallScreen = MediaQuery.of(context).size.width < 1000;
@@ -814,141 +721,6 @@ print('📸 [_buildProductGallery] Main image: $mainImage');
   }
 
   // ============= MORE FROM SELLER =============
-  // Widget _buildMoreFromStore(Product product) {
-  //   final String sellerName = product.seller?.name ?? 'Sarah J.';
-
-  //   //  If no seller products, show message
-  //   if (_sellerProducts.isEmpty) {
-  //     return Column(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: [
-  //         Text(
-  //           'More from $sellerName\'s Store',
-  //           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-  //         ),
-  //         const SizedBox(height: 16),
-  //         const Center(
-  //           child: Padding(
-  //             padding: EdgeInsets.all(40),
-  //             child: Text('No other items from this seller'),
-  //           ),
-  //         ),
-  //       ],
-  //     );
-  //   }
-
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       Text(
-  //         'More from $sellerName\'s Store',
-  //         style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-  //       ),
-  //       const SizedBox(height: 16),
-  //       //  Grid like HTML store-grid with proper sizing
-  //       GridView.builder(
-  //         shrinkWrap: true,
-  //         physics: const NeverScrollableScrollPhysics(),
-  //         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-  //           crossAxisCount: _isMobile ? 3 : 7,
-  //           crossAxisSpacing: 5,
-  //           mainAxisSpacing: 5,
-  //           childAspectRatio: 0.80,
-  //         ),
-  //         itemCount: _sellerProducts.length,
-  //         itemBuilder: (context, index) {
-  //           final sellerProduct = _sellerProducts[index];
-  //           return GestureDetector(
-  //             onTap: () {
-  //               Navigator.pushReplacement(
-  //                 context,
-  //                 MaterialPageRoute(
-  //                   builder: (context) =>
-  //                       ProductDetailPage(productId: sellerProduct.id),
-  //                 ),
-  //               );
-  //             },
-  //             child: Container(
-  //               decoration: BoxDecoration(
-  //                 borderRadius: BorderRadius.circular(12),
-  //                 boxShadow: [
-  //                   BoxShadow(
-  //                     color: Colors.black.withOpacity(0.05),
-  //                     blurRadius: 4,
-  //                     spreadRadius: 1,
-  //                   ),
-  //                 ],
-  //               ),
-  //               child: Column(
-  //                 crossAxisAlignment: CrossAxisAlignment.center,
-  //                 children: [
-  //                   //  Product Image - Fixed aspect ratio
-  //                   Expanded(
-  //                     child: ClipRRect(
-  //                       borderRadius: const BorderRadius.all(
-  //                         Radius.circular(16),
-  //                       ),
-  //                       child: CachedNetworkImage(
-  //                         imageUrl: sellerProduct.proxiedImageUrl,
-  //                         fit: BoxFit.cover,
-  //                         placeholder: (context, url) => Container(
-  //                           color: Colors.grey[200],
-  //                           child: const Center(
-  //                             child: CircularProgressIndicator(
-  //                               color: Color(0xFF2B6E3B),
-  //                             ),
-  //                           ),
-  //                         ),
-  //                         errorWidget: (context, url, error) => Container(
-  //                           color: Colors.grey[200],
-  //                           child: const Icon(
-  //                             Icons.image_not_supported,
-  //                             size: 40,
-  //                           ),
-  //                         ),
-  //                       ),
-  //                     ),
-  //                   ),
-  //                   //  Product Name (like HTML store-item-name)
-  //                   Padding(
-  //                     padding: const EdgeInsets.symmetric(
-  //                       horizontal: 6.0,
-  //                       vertical: 6.0,
-  //                     ),
-  //                     child: Text(
-  //                       sellerProduct.name.length > 18
-  //                           ? '${sellerProduct.name.substring(0, 15)}...'
-  //                           : sellerProduct.name,
-  //                       style: const TextStyle(
-  //                         fontSize: 12,
-  //                         fontWeight: FontWeight.w600,
-  //                       ),
-  //                       textAlign: TextAlign.center,
-  //                       maxLines: 2,
-  //                       overflow: TextOverflow.ellipsis,
-  //                     ),
-  //                   ),
-  //                   //  Price (like HTML store-item-price)
-  //                   Padding(
-  //                     padding: const EdgeInsets.only(bottom: 8.0),
-  //                     child: Text(
-  //                       '\$${sellerProduct.price.toStringAsFixed(2)}',
-  //                       style: const TextStyle(
-  //                         fontSize: 12,
-  //                         fontWeight: FontWeight.bold,
-  //                         color: const Color(0xFFD68247),
-  //                       ),
-  //                     ),
-  //                   ),
-  //                 ],
-  //               ),
-  //             ),
-  //           );
-  //         },
-  //       ),
-  //     ],
-  //   );
-  // }
   Widget _buildMoreFromStore(Product product) {
   final String sellerName = product.seller?.name ?? 'Sarah J.';
 

@@ -24,60 +24,6 @@ class MockApiService {
     'Home Decor': 'homedecor',
     'Appliances': 'appliances',
   };
-  
-  // Product image mapping (category + filename)
-  // static const Map<String, String> productPatterns = {
-  //   // T-Shirts
-  //   'Classic T-Shirt': 'tshirts/ClassicShirt/',
-  //   'OverSize T-Shirt': 'tshirts/OverSize/',
-  //   'Column T-Shirt': 'tshirts/ColumnShirt/',
-    
-  //   // Blouses
-  //   'White Blouse': 'blouses/',
-  //   'Color Blouse': 'blouses/',
-    
-  //   // Bags
-  //   'Leather Bag': 'bags/LeatherBag/',
-  //   'Chain Shoulder Bag': 'bags/ChainShoulderBag/',
-    
-  //   // Hats
-  //   'Wool Fedora Hat': 'hats/WoolFedoraHat/',
-  //   'Uniset Hat': 'hats/UnisetHat/',
-    
-  //   // Shoes
-  //   'Running Shoes': 'shoes/running.jpg',
-  //   'Wedding Heel': 'shoes/heels.jpg',
-  //   'Sneaker Shoe': 'shoes/sneakers.jpg',
-    
-  //   // Jeans
-  //   'Long Jeans': 'jeans/skinny.jpg',
-  //   'Jean Short Skirt': 'jeans/short.jpg',
-  //   'Short Jean': 'jeans/ripped.jpg',
-    
-  //   // Accessories
-  //   'Neck Accessories': 'accessories/necklace.jpg',
-  //   'Earring Set': 'accessories/earrings.jpg',
-  //   'Press On Nail': 'accessories/nails.jpg',
-    
-  //   // Electronics
-  //   'Ipad 10th Gen': 'electronics/ipad.jpg',
-    
-  //   // Headphones
-  //   'Earphone': 'headphones/wireless.jpg',
-    
-  //   // Power Banks
-  //   'Powerbank': 'powerbanks/10000mah.jpg',
-    
-  //   // Clearance
-  //   'Clearance Item': 'clearance/clearance.jpg',
-  //   'Clearance Note Book': 'clearance/clearance.jpg',
-    
-  //   // Home Decor
-  //   'Home Decor': 'homedecor/homedecor.jpg',
-    
-  //   // Appliances
-  //   'Appliance': 'appliances/appliance.jpg',
-  // };
 
  // Get category folder
   static String getCategoryFolder(String category) {

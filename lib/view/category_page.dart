@@ -25,7 +25,7 @@ class _CategoryPageState extends State<CategoryPage> {
   int _currentSlideIndex = 0;
   final Map<String, int> _sliderIndexes = {};
   final Map<String, CarouselSliderController> _sliderControllers = {};
-  // 🔥 ADD method to get or create a slider index
+  // ADD method to get or create a slider index
   int _getSliderIndex(String id) {
     if (!_sliderIndexes.containsKey(id)) {
       _sliderIndexes[id] = 0;
@@ -33,12 +33,12 @@ class _CategoryPageState extends State<CategoryPage> {
     return _sliderIndexes[id]!;
   }
   
-  // 🔥 ADD method to update slider index
+  // ADD method to update slider index
   void _updateSliderIndex(String id, int index) {
     _sliderIndexes[id] = index;
   }
 
-  // 🔥 ADD method to get or create a controller for a specific slider
+  // ADD method to get or create a controller for a specific slider
   CarouselSliderController _getController(String id) {
     if (!_sliderControllers.containsKey(id)) {
       _sliderControllers[id] = CarouselSliderController();
@@ -170,10 +170,10 @@ class _CategoryPageState extends State<CategoryPage> {
             )
             .take(5)
             .toList();
-        // 🔥 Check if mobile
+        //  Check if mobile
       final bool isMobile = MediaQuery.of(context).size.width < 768;
 
-      // 🔥 If mobile, show in a row (side by side)
+      //  If mobile, show in a row (side by side)
       if (isMobile) {
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,7 +184,7 @@ class _CategoryPageState extends State<CategoryPage> {
                   title: 'New Arrivals',
                   products: fashionTrending,
                   sliderId: 'fashion_mobile',
-                  isCompact: true, // 🔥 Add compact mode
+                  isCompact: true, //  Add compact mode
                 ),
               ),
             if (fashionTrending.isNotEmpty && electronicsTrending.isNotEmpty)
@@ -195,14 +195,14 @@ class _CategoryPageState extends State<CategoryPage> {
                   title: 'Trending Now',
                   products: electronicsTrending,
                   sliderId: 'electronics_mobile',
-                  isCompact: true, // 🔥 Add compact mode
+                  isCompact: true, // Add compact mode
                 ),
               ),
           ],
         );
       }
 
-      // 🔥 Desktop view - stacked vertically
+      //  Desktop view - stacked vertically
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -233,69 +233,24 @@ class _CategoryPageState extends State<CategoryPage> {
         'subtitle':
             'Get the latest dresses, shorts, lightweight,\nand accessories',
         'offer': 'Up to 30% off on selected items',
-        'images': [
-          ApiService.getProxiedImageUrl(
-            'https://i1-e.pinimg.com/736x/ba/9c/87/ba9c87fb2c220594e494aaa628c6342b.jpg',
-          ),
-          ApiService.getProxiedImageUrl(
-            'https://i1-e.pinimg.com/736x/4c/51/b7/4c51b7e99173c170c5db866a5ccff75e.jpg',
-          ),
-          ApiService.getProxiedImageUrl(
-            'https://i1-e.pinimg.com/736x/8d/54/5f/8d545f2a363a450f58dfd9c49a03e81b.jpg',
-          ),
-          ApiService.getProxiedImageUrl(
-            'https://i1-e.pinimg.com/1200x/2b/3a/47/2b3a478de5e4aa1d6b5fa3fa23818f07.jpg',
-          ),
-          ApiService.getProxiedImageUrl(
-            'https://i1-e.pinimg.com/1200x/9c/a2/43/9ca243ade3b1a493f0ec98e8aa3ef69f.jpg',
-          ),
-        ],
+        'imageCount': 5, // Number of images for this slide
+      'baseName': 'slide',
       },
       {
         'title': 'BEACH READY',
         'subtitle':
             'Straw hats, sandals, linen shirts & summer totes.\nMake a splash with our new arrivals.',
         'offer': 'Free shipping on orders \$50+',
-        'images': [
-          ApiService.getProxiedImageUrl(
-            'https://i1-e.pinimg.com/736x/ba/9c/87/ba9c87fb2c220594e494aaa628c6342b.jpg',
-          ),
-          ApiService.getProxiedImageUrl(
-            'https://i1-e.pinimg.com/736x/4c/51/b7/4c51b7e99173c170c5db866a5ccff75e.jpg',
-          ),
-          ApiService.getProxiedImageUrl(
-            'https://i1-e.pinimg.com/736x/8d/54/5f/8d545f2a363a450f58dfd9c49a03e81b.jpg',
-          ),
-          ApiService.getProxiedImageUrl(
-            'https://i1-e.pinimg.com/1200x/2b/3a/47/2b3a478de5e4aa1d6b5fa3fa23818f07.jpg',
-          ),
-          ApiService.getProxiedImageUrl(
-            'https://i1-e.pinimg.com/1200x/9c/a2/43/9ca243ade3b1a493f0ec98e8aa3ef69f.jpg',
-          ),
-        ],
+        'imageCount': 5,
+      'baseName': 'slide',
       },
       {
         'title': 'SUMMER GADGETS',
         'subtitle':
             'Wireless earbuds, power banks & smart accessories.\nStay connected on the go.',
         'offer': 'Limited time offers',
-        'images': [
-          ApiService.getProxiedImageUrl(
-            'https://i1-e.pinimg.com/736x/ba/9c/87/ba9c87fb2c220594e494aaa628c6342b.jpg',
-          ),
-          ApiService.getProxiedImageUrl(
-            'https://i1-e.pinimg.com/736x/4c/51/b7/4c51b7e99173c170c5db866a5ccff75e.jpg',
-          ),
-          ApiService.getProxiedImageUrl(
-            'https://i1-e.pinimg.com/736x/8d/54/5f/8d545f2a363a450f58dfd9c49a03e81b.jpg',
-          ),
-          ApiService.getProxiedImageUrl(
-            'https://i1-e.pinimg.com/1200x/2b/3a/47/2b3a478de5e4aa1d6b5fa3fa23818f07.jpg',
-          ),
-          ApiService.getProxiedImageUrl(
-            'https://i1-e.pinimg.com/1200x/9c/a2/43/9ca243ade3b1a493f0ec98e8aa3ef69f.jpg',
-          ),
-        ],
+        'imageCount': 5,
+      'baseName': 'slide',
       },
     ];
 
@@ -321,6 +276,15 @@ class _CategoryPageState extends State<CategoryPage> {
             items: slides.map((slide) {
               return Builder(
                 builder: (BuildContext context) {
+                  List<String> images = [];
+                int count = slide['imageCount'] as int;
+                String baseName = slide['baseName'] as String;
+                for (int i = 1; i <= count; i++) {
+                  images.add('assets/images/heroslider/${baseName}_$i.jpg');
+                }
+                
+                // Add images to slide data
+                slide['images'] = images;
                   return Container(
                     width: double.infinity,
                     margin: const EdgeInsets.symmetric(horizontal: 0),
@@ -379,6 +343,40 @@ class _CategoryPageState extends State<CategoryPage> {
     );
   }
 
+  Widget _buildHeroImage(String imageUrl) {
+    if (imageUrl.isEmpty) {
+    return Container(
+      color: Colors.grey[300],
+      child: const Icon(Icons.broken_image, color: Colors.grey),
+    );
+  }
+    // If it's a local asset
+    if (imageUrl.startsWith('assets/')) {
+      String cleanPath = imageUrl.replaceFirst('assets/', '');
+      return Image.asset(
+        cleanPath,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: Colors.grey[300],
+            child: const Icon(Icons.broken_image, color: Colors.grey),
+          );
+        },
+      );
+    }
+
+    // If it's a network URL
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          color: Colors.grey[300],
+          child: const Icon(Icons.broken_image, color: Colors.grey),
+        );
+      },
+    );
+  }
   // ============= DESKTOP SLIDE =============
   Widget _buildDesktopSlide(Map<String, dynamic> slide) {
     final images = slide['images'] as List<String>;
@@ -425,19 +423,7 @@ class _CategoryPageState extends State<CategoryPage> {
                 margin: const EdgeInsets.only(right: 4),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    images[0],
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[300],
-                        child: const Icon(
-                          Icons.broken_image,
-                          color: Colors.grey,
-                        ),
-                      );
-                    },
-                  ),
+                  child: _buildHeroImage(images[0]),
                 ),
               ),
               SizedBox(
@@ -453,19 +439,7 @@ class _CategoryPageState extends State<CategoryPage> {
                             margin: const EdgeInsets.all(2),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(6),
-                              child: Image.network(
-                                images[1],
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    color: Colors.grey[300],
-                                    child: const Icon(
-                                      Icons.broken_image,
-                                      color: Colors.grey,
-                                    ),
-                                  );
-                                },
-                              ),
+                              child: _buildHeroImage(images[1]),
                             ),
                           ),
                         ),
@@ -475,19 +449,7 @@ class _CategoryPageState extends State<CategoryPage> {
                             margin: const EdgeInsets.all(2),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(6),
-                              child: Image.network(
-                                images[2],
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    color: Colors.grey[300],
-                                    child: const Icon(
-                                      Icons.broken_image,
-                                      color: Colors.grey,
-                                    ),
-                                  );
-                                },
-                              ),
+                              child: _buildHeroImage(images[2]),
                             ),
                           ),
                         ),
@@ -501,19 +463,7 @@ class _CategoryPageState extends State<CategoryPage> {
                             margin: const EdgeInsets.all(2),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(6),
-                              child: Image.network(
-                                images[3],
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    color: Colors.grey[300],
-                                    child: const Icon(
-                                      Icons.broken_image,
-                                      color: Colors.grey,
-                                    ),
-                                  );
-                                },
-                              ),
+                              child: _buildHeroImage(images[3]),
                             ),
                           ),
                         ),
@@ -523,19 +473,7 @@ class _CategoryPageState extends State<CategoryPage> {
                             margin: const EdgeInsets.all(2),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(6),
-                              child: Image.network(
-                                images[4],
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    color: Colors.grey[300],
-                                    child: const Icon(
-                                      Icons.broken_image,
-                                      color: Colors.grey,
-                                    ),
-                                  );
-                                },
-                              ),
+                              child: _buildHeroImage(images[4]),
                             ),
                           ),
                         ),
@@ -602,20 +540,7 @@ class _CategoryPageState extends State<CategoryPage> {
                 margin: const EdgeInsets.only(right: 2),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(6),
-                  child: Image.network(
-                    displayImages[0],
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[300],
-                        child: const Icon(
-                          Icons.broken_image,
-                          color: Colors.grey,
-                          size: 16,
-                        ),
-                      );
-                    },
-                  ),
+                  child: _buildHeroImage(displayImages[0]),
                 ),
               ),
               SizedBox(
@@ -628,40 +553,14 @@ class _CategoryPageState extends State<CategoryPage> {
                       margin: const EdgeInsets.only(bottom: 2),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(4),
-                        child: Image.network(
-                          displayImages[1],
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: Colors.grey[300],
-                              child: const Icon(
-                                Icons.broken_image,
-                                color: Colors.grey,
-                                size: 14,
-                              ),
-                            );
-                          },
-                        ),
+                        child: _buildHeroImage(displayImages[1]),
                       ),
                     ),
                     Container(
                       height: 33,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(4),
-                        child: Image.network(
-                          displayImages[2],
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: Colors.grey[300],
-                              child: const Icon(
-                                Icons.broken_image,
-                                color: Colors.grey,
-                                size: 14,
-                              ),
-                            );
-                          },
-                        ),
+                        child: _buildHeroImage(displayImages[2]),
                       ),
                     ),
                   ],
@@ -1104,7 +1003,7 @@ class _CategoryPageState extends State<CategoryPage> {
             );
           }).toList(),
         ),
-        // 🔥 LEFT ARROW - Positioned at center-left
+        // LEFT ARROW - Positioned at center-left
       Positioned(
         left: 0,
         top: 0,
@@ -1139,7 +1038,7 @@ class _CategoryPageState extends State<CategoryPage> {
           ),
         ),
       ),
-      // 🔥 RIGHT ARROW - Positioned at center-right
+      // RIGHT ARROW - Positioned at center-right
       Positioned(
         right: 0,
         top: 0,
