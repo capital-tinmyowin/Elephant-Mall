@@ -69,7 +69,7 @@ flutter:
   assets:
     - assets/
     - assets/images/heroslider/
-    - assets/images/categories/*
+    - assets/images/categories/
     - lib/uploads/
     - images/
     - lib/uploads/login.png

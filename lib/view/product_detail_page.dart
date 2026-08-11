@@ -180,81 +180,92 @@ Widget _buildPlaceholder(double height, double width) {
 }
   // ============= DESKTOP LAYOUT =============
   Widget _buildDesktopLayout(Product product) {
-    final bool isSmallScreen = MediaQuery.of(context).size.width < 1000;
+  final bool isSmallScreen = MediaQuery.of(context).size.width < 1000;
+  final bool isVerySmallScreen = MediaQuery.of(context).size.width < 1200;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Product Gallery + Info - Responsive Row
-        isSmallScreen
-            ? Column(
-                //  Stack vertically on smaller screens
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(child: _buildProductGallery(product)),
-                  const SizedBox(height: 24),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildProductInfo(product),
-                      const SizedBox(height: 16),
-                      _buildActionButtons(product),
-                      const SizedBox(height: 16),
-                      _buildDescription(product),
-                      _buildSellerInfo(product),
-                    ],
-                  ),
-                ],
-              )
-            : Container(
-                padding: EdgeInsetsGeometry.only(right: 250),
-                child: Row(
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // Product Gallery + Info - Responsive Row
+      if (isSmallScreen)
+        //  On small screens: Stack vertically (Gallery on top, Info below)
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(child: _buildProductGallery(product)),
+            const SizedBox(height: 24),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildProductInfo(product),
+                const SizedBox(height: 16),
+                _buildActionButtons(product),
+                const SizedBox(height: 16),
+                _buildDescription(product),
+                _buildSellerInfo(product),
+              ],
+            ),
+          ],
+        )
+      else
+        //  On larger screens: Row layout (Gallery left, Info right)
+        Container(
+          padding: EdgeInsets.only(
+            right: isVerySmallScreen ? 100 : 250,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 1,
+                child: Center(
+                  child: _buildProductGallery(product),
+                ),
+              ),
+              const SizedBox(width: 24),
+              Expanded(
+                flex: 1,
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(flex: 1, child: _buildProductGallery(product)),
-                    Expanded(
-                      flex: 1,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildProductInfo(product),
-                          const SizedBox(height: 16),
-                          _buildActionButtons(product),
-                          const SizedBox(height: 16),
-                          _buildDescription(product),
-                          _buildSellerInfo(product),
-                        ],
-                      ),
-                    ),
-                    // Expanded(flex: 1, child: const SizedBox(width: 24)),
+                    _buildProductInfo(product),
+                    const SizedBox(height: 16),
+                    _buildActionButtons(product),
+                    const SizedBox(height: 16),
+                    _buildDescription(product),
+                    _buildSellerInfo(product),
                   ],
                 ),
               ),
-        const SizedBox(height: 16),
-        _buildMoreFromStore(product),
-      ],
-    );
-  }
+            ],
+          ),
+        ),
+      const SizedBox(height: 16),
+      _buildMoreFromStore(product),
+    ],
+  );
+}
 
   // ============= MOBILE LAYOUT =============
   Widget _buildMobileLayout(Product product) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildProductInfo(product),
-        const SizedBox(height: 16),
-        _buildProductGallery(product),
-        const SizedBox(height: 16),
-        _buildActionButtons(product),
-        const SizedBox(height: 16),
-        _buildDescription(product),
-        const SizedBox(height: 16),
-        _buildSellerInfo(product),
-        const SizedBox(height: 16),
-        _buildMoreFromStore(product),
-      ],
-    );
-  }
+  return Column(
+    mainAxisSize: MainAxisSize.min, // Prevents overflow
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _buildProductInfo(product),
+      const SizedBox(height: 16),
+      _buildProductGallery(product),
+      const SizedBox(height: 16),
+      _buildActionButtons(product),
+      const SizedBox(height: 16),
+      _buildDescription(product),
+      const SizedBox(height: 16),
+      _buildSellerInfo(product),
+      const SizedBox(height: 16),
+      _buildMoreFromStore(product),
+    ],
+  );
+}
 
   // ============= PRODUCT GALLERY =============
 Widget _buildProductGallery(Product product) {
@@ -262,23 +273,110 @@ Widget _buildProductGallery(Product product) {
   final bool isSmallScreen = MediaQuery.of(context).size.width < 1000;
 
   final images = product.proxiedAllImages;
-  print('📸 [_buildProductGallery] Images: $images');
+  
   // Ensure selected index is valid
   if (_selectedImageIndex >= images.length) {
     _selectedImageIndex = 0;
   }
   
   final mainImage = images.isNotEmpty ? images[_selectedImageIndex] : '';
-print('📸 [_buildProductGallery] Main image: $mainImage');
-  double imageWidth = isMobile ? 180 : (isSmallScreen ? 220 : 200);
-  double imageHeight = isMobile ? 250 : (isSmallScreen ? 280 : 300);
-  double thumbSize = isMobile ? 60 : (isSmallScreen ? 70 : 80);
+
+  // Responsive image sizes
+  double imageWidth = isMobile ? 180 : (isSmallScreen ? 200 : 280);
+  double imageHeight = isMobile ? 230 : (isSmallScreen ? 260 : 320);
+  double thumbSize = isMobile ? 50 : 60;
 
   return Column(
     crossAxisAlignment: CrossAxisAlignment.center,
+    mainAxisSize: MainAxisSize.min, //  IMPORTANT: Prevents overflow
     children: [
-      Center(
-        child: Container(
+      // Main image with navigation buttons
+      if (images.length > 1)
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // LEFT ARROW
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedImageIndex = (_selectedImageIndex - 1) % images.length;
+                  if (_selectedImageIndex < 0) {
+                    _selectedImageIndex = images.length - 1;
+                  }
+                });
+              },
+              child: Container(
+                width: isMobile ? 28 : 36,
+                height: isMobile ? 28 : 36,
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.grey[300]!),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.chevron_left,
+                  color: const Color(0xFF2B6E3B),
+                  size: isMobile ? 18 : 24,
+                ),
+              ),
+            ),
+            
+            // Main Image
+            Container(
+              width: imageWidth,
+              height: imageHeight,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: Colors.grey[50]),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: _buildImage(mainImage, imageHeight, double.infinity),
+              ),
+            ),
+            
+            // RIGHT ARROW
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedImageIndex = (_selectedImageIndex + 1) % images.length;
+                });
+              },
+              child: Container(
+                width: isMobile ? 28 : 36,
+                height: isMobile ? 28 : 36,
+                margin: const EdgeInsets.only(left: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.grey[300]!),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.chevron_right,
+                  color: const Color(0xFF2B6E3B),
+                  size: isMobile ? 18 : 24,
+                ),
+              ),
+            ),
+          ],
+        )
+      else
+        // Single image - no arrows
+        Container(
           width: imageWidth,
           height: imageHeight,
           padding: const EdgeInsets.all(16),
@@ -288,16 +386,19 @@ print('📸 [_buildProductGallery] Main image: $mainImage');
             child: _buildImage(mainImage, imageHeight, double.infinity),
           ),
         ),
-      ),
+      
       const SizedBox(height: 12),
+      
+      //  Thumbnails - Limited to 5 visible with horizontal scroll
       if (images.length > 1)
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: images.asMap().entries.map((entry) {
-              final index = entry.key;
-              final imageUrl = entry.value;
+        SizedBox(
+          height: thumbSize + 30,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: images.length,
+            shrinkWrap: true,
+            itemBuilder: (context, index) {
+              final imageUrl = images[index];
               return GestureDetector(
                 onTap: () {
                   setState(() {
@@ -323,7 +424,7 @@ print('📸 [_buildProductGallery] Main image: $mainImage');
                   ),
                 ),
               );
-            }).toList(),
+            },
           ),
         ),
     ],
@@ -732,7 +833,7 @@ print('📸 [_buildProductGallery] Main image: $mainImage');
           'More from $sellerName\'s Store',
           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
         ),
-        const SizedBox(height: 16),
+        // const SizedBox(height: 16),
         const Center(
           child: Padding(
             padding: EdgeInsets.all(40),
@@ -750,15 +851,15 @@ print('📸 [_buildProductGallery] Main image: $mainImage');
         'More from $sellerName\'s Store',
         style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 10),
       GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: _isMobile ? 3 : 7,
-          crossAxisSpacing: 5,
+          crossAxisCount: _isMobile ? 4 : 12,
+          crossAxisSpacing: 10,
           mainAxisSpacing: 5,
-          childAspectRatio: 0.80,
+          childAspectRatio: 0.50,
         ),
         itemCount: _sellerProducts.length,
         itemBuilder: (context, index) {
