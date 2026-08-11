@@ -113,7 +113,7 @@ class HomeService {
       {
         "categoryId":2,
         "categoryName":"Blouses",
-        "photoPath":"assets/blouse.png",
+        "photoPath":"assets/store_banner.jpg",
         "sortOrder":2,
         "isActive":true
       },
@@ -133,21 +133,21 @@ class HomeService {
       },
        {
         "categoryId":5,
-        "categoryName":"T-Shirts",
+        "categoryName":"တီရှပ်",
         "photoPath":"assets/tshirt.png",
         "sortOrder":1,
         "isActive":true
       },
       {
         "categoryId":6,
-        "categoryName":"Blouses",
-        "photoPath":"assets/blouse.png",
+        "categoryName":"အမျိုးသမီးဝတ်အင်္ကျီ",
+        "photoPath":"assets/linen.webp",
         "sortOrder":2,
         "isActive":true
       },
       {
         "categoryId":7,
-        "categoryName":"Bags",
+        "categoryName":"အိတ်",
         "photoPath":"assets/bag.png",
         "sortOrder":3,
         "isActive":true
@@ -169,13 +169,13 @@ class HomeService {
       {
         "categoryId":10,
         "categoryName":"Blouses",
-        "photoPath":"assets/blouse.png",
+        "photoPath":"assets/store_banner.jpg",
         "sortOrder":2,
         "isActive":true
       },
       {
         "categoryId":11,
-        "categoryName":"Bags",
+        "categoryName":"အိတ်",
         "photoPath":"assets/bag.png",
         "sortOrder":3,
         "isActive":true
@@ -186,7 +186,28 @@ class HomeService {
         "photoPath":"assets/shoe.png",
         "sortOrder":4,
         "isActive":true
-      }
+      },
+       {
+        "categoryId":13,
+        "categoryName":"Bags",
+        "photoPath":"assets/bag.png",
+        "sortOrder":3,
+        "isActive":true
+      },
+      {
+        "categoryId":14,
+        "categoryName":"ဖိနပ်",
+        "photoPath":"assets/shoe.png",
+        "sortOrder":4,
+        "isActive":true
+      },
+       {
+        "categoryId":15,
+        "categoryName":"T-Shirts",
+        "photoPath":"assets/tshirt.png",
+        "sortOrder":1,
+        "isActive":true
+      },
     ];
 
     return jsonData
@@ -197,9 +218,9 @@ class HomeService {
     final List jsonData=[
       {
         "productId":1,
-        "name":"Men's Sneakers",
+        "name":"ဖိနပ်",
         "description":"Comfort shoes",
-        "price":89,
+        "price":150.45,
         "imagePath":"assets/man-sneaker.png",
         "quantity":20,
         "rating":5
@@ -217,14 +238,14 @@ class HomeService {
         "productId":3,
         "name":"Leather Backpack",
         "description":"Travel bag",
-        "price":110,
-        "imagePath":"assets/bagpack.jpg",
+        "price":11000,
+        "imagePath":"assets/leatherBag.jpg",
         "quantity":15,
         "rating":3
       },
       {
         "productId":4,
-        "name":"Linen Shirt",
+        "name":"အမျိုးသမီးဝတ်အင်္ကျီ",
         "description":"Fashion shirt",
         "price":45,
         "imagePath":"assets/linen.webp",
@@ -233,7 +254,7 @@ class HomeService {
       },
        {
         "productId":5,
-        "name":"Men's Sneakers",
+        "name":"အားကစားဖိနပ်",
         "description":"Comfort shoes",
         "price":89,
         "imagePath":"assets/man-sneaker.png",
@@ -242,7 +263,7 @@ class HomeService {
       },
       {
         "productId":6,
-        "name":"Women's Wristwatch",
+        "name":"လက်ပတ်နာရီ",
         "description":"Luxury watch",
         "price":65,
         "imagePath":"assets/woman-watch.png",
@@ -253,14 +274,14 @@ class HomeService {
         "productId":7,
         "name":"Leather Backpack",
         "description":"Travel bag",
-        "price":110,
-        "imagePath":"assets/bagpack.jpg",
+        "price":11,
+        "imagePath":"assets/leatherBag.jpg",
         "quantity":15,
         "rating":5
       },
       {
         "productId":8,
-        "name":"Linen Shirt",
+        "name":"အမျိုးသမီးဝတ်အင်္ကျီ",
         "description":"Fashion shirt",
         "price":45,
         "imagePath":"assets/linen.webp",
@@ -287,10 +308,10 @@ class HomeService {
       },
       {
         "productId":11,
-        "name":"Leather Backpack",
+        "name":"သားရေကျောပိုးအိတ်",
         "description":"Travel bag",
-        "price":110,
-        "imagePath":"assets/bagpack.jpg",
+        "price":11,
+        "imagePath":"assets/leatherBag.jpg",
         "quantity":15,
         "rating":5
       },
@@ -302,7 +323,25 @@ class HomeService {
         "imagePath":"assets/linen.webp",
         "quantity":30,
         "rating":4
-      }
+      },
+        {
+        "productId":13,
+        "name":"Leather Backpack",
+        "description":"Travel bag",
+        "price":11000,
+        "imagePath":"assets/leatherBag.jpg",
+        "quantity":15,
+        "rating":3
+      },
+      {
+        "productId":14,
+        "name":"Linen Shirt",
+        "description":"Fashion shirt",
+        "price":45,
+        "imagePath":"assets/linen.webp",
+        "quantity":30,
+        "rating":2
+      },
     ];
     return jsonData
         .map((e)=>Product.fromJson(e))

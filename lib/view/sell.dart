@@ -34,6 +34,8 @@ class _SellPageState extends State<SellPage> {
   bool telegramVisible = false;
   bool viberVisible = false;
 
+  bool agreedToTerms = false;
+
   List<Category> categories = [];
   List<int> selectedCategoryIds = [];
   List<ProductVariant> variants = [];
@@ -209,7 +211,7 @@ class _SellPageState extends State<SellPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Checkbox(value: sameAsPhone, onChanged: onChanged),
-            const Text("Same as Phone"),
+            const Text("Same as Ph"),
           ],
         ),
       ],
@@ -233,7 +235,35 @@ class _SellPageState extends State<SellPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Add Product Variant"),
+          backgroundColor: const Color(0xfffdfaf4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          titlePadding: EdgeInsets.zero,
+          title: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: const BoxDecoration(
+              color: Color(0xFFC77C2E), 
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(18),
+                topRight: Radius.circular(18),
+              ),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.inventory_2_outlined, color: Colors.white, size: 28),
+                SizedBox(width: 12),
+                Text(
+                  "Add Product Variant",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
           content: SizedBox(
             width: 400,
             child: Form(
@@ -436,68 +466,80 @@ class _SellPageState extends State<SellPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F3F3),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xfffdfaf4), Color(0xfff7edd9)],
+          ),
+        ),
+        child: Column(
+          children: [
+            const CommonHeader(),
 
-      body: Column(
-        children: [
-          const CommonHeader(),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Center(
-                child: Container(
-                  width: 1200,
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      /// TITLE
-                      const Center(
-                        child: Column(
-                          children: [
-                            Text(
-                              "Create Your Listing",
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF3C6E2A),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Center(
+                  child: Container(
+                    width: 1500,
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        /// TITLE
+                        const Center(
+                          child: Column(
+                            children: [
+                              Text(
+                                "Create Your Listing",
+                                style: TextStyle(
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF3C6E2A),
+                                ),
                               ),
-                            ),
-                            SizedBox(height: 5),
-                            Text(
-                              "Start Selling in Yangon",
-                              style: TextStyle(fontSize: 16),
-                            ),
-                          ],
+                              SizedBox(height: 5),
+                              const Text(
+                                "Start Selling in Yangon",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
 
-                      const SizedBox(height: 10),
+                        const SizedBox(height: 5),
 
-                      /// MAIN LAYOUT
-                      isMobile(context)
-                          ? Column(
-                              children: [
-                                _leftSection(),
-                                const SizedBox(height: 20),
-                                _rightSection(),
-                              ],
-                            )
-                          : Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(flex: 5, child: _leftSection()),
-                                const SizedBox(width: 80),
-                                Expanded(flex: 5, child: _rightSection()),
-                              ],
-                            ),
-                    ],
+                        /// MAIN LAYOUT
+                        isMobile(context)
+                            ? Column(
+                                children: [
+                                  _leftSection(),
+                                  const SizedBox(height: 20),
+                                  _rightSection(),
+                                ],
+                              )
+                            : Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(flex: 5, child: _leftSection()),
+                                  const SizedBox(width: 120),
+                                  Expanded(flex: 5, child: _rightSection()),
+                                ],
+                              ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
 
-          if (!isMobile(context)) const CommonFooter(),
-        ],
+            if (!isMobile(context)) const CommonFooter(),
+          ],
+        ),
       ),
       bottomNavigationBar: isMobile(context)
           ? CommonBottomBar(currentIndex: 2)
@@ -510,12 +552,30 @@ class _SellPageState extends State<SellPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Product Photos (Up to 10 Photos)",
-          style: TextStyle(fontWeight: FontWeight.bold),
+        const Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: "Product Photos ",
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                ),
+              ),
+              TextSpan(
+                text: "(Up to 10 Photos)",
+                style: TextStyle(
+                  fontSize: 18, // Smaller
+                  fontWeight: FontWeight.w400,
+                  color: Colors.black, // Different color
+                ),
+              ),
+            ],
+          ),
         ),
 
-        const SizedBox(height: 10),
+        const SizedBox(height: 5),
 
         isSmallPhotoLayout(context)
             ? Column(
@@ -649,7 +709,7 @@ class _SellPageState extends State<SellPage> {
                               width: double.infinity,
                               height: double.infinity,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFE7D1A8), // FULL FILL NOW
+                                color: const Color(0xFFE7D1A8),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Column(
@@ -678,7 +738,7 @@ class _SellPageState extends State<SellPage> {
                 ),
               ),
 
-        const SizedBox(height: 10),
+        const SizedBox(height: 15),
 
         Center(
           child: Row(
@@ -694,17 +754,35 @@ class _SellPageState extends State<SellPage> {
           ),
         ),
 
-        const SizedBox(height: 10),
+        const SizedBox(height: 5),
 
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Item Title",
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            const Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: "Item Title",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                  TextSpan(
+                    text: " (e.g., Silk Longyi or Teak Bowl)",
+                    style: TextStyle(
+                      fontSize: 18, // Smaller
+                      fontWeight: FontWeight.w400,
+                      color: Colors.black, // Different color
+                    ),
+                  ),
+                ],
+              ),
             ),
 
-            const SizedBox(height: 6),
+            const SizedBox(height: 5),
 
             TextField(
               controller: titleController,
@@ -716,21 +794,42 @@ class _SellPageState extends State<SellPage> {
                   });
                 }
               },
-              decoration: _input("Enter item title", errorText: titleError),
+              decoration: _input(
+                "ပစ္စည်းအမည် (ဥပမာ - ပိုးလုံချည် သို့မဟုတ် ကျွန်းပန်းကန်)",
+                errorText: titleError,
+              ),
             ),
           ],
         ),
 
-        const SizedBox(height: 10),
+        const SizedBox(height: 5),
 
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Suggected Category",
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            const Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: "Myanmar Crafts & Daily Goods",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                  TextSpan(
+                    text: " (Suggected Categories)",
+                    style: TextStyle(
+                      fontSize: 18, // Smaller
+                      fontWeight: FontWeight.w400,
+                      color: Colors.black, // Different color
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 5),
 
             SizedBox(
               height: 140,
@@ -758,26 +857,92 @@ class _SellPageState extends State<SellPage> {
                               context: context,
                               builder: (context) {
                                 return AlertDialog(
-                                  title: const Row(
-                                    children: [
-                                      Icon(
-                                        Icons.warning_amber_rounded,
-                                        color: Colors.orange,
-                                        size: 30,
+                                  backgroundColor: const Color(0xfffdfaf4),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  titlePadding: EdgeInsets.zero,
+
+                                  title: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 16,
+                                    ),
+                                    decoration: const BoxDecoration(
+                                      color: Color(
+                                        0xFF3C6E2A,
+                                      ), // Same green as header
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: Radius.circular(16),
+                                        topRight: Radius.circular(16),
                                       ),
-                                      SizedBox(width: 10),
-                                      Text("Maximum Reached"),
-                                    ],
+                                    ),
+                                    child: const Row(
+                                      children: [
+                                        Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: Colors.white,
+                                          size: 28,
+                                        ),
+                                        SizedBox(width: 10),
+                                        Text(
+                                          "Maximum Reached",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 20,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  content: const Text(
-                                    "You can select up to 3 categories only.",
+
+                                  content: const Padding(
+                                    padding: EdgeInsets.only(top: 8),
+                                    child: Text(
+                                      "You can select up to 3 categories only.",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
                                   ),
+
+                                  actionsPadding: const EdgeInsets.fromLTRB(
+                                    20,
+                                    0,
+                                    20,
+                                    20,
+                                  ),
+
                                   actions: [
-                                    ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                      },
-                                      child: const Text("OK"),
+                                    SizedBox(
+                                      width: 100,
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(
+                                            0xFFC77C2E,
+                                          ), // Gold
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              25,
+                                            ),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                        },
+                                        child: const Text(
+                                          "OK",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 );
@@ -857,14 +1022,18 @@ class _SellPageState extends State<SellPage> {
             ),
           ),
 
-        const SizedBox(height: 10),
+        const SizedBox(height: 5),
 
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               "Product Description",
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
             ),
 
             const SizedBox(height: 6),
@@ -880,7 +1049,8 @@ class _SellPageState extends State<SellPage> {
                 }
               },
               decoration: _input(
-                "Describe your item",
+                "Describe your item. (Material, Condition, Size, etc.)\n"
+                "သင့်ပစ္စည်းအကြောင်းဖော်ပြပါ။ (ပစ္စည်း၊ အခြေအနေ၊ အရွယ်အစား စသည်)",
                 errorText: descriptionError,
               ),
             ),
@@ -900,7 +1070,11 @@ class _SellPageState extends State<SellPage> {
           children: [
             const Text(
               "Price",
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
             ),
 
             const SizedBox(height: 6),
@@ -909,14 +1083,11 @@ class _SellPageState extends State<SellPage> {
               controller: priceController,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              onChanged: (value) {
-                if (value.trim().isNotEmpty && priceError != null) {
-                  setState(() {
-                    priceError = null;
-                  });
-                }
-              },
-              decoration: _input("Price in Kyats", errorText: priceError),
+              decoration: _input(
+                "Enter Price",
+                errorText: priceError,
+                suffixText: "Ks",
+              ),
             ),
           ],
         ),
@@ -936,7 +1107,11 @@ class _SellPageState extends State<SellPage> {
           children: [
             const Text(
               "Product Variants",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
             ),
 
             const SizedBox(height: 10),
@@ -957,7 +1132,11 @@ class _SellPageState extends State<SellPage> {
 
         const Text(
           "Inventory (Stock)",
-          style: TextStyle(fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
         ),
         const SizedBox(height: 6),
 
@@ -1010,14 +1189,22 @@ class _SellPageState extends State<SellPage> {
 
         const Text(
           "Byer Contact Methods",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
         ),
 
         const SizedBox(height: 10),
 
         const Text(
           "Phone Number",
-          style: TextStyle(fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
         ),
         const SizedBox(height: 6),
         TextField(
@@ -1041,7 +1228,11 @@ class _SellPageState extends State<SellPage> {
           children: [
             const Text(
               "Telegram",
-              style: TextStyle(fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
             ),
             const SizedBox(height: 6),
 
@@ -1099,7 +1290,14 @@ class _SellPageState extends State<SellPage> {
                           }
                         });
                       },
-                      child: const Text("Same as Phone"),
+                      child: const Text(
+                        "Same as Ph",
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -1113,7 +1311,14 @@ class _SellPageState extends State<SellPage> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Viber", style: TextStyle(fontWeight: FontWeight.w600)),
+            const Text(
+              "Viber",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
+            ),
             const SizedBox(height: 6),
 
             Row(
@@ -1172,7 +1377,14 @@ class _SellPageState extends State<SellPage> {
                           }
                         });
                       },
-                      child: const Text("Same as Phone"),
+                      child: const Text(
+                        "Same as Ph",
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -1188,7 +1400,11 @@ class _SellPageState extends State<SellPage> {
           children: [
             const Text(
               "Messenger",
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
             ),
 
             const SizedBox(height: 6),
@@ -1382,21 +1598,111 @@ class _SellPageState extends State<SellPage> {
                 );
               }
             },
-            child: const Text(
-              "POST YOUR LISTING",
-              style: TextStyle(fontSize: 18, color: Colors.white),
+
+            child: const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "POST YOUR LISTING",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 1),
+                Text(
+                  "သင့်ပစ္စည်းကိုတင်ပါ။",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: Colors.white),
+                ),
+              ],
             ),
+          ),
+        ),
+
+        const SizedBox(height: 12),
+        Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Checkbox(
+                value: agreedToTerms,
+                onChanged: (value) {
+                  setState(() {
+                    agreedToTerms = value ?? false;
+                  });
+                },
+              ),
+
+              RichText(
+                text: const TextSpan(
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                  children: [
+                    TextSpan(text: "By posting, you agree to our "),
+                    TextSpan(
+                      text: "Terms & Conditions",
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontWeight: FontWeight.bold,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                    TextSpan(text: "."),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  InputDecoration _input(String hint, {String? errorText}) {
+  InputDecoration _input(String hint, {String? errorText, String? suffixText}) {
     return InputDecoration(
       hintText: hint,
-
       errorText: errorText,
+
+      hintStyle: const TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+        color: Colors.black,
+        height: 1.4,
+      ),
+
+      suffixIcon: suffixText == null
+          ? null
+          : Container(
+              width: 55,
+              decoration: const BoxDecoration(
+                color: Color.fromARGB(
+                  255,
+                  181,
+                  179,
+                  179,
+                ), // Background only for Ks
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(10),
+                  bottomRight: Radius.circular(10),
+                ),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                suffixText,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+
+      suffixIconConstraints: const BoxConstraints(minWidth: 45, minHeight: 45),
 
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
 
