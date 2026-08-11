@@ -1,13 +1,239 @@
 
+import 'package:elephant_mall/services/Category_service.dart';
+
 import '../models/Category.dart';
 import '../models/product.dart';
 
 class MockApiService {
+
+  static const String baseImagePath = 'assets/images/categories/';
+  
+  // Category folder mapping
+  static const Map<String, String> categoryFolders = {
+    'T-Shirts': 'tshirts',
+    'Blouses': 'blouses',
+    'Bags': 'bags',
+    'Hats': 'hats',
+    'Shoes': 'shoes',
+    'Jeans': 'jeans',
+    'Accessories': 'accessories',
+    'Electronics': 'electronics',
+    'Headphones': 'headphones',
+    'Power Banks': 'powerbanks',
+    'Clearance': 'clearance',
+    'Home Decor': 'homedecor',
+    'Appliances': 'appliances',
+  };
+  
+  // Product image mapping (category + filename)
+  // static const Map<String, String> productPatterns = {
+  //   // T-Shirts
+  //   'Classic T-Shirt': 'tshirts/ClassicShirt/',
+  //   'OverSize T-Shirt': 'tshirts/OverSize/',
+  //   'Column T-Shirt': 'tshirts/ColumnShirt/',
+    
+  //   // Blouses
+  //   'White Blouse': 'blouses/',
+  //   'Color Blouse': 'blouses/',
+    
+  //   // Bags
+  //   'Leather Bag': 'bags/LeatherBag/',
+  //   'Chain Shoulder Bag': 'bags/ChainShoulderBag/',
+    
+  //   // Hats
+  //   'Wool Fedora Hat': 'hats/WoolFedoraHat/',
+  //   'Uniset Hat': 'hats/UnisetHat/',
+    
+  //   // Shoes
+  //   'Running Shoes': 'shoes/running.jpg',
+  //   'Wedding Heel': 'shoes/heels.jpg',
+  //   'Sneaker Shoe': 'shoes/sneakers.jpg',
+    
+  //   // Jeans
+  //   'Long Jeans': 'jeans/skinny.jpg',
+  //   'Jean Short Skirt': 'jeans/short.jpg',
+  //   'Short Jean': 'jeans/ripped.jpg',
+    
+  //   // Accessories
+  //   'Neck Accessories': 'accessories/necklace.jpg',
+  //   'Earring Set': 'accessories/earrings.jpg',
+  //   'Press On Nail': 'accessories/nails.jpg',
+    
+  //   // Electronics
+  //   'Ipad 10th Gen': 'electronics/ipad.jpg',
+    
+  //   // Headphones
+  //   'Earphone': 'headphones/wireless.jpg',
+    
+  //   // Power Banks
+  //   'Powerbank': 'powerbanks/10000mah.jpg',
+    
+  //   // Clearance
+  //   'Clearance Item': 'clearance/clearance.jpg',
+  //   'Clearance Note Book': 'clearance/clearance.jpg',
+    
+  //   // Home Decor
+  //   'Home Decor': 'homedecor/homedecor.jpg',
+    
+  //   // Appliances
+  //   'Appliance': 'appliances/appliance.jpg',
+  // };
+
+ // Get category folder
+  static String getCategoryFolder(String category) {
+    return categoryFolders[category] ?? category.toLowerCase().replaceAll(' ', '_');
+  }
+ static String getProductFolder(Product product) {
+    String folder = getCategoryFolder(product.category);
+    
+    // For T-Shirts with types
+    if (product.category == 'T-Shirts') {
+      if (product.name.contains('Classic')) {
+        return '$baseImagePath$folder/ClassicShirt';
+      }
+      if (product.name.contains('OverSize')) {
+        return '$baseImagePath$folder/OverSize';
+      }
+      if (product.name.contains('Column')) {
+        return '$baseImagePath$folder/ColumnShirt';
+      }
+    }
+    //for Blouse
+    if (product.category == 'Blouses') {
+      if (product.name.contains('White')) {
+        return '$baseImagePath$folder/WhiteBlouse';
+      }
+      if (product.name.contains('Color')) {
+        return '$baseImagePath$folder/ColorBlouse';
+      }
+    }
+    
+    // For Bags with types
+    if (product.category == 'Bags') {
+      if (product.name.contains('Leather')) {
+        return '$baseImagePath$folder/LeatherBag';
+      }
+      if (product.name.contains('Chain')) {
+        return '$baseImagePath$folder/ChainShoulderBag';
+      }
+    }
+    //for Hat
+     if (product.category == 'Hats') {
+      if (product.name.contains('Wool Fedora Hat')) {
+        return '$baseImagePath$folder/WoolFedoraHat';
+      }
+      if (product.name.contains('Uniset Hat')) {
+        return '$baseImagePath$folder/UnisetHat';
+      }
+    }
+    //Shoes
+    if (product.category == 'Shoes') {
+      if (product.name.contains('Running Shoes')) {
+        return '$baseImagePath$folder/RunningShoe';
+      }
+      if (product.name.contains('Wedding Heel')) {
+        return '$baseImagePath$folder/WeddingHeel';
+      }
+      if (product.name.contains('Sneaker Shoe')) {
+        return '$baseImagePath$folder/Sneaker';
+      }
+    }
+  //Jeans
+  if (product.category == 'Jeans') {
+      if (product.name.contains('Long Jeans')) {
+        return '$baseImagePath$folder/Long';
+      }
+      if (product.name.contains('Jean Short Skirt')) {
+        return '$baseImagePath$folder/ShortSkirt';
+      }
+      if (product.name.contains('Short Jean')) {
+        return '$baseImagePath$folder/Short';
+      }
+    }
+  //Accessories
+  if (product.category == 'Accessories') {
+      if (product.name.contains('Neck Accessories')) {
+        return '$baseImagePath$folder/Neck';
+      }
+      if (product.name.contains('Earring Set')) {
+        return '$baseImagePath$folder/Earing';
+      }
+      if (product.name.contains('Press On Nail')) {
+        return '$baseImagePath$folder/Nail';
+      }
+    }
+    //Electronics
+  if (product.category == 'Electronics') {
+      if (product.name.contains('Ipad 10th Gen')) {
+        return '$baseImagePath$folder/Ipad';
+      }
+      if (product.name.contains('Earring Set')) {
+        return '$baseImagePath$folder/Earing';
+      }
+      if (product.name.contains('Press On Nail')) {
+        return '$baseImagePath$folder/Nail';
+      }
+    }
+     //Headphones
+  if (product.category == 'Headphones') {
+      if (product.name.contains('Earphone')) {
+        return '$baseImagePath$folder/Earphone';
+      }
+    }
+    if (product.category == 'Power Banks') {
+      if (product.name.contains('Powerbank')) {
+        return '$baseImagePath$folder/Powerbank';
+      }
+    }
+    if (product.category == 'Clearance') {
+      if (product.name.contains('Clearance Item')) {
+        return '$baseImagePath$folder/Item';
+      }
+      if (product.name.contains('Clearance Note Book')) {
+        return '$baseImagePath$folder/NoteBook';
+      }
+    }
+    if (product.category == 'Home Decor') {
+      if (product.name.contains('Home Decor')) {
+        return '$baseImagePath$folder/HomeDecor';
+      }
+    }
+    if (product.category == 'Appliances') {
+      if (product.name.contains('Appliance')) {
+        return '$baseImagePath$folder/Appliance';
+      }
+    }
+
+    return '$baseImagePath$folder';
+  }
+  // 🔥 Get product image path with subfolder support
+   static String getProductImagePath(Product product) {
+    String folder = getProductFolder(product);
+    
+    // Use main color if available
+    if (product.colors.isNotEmpty) {
+      return '$folder/${product.colors.first}.jpg';
+    }
+    
+    // Fallback
+    return '$folder/default.jpg';
+  }
+
+  // Get image URL with local fallback
+  static String getImageUrl(Product product) {
+    // Only use local images if mock data is enabled
+    if (!ApiService.useMockDataStatic) {
+      return product.image ?? '';
+    }
+    
+    return getProductImagePath(product);
+  }
+
   static List<Product> getMockProducts() {
     return [
       Product(
       id: 1,
-      name: "Classic Black T-Shirt",
+      name: "Classic T-Shirt",
       price: 19.99,
       category: "T-Shirts",
       image: "https://i.pinimg.com/736x/ff/55/b5/ff55b572cdc9e5c7bcb9e1e46aca153b.jpg",
@@ -26,10 +252,11 @@ class MockApiService {
         "https://i.pinimg.com/736x/bd/a0/ca/bda0ca23a55ffd326145a2dbb8e139f4.jpg",
         "https://i.pinimg.com/1200x/51/6e/ab/516eab223c22a36d1051ba9bc46f5695.jpg",
       ],
+      colors: ['black', 'white', 'cream', 'blue', 'pink','skyblue'],
     ),
     Product(
       id: 2,
-      name: "Classic White T-Shirt",
+      name: "OverSize T-Shirt",
       price: 19.99,
       category: "T-Shirts",
       image: "https://i.pinimg.com/1200x/7b/9b/64/7b9b64157c65859e958063af2284b620.jpg",
@@ -48,10 +275,11 @@ class MockApiService {
         "https://i.pinimg.com/736x/bd/a0/ca/bda0ca23a55ffd326145a2dbb8e139f4.jpg",
         "https://i.pinimg.com/1200x/51/6e/ab/516eab223c22a36d1051ba9bc46f5695.jpg",
       ],
+      colors: ['white', 'black', 'brown'],
     ),
     Product(
       id: 3,
-      name: "Classic Cream T-Shirt",
+      name: "Column T-Shirt",
       price: 19.99,
       category: "T-Shirts",
       image: "https://i.pinimg.com/1200x/2d/7b/21/2d7b21a072cd538589f63358fbd35520.jpg",
@@ -70,6 +298,7 @@ class MockApiService {
         "https://i.pinimg.com/736x/bd/a0/ca/bda0ca23a55ffd326145a2dbb8e139f4.jpg",
         "https://i.pinimg.com/1200x/51/6e/ab/516eab223c22a36d1051ba9bc46f5695.jpg",
       ],
+      colors: ['white','black','blue'],
     ),
     Product(
       id: 4,
@@ -91,10 +320,11 @@ class MockApiService {
         "https://i.pinimg.com/1200x/d3/db/ae/d3dbaeb17fcee123f3c128fd9e0c1223.jpg",
         "https://i.pinimg.com/736x/14/3f/4a/143f4ab55d79b2b53a9c6a342153bbbf.jpg",
       ],
+      colors: ['white','flower']
     ),
     Product(
       id: 5,
-      name: "Red Blouse",
+      name: "Color Blouse",
       price: 39.99,
       category: "Blouses",
       image: "https://i.pinimg.com/736x/14/3f/4a/143f4ab55d79b2b53a9c6a342153bbbf.jpg",
@@ -112,10 +342,11 @@ class MockApiService {
         "https://i.pinimg.com/1200x/d3/db/ae/d3dbaeb17fcee123f3c128fd9e0c1223.jpg",
         "https://i.pinimg.com/1200x/bd/6c/f9/bd6cf9e39bb3ea86086bb1f89c789ee6.jpg",
       ],
+      colors: ['pink','red']
     ),
     Product(
       id: 6,
-      name: "White Shoulder Bag",
+      name: "Leather Bag",
       price: 34.99,
       category: "Bags",
       image: "https://i.pinimg.com/1200x/f2/df/79/f2df7979c3e9fd8bfdf6b51aa9aca09e.jpg",
@@ -134,10 +365,11 @@ class MockApiService {
         "https://i.pinimg.com/736x/a6/65/b4/a665b473466c9ecc932501038b63349c.jpg",
         "https://i.pinimg.com/1200x/8e/5d/4e/8e5d4e3ae705b36622ca969dd5f3b187.jpg",
       ],
+      colors: ['black', 'white', 'green', 'pink'],
     ),
     Product(
       id: 7,
-      name: "Black Chain Shoulder Bag",
+      name: "Chain Shoulder Bag",
       price: 34.99,
       category: "Bags",
       image: "https://i.pinimg.com/1200x/2b/a4/3c/2ba43c436ea17b8eef0082b9be1bacf1.jpg",
@@ -154,6 +386,7 @@ class MockApiService {
       productImages: [
         "https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcQ8_PQWX9xellT9o8IGLS5o-3QbJvQd0wa6iWXpMLhxO1hh2Wsa",
       ],
+      colors: ['black','size'],
     ),
     Product(
       id: 8,
@@ -174,6 +407,7 @@ class MockApiService {
       productImages: [
         "https://i.pinimg.com/736x/e5/a5/21/e5a5215a1fbf1f5cdacb7b19aac0c691.jpg",
       ],
+      colors: ['gray','black']
     ),
     Product(
       id: 9,
@@ -196,6 +430,7 @@ class MockApiService {
         "https://i.pinimg.com/736x/9a/79/0a/9a790ac7f49392130dce32aab2118d04.jpg",
         "https://i.pinimg.com/736x/a2/68/92/a2689259a89ac80c62de869f4d51f222.jpg",
       ],
+      colors: ['white','black','pink','red'],
     ),
     Product(
       id: 10,
@@ -218,6 +453,7 @@ class MockApiService {
         "https://i.pinimg.com/736x/71/b3/44/71b34468e864cf0d74a842e48bf9a323.jpg",
         "https://i.pinimg.com/1200x/23/ca/47/23ca47a3bd603425460c669259cbb215.jpg",
       ],
+      colors: ['white','black','blue','gray'],
     ),
     Product(
       id: 11,
@@ -239,6 +475,7 @@ class MockApiService {
         "https://i.pinimg.com/1200x/a6/a2/81/a6a2816eedfe75ae8888e2f7ddc6520e.jpg",
         "https://i.pinimg.com/1200x/5d/c7/ff/5dc7ff808629b1981289023e16b1141a.jpg",
       ],
+      colors: ['w1','w2','w3'],
     ),
     Product(
       id: 12,
@@ -257,6 +494,7 @@ class MockApiService {
         ),
       description: "Metallic finish, lightweight EVA sole.",
       productImages: [],
+      colors: ['brown'],
     ),
     Product(
       id: 13,
@@ -279,6 +517,7 @@ class MockApiService {
         "https://i.pinimg.com/1200x/5b/42/20/5b422004959a5b1b909242233602a8e7.jpg",
         "https://i.pinimg.com/1200x/ab/f7/41/abf741d4cf5b5b2984593fab0e0f1af1.jpg",
       ],
+      colors: ['L1','L2','L3','L4'],
     ),
     Product(
       id: 14,
@@ -301,6 +540,7 @@ class MockApiService {
         "https://i.pinimg.com/736x/9f/ad/70/9fad7068677ac694288f69c8aa36fd9a.jpg",
         "https://i.pinimg.com/736x/1f/f5/bb/1ff5bb762af630859830aaa78dcb5231.jpg",
       ],
+      colors: ['S1','S2','S3','S4']
     ),
     Product(
       id: 15,
@@ -323,6 +563,7 @@ class MockApiService {
         "https://i.pinimg.com/736x/cb/01/1d/cb011d26038d97180e9a99f198a0610c.jpg",
         "https://i.pinimg.com/1200x/d3/9e/a9/d39ea96c977da323b85bf254da804fab.jpg",
       ],
+      colors: ['stblack','stblue','stbrown','stwhite'],
     ),
       Product(
         id: 16,
@@ -346,6 +587,7 @@ class MockApiService {
             "https://i.pinimg.com/736x/62/4d/42/624d42e8002e0de2de11099e02d86f9f.jpg",
             "https://i.pinimg.com/1200x/89/40/34/894034509c10c8e02cd1ea7ef7e6ff27.jpg",
           ],
+          colors: ['N1','N2','N3','N4','N5'],
       ),
       Product(
         id: 17,
@@ -369,6 +611,7 @@ class MockApiService {
             "https://i.pinimg.com/736x/22/1a/ff/221affeb6f69f931f90fc9ffa8414f23.jpg",
             "https://i.pinimg.com/736x/e1/95/f7/e195f778d4c20932313aa1cb2c6cb6af.jpg",
           ],
+          colors: ['E1','E2','E3','E4','E5'],
       ),
       Product(
         id: 18,
@@ -392,6 +635,7 @@ class MockApiService {
             "https://i.pinimg.com/736x/07/cc/c9/07ccc9a4e30f28ae1929ec0bb5d9b64f.jpg",
             "https://i.pinimg.com/736x/62/b5/cd/62b5cdc59180eb34f5c72b4431b9dc66.jpg",
           ],
+          colors: ['N1','N2','N3','N4','N5']
       ),
       Product(
         id: 19,
@@ -414,6 +658,7 @@ class MockApiService {
             "https://i.pinimg.com/736x/a4/3a/31/a43a3139c7dbe8cdf069747a1adbf065.jpg",
             "https://i.pinimg.com/736x/03/50/b4/0350b4a8e67383b0b9f2117782b22724.jpg",
           ],
+          colors: ['I1','I2','I3','I4']
       ),
       Product(
         id: 20,
@@ -437,6 +682,7 @@ class MockApiService {
             "https://i.pinimg.com/736x/e0/41/a1/e041a16d06691b38cc35316dc48e1b16.jpg",
             "https://i.pinimg.com/736x/1b/9e/b1/1b9eb1ac0d99e6656414273a1e1b0141.jpg",
           ],
+          colors: ['Eph1','Eph2']
       ),
       Product(
         id: 21,
@@ -459,6 +705,7 @@ class MockApiService {
             "https://i.pinimg.com/736x/18/db/7f/18db7fe2ac7dfd458029317fab2d612d.jpg",
             "https://i.pinimg.com/1200x/9d/d5/39/9dd539a08fec5a2c382e3789ab836841.jpg",
           ],
+          colors: ['pb1','pb2','pb3','pb4']
       ),
       Product(
         id: 22,
@@ -476,6 +723,7 @@ class MockApiService {
           joinDate: DateTime.now(),
         ),
         description: "Limited stock, final sale.",
+        colors: ['C1']
       ),
       Product(
         id: 25,
@@ -493,6 +741,7 @@ class MockApiService {
           joinDate: DateTime.now(),
         ),
         description: "Limited stock, final sale.",
+        colors: ['C2']
       ),
       Product(
         id: 23,
@@ -516,6 +765,7 @@ class MockApiService {
             "https://i.pinimg.com/736x/2a/be/0b/2abe0be2238bbfd0960b5ff5d87b4f34.jpg",
             "https://i.pinimg.com/736x/03/f8/c9/03f8c9c43933272f1ff2d8a9b9be731d.jpg",
           ],
+        colors: ['H1','H2','H3','H4','H5']
       ),
       Product(
         id: 24,
@@ -539,6 +789,7 @@ class MockApiService {
             "https://i.pinimg.com/736x/fb/3f/b8/fb3fb8251599116e2bdb1aa1cd39c0b2.jpg",
             "https://i.pinimg.com/736x/b0/a6/58/b0a6581c5dc2781e3f4c4410f4fbd501.jpg",
           ],
+          colors: ['A1','A2','A3','A4','A5']
       ),
     ];
   }

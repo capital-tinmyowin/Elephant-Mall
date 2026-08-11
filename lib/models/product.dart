@@ -1,3 +1,5 @@
+import 'package:elephant_mall/services/mock_api_service.dart';
+
 import '../services/Category_service.dart';
 
 class Product {
@@ -11,6 +13,7 @@ class Product {
   final String? description;
   final Seller? seller;  //  Must be Seller? not String?
   final List<String>? productImages;
+  final List<String> colors;
 
   Product({
     required this.id,
@@ -23,23 +26,58 @@ class Product {
     this.description,
     this.seller,
     this.productImages,
+    this.colors = const [],
   });
 
+   // ============= IMAGE GETTERS =============
+  String get mainColor {
+    return colors.isNotEmpty ? colors.first : 'default';
+  }
+  // Main product image with local fallback
   String get proxiedImageUrl {
-    return ApiService.getProxiedImageUrl(image);
+    if (ApiService.useMockDataStatic) {
+      // Try to find image in the folder
+      String path = MockApiService.getProductImagePath(this);
+      return path;
+    }
+    if (image.isNotEmpty) {
+      return ApiService.getProxiedImageUrl(image);
+    }
+    return MockApiService.getProductImagePath(this);
   }
 
-  List<String> get allImages {
+  // 🔥 All product images (for gallery) - returns all colors
+  List<String> get proxiedAllImages {
+    if (ApiService.useMockDataStatic) {
+      List<String> images = [];
+      
+      // Get the product folder from mock service
+      String folder = MockApiService.getProductFolder(this);
+      
+      // Add all color images
+      for (var color in colors) {
+        images.add('$folder/$color.jpg');
+      }
+      
+      // If no colors, use default
+      if (images.isEmpty) {
+        images.add(MockApiService.getProductImagePath(this));
+      }
+      
+      return images;
+    }
+    
+    // If backend is running
     final List<String> images = [image];
     if (productImages != null && productImages!.isNotEmpty) {
       images.addAll(productImages!);
     }
-    return images;
+    return images.map((url) => ApiService.getProxiedImageUrl(url)).toList();
   }
 
-  List<String> get proxiedAllImages {
-    return allImages.map((url) => ApiService.getProxiedImageUrl(url)).toList();
-  }
+  // String get proxiedImageUrl {
+  //   return ApiService.getProxiedImageUrl(image);
+  // }
 
   factory Product.fromJson(Map<String, dynamic> json) {
     //  DEBUG
