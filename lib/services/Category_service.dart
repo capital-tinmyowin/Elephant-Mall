@@ -8,16 +8,16 @@ import 'mock_api_service.dart';
 
 class ApiService extends ChangeNotifier {
   static const String baseUrl = 'http://localhost:5150/api';
-  
+
   //  Static variable for mock data flag
   static bool useMockDataStatic = false;
-  
+
   //  Instance variable for mock data flag
   bool _useMockData = false;
 
   //  Getter for useMockData
   bool get useMockData => _useMockData;
-  
+
   Future<Map<String, dynamic>> register(
     String username,
     String email,
@@ -96,27 +96,30 @@ class ApiService extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>> addFavorite(int userId, int productId) async {
-  try {
-    final response = await http.post(
-      Uri.parse('$baseUrl/Favorites?userId=$userId&productId=$productId'), // ✅ Send as query params
-      headers: {'Content-Type': 'application/json'},
-    );
-    
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return json.decode(response.body) as Map<String, dynamic>;
-    } else {
+    try {
+      final response = await http.post(
+        Uri.parse(
+          '$baseUrl/Favorites?userId=$userId&productId=$productId',
+        ), // ✅ Send as query params
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to add favorite: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
       return {
         'success': false,
-        'message': 'Failed to add favorite: ${response.statusCode}'
+        'message': 'Failed to add favorite: ${e.toString()}',
       };
     }
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'Failed to add favorite: ${e.toString()}'
-    };
   }
-}
+
   //  Setter for useMockData
   set useMockData(bool value) {
     _useMockData = value;
@@ -128,7 +131,7 @@ class ApiService extends ChangeNotifier {
 
   List<CartItem> get cartItems => _cartItems;
   int get cartItemCount => _cartItems.length;
-  
+
   double get cartTotalPrice {
     return _cartItems.fold(0, (sum, item) => sum + item.totalPrice);
   }
@@ -139,16 +142,13 @@ class ApiService extends ChangeNotifier {
 
   // ============= CART METHODS =============
   void addItem(Product product) {
-  addToCart(product);
-}
+    addToCart(product);
+  }
 
-void removeItem(int productId) {
-  removeFromCart(productId);
-}
+  void removeItem(int productId) {
+    removeFromCart(productId);
+  }
 
-void updateQuantity(int productId, int quantity) {
-  updateCartQuantity(productId, quantity);
-}
   void addToCart(Product product) {
     final existingItem = _cartItems.firstWhere(
       (item) => item.product.id == product.id,
@@ -176,7 +176,7 @@ void updateQuantity(int productId, int quantity) {
         quantity: 0,
       ),
     );
-    
+
     if (item.product.id != -1) {
       if (quantity <= 0) {
         _cartItems.remove(item);
@@ -253,6 +253,22 @@ void updateQuantity(int productId, int quantity) {
     return '$baseUrl/image/proxy?url=$encodedUrl';
   }
 
+  // ============= GET LOCAL IMAGE URL =============
+  static String getLocalImageUrl(Product product) {
+    // If mock data is enabled, use local images
+    if (useMockDataStatic) {
+      return MockApiService.getImageUrl(product);
+    }
+
+    // If not, use the product's image URL with proxy
+    if (product.image != null && product.image!.isNotEmpty) {
+      return getProxiedImageUrl(product.image!);
+    }
+
+    // Final fallback
+    return 'assets/images/placeholders/default_placeholder.jpg';
+  }
+
   // ============= LOAD PRODUCTS =============
   Future<void> loadProducts() async {
     _isLoading = true;
@@ -264,7 +280,7 @@ void updateQuantity(int productId, int quantity) {
       _allProducts = await _getProductsFromApi();
       _filteredProducts = _allProducts;
       print(' SUCCESS: Loaded ${_allProducts.length} products');
-      
+
       if (_allProducts.isEmpty) {
         _errorMessage = 'No products found in database';
         print(' No products found');
@@ -279,6 +295,7 @@ void updateQuantity(int productId, int quantity) {
   }
 
   Future<List<Product>> _getProductsFromApi() async {
+    // Check if mock data is enabled
     if (_useMockData || useMockDataStatic) {
       print(' Using mock data (forced)');
       return MockApiService.getMockProducts();
@@ -287,17 +304,18 @@ void updateQuantity(int productId, int quantity) {
     try {
       final url = Uri.parse('$baseUrl/products');
       print(' Requesting: $url');
-      
-      final response = await http.get(
-        url,
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          print(' API timeout, using mock data');
-          throw Exception('Timeout');
-        },
-      );
+
+      final response = await http
+          .get(url, headers: {'Content-Type': 'application/json'})
+          .timeout(
+            const Duration(seconds: 3),
+            onTimeout: () {
+              print(' API timeout, using mock data');
+              // If timeout, enable mock data
+              useMockDataStatic = true;
+              throw Exception('Timeout');
+            },
+          );
 
       print(' Response status: ${response.statusCode}');
 
@@ -316,6 +334,8 @@ void updateQuantity(int productId, int quantity) {
     } catch (e) {
       print(' API Error: $e');
       print(' Using mock data as fallback');
+      // Enable mock data on error
+      useMockDataStatic = true;
       return MockApiService.getMockProducts();
     }
   }
@@ -345,17 +365,16 @@ void updateQuantity(int productId, int quantity) {
 
     try {
       final url = Uri.parse('$baseUrl/categories');
-      
-      final response = await http.get(
-        url,
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          print(' API timeout, using mock data');
-          throw Exception('Timeout');
-        },
-      );
+
+      final response = await http
+          .get(url, headers: {'Content-Type': 'application/json'})
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              print(' API timeout, using mock data');
+              throw Exception('Timeout');
+            },
+          );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -394,39 +413,41 @@ void updateQuantity(int productId, int quantity) {
   }
 
   Future<Product> _getProductByIdFromApi(int id) async {
-    if (_useMockData || useMockDataStatic) {
-      return MockApiService.getMockProductById(id);
-    }
-
-    try {
-      final url = Uri.parse('$baseUrl/products/$id');
-      
-      final response = await http.get(
-        url,
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          print(' API timeout, using mock data');
-          throw Exception('Timeout');
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true && data['data'] != null) {
-          return Product.fromJson(data['data']);
-        } else {
-          throw Exception(data['message'] ?? 'Failed to load product');
-        }
-      } else {
-        throw Exception('Failed to load product');
-      }
-    } catch (e) {
-      print(' API Error: $e');
-      return MockApiService.getMockProductById(id);
-    }
+  if (_useMockData || useMockDataStatic) {
+    return MockApiService.getMockProductById(id);
   }
+
+  try {
+    final url = Uri.parse('$baseUrl/products/$id');
+    
+    final response = await http.get(
+      url,
+      headers: {'Content-Type': 'application/json'},
+    ).timeout(
+      const Duration(seconds: 3),
+      onTimeout: () {
+        print(' API timeout, using mock data');
+        useMockDataStatic = true;
+        throw Exception('Timeout');
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['success'] == true && data['data'] != null) {
+        return Product.fromJson(data['data']);
+      } else {
+        throw Exception(data['message'] ?? 'Failed to load product');
+      }
+    } else {
+      throw Exception('Failed to load product');
+    }
+  } catch (e) {
+    print(' API Error: $e');
+    useMockDataStatic = true;
+    return MockApiService.getMockProductById(id);
+  }
+}
 
   // ============= LOAD PRODUCTS BY CATEGORY =============
   Future<void> loadProductsByCategory(String category) async {
@@ -442,7 +463,9 @@ void updateQuantity(int productId, int quantity) {
       } else {
         _filteredProducts = await _getProductsByCategoryFromApi(category);
       }
-      print(' Loaded ${_filteredProducts.length} products for category: $category');
+      print(
+        ' Loaded ${_filteredProducts.length} products for category: $category',
+      );
     } catch (e) {
       _errorMessage = 'Error loading products by category: $e';
       print(' Error loading products by category: $e');
@@ -459,17 +482,16 @@ void updateQuantity(int productId, int quantity) {
 
     try {
       final url = Uri.parse('$baseUrl/products/category/$category');
-      
-      final response = await http.get(
-        url,
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          print(' API timeout, using mock data');
-          throw Exception('Timeout');
-        },
-      );
+
+      final response = await http
+          .get(url, headers: {'Content-Type': 'application/json'})
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              print(' API timeout, using mock data');
+              throw Exception('Timeout');
+            },
+          );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -496,17 +518,16 @@ void updateQuantity(int productId, int quantity) {
 
     try {
       final url = Uri.parse('$baseUrl/products/trending');
-      
-      final response = await http.get(
-        url,
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          print(' API timeout, using mock data');
-          throw Exception('Timeout');
-        },
-      );
+
+      final response = await http
+          .get(url, headers: {'Content-Type': 'application/json'})
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              print(' API timeout, using mock data');
+              throw Exception('Timeout');
+            },
+          );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -514,7 +535,9 @@ void updateQuantity(int productId, int quantity) {
           List<dynamic> productsData = data['data'];
           return productsData.map((json) => Product.fromJson(json)).toList();
         } else {
-          throw Exception(data['message'] ?? 'Failed to load trending products');
+          throw Exception(
+            data['message'] ?? 'Failed to load trending products',
+          );
         }
       } else {
         throw Exception('Failed to load trending products');
