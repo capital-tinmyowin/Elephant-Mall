@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../home.dart';
 import '../sell.dart';
 import '../login.dart'; // Change the path if your LoginPage is in another folder
+import '../sellernew.dart';
 
 class CommonHeader extends StatefulWidget {
   const CommonHeader({super.key});
@@ -74,7 +75,7 @@ class _CommonHeaderState extends State<CommonHeader> {
                                 "MY FAVORITE",
                                 const SellPage(),
                               ),
-                              _menuItem(context, "ABOUT US", const SellPage()),
+                              _menuItem(context, "ABOUT US", const NewSellerPage()),
                             ],
                           ),
                         ),
@@ -212,7 +213,7 @@ class _CommonHeaderState extends State<CommonHeader> {
                       _menuItem(context, "SALE", const SellPage()),
                       _menuItem(context, "NEW IN", const SellPage()),
                       _menuItem(context, "MY ORDERS", const SellPage()),
-                      _menuItem(context, "ABOUT US", const SellPage()),
+                      _menuItem(context, "ABOUT US", const NewSellerPage()),
                     ],
                   ),
                 ),
@@ -570,7 +571,7 @@ class CommonBottomBar extends StatelessWidget {
         break;
 
       case 4:
-        page = const ProfilePage();
+        page = const NewSellerPage();
         break;
 
       default:
