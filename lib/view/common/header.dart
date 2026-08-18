@@ -1,5 +1,5 @@
 import 'package:elephant_mall/services/auth_service.dart';
-import 'package:elephant_mall/view/category_page.dart';
+import '../profile.dart';
 import 'package:elephant_mall/view/category_page.dart';
 import 'package:elephant_mall/view/favourite_page.dart';
 import 'package:flutter/material.dart';
