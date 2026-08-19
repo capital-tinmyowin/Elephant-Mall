@@ -571,7 +571,7 @@ class CommonBottomBar extends StatelessWidget {
         break;
 
       case 4:
-        page = const NewSellerPage();
+        page = const ProfilePage();
         break;
 
       default:
