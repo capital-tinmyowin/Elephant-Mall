@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:elephant_mall/view/category_detail.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
@@ -32,7 +33,7 @@ class _CategoryPageState extends State<CategoryPage> {
     }
     return _sliderIndexes[id]!;
   }
-  
+
   // ADD method to update slider index
   void _updateSliderIndex(String id, int index) {
     _sliderIndexes[id] = index;
@@ -171,38 +172,38 @@ class _CategoryPageState extends State<CategoryPage> {
             .take(5)
             .toList();
         //  Check if mobile
-      final bool isMobile = MediaQuery.of(context).size.width < 768;
+        final bool isMobile = MediaQuery.of(context).size.width < 768;
 
-      //  If mobile, show in a row (side by side)
-      if (isMobile) {
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (fashionTrending.isNotEmpty)
-              Expanded(
-                child: _buildTrendingSlider(
-                  title: 'New Arrivals',
-                  products: fashionTrending,
-                  sliderId: 'fashion_mobile',
-                  isCompact: true, //  Add compact mode
+        //  If mobile, show in a row (side by side)
+        if (isMobile) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (fashionTrending.isNotEmpty)
+                Expanded(
+                  child: _buildTrendingSlider(
+                    title: 'New Arrivals',
+                    products: fashionTrending,
+                    sliderId: 'fashion_mobile',
+                    isCompact: true, //  Add compact mode
+                  ),
                 ),
-              ),
-            if (fashionTrending.isNotEmpty && electronicsTrending.isNotEmpty)
-              const SizedBox(width: 8),
-            if (electronicsTrending.isNotEmpty)
-              Expanded(
-                child: _buildTrendingSlider(
-                  title: 'Trending Now',
-                  products: electronicsTrending,
-                  sliderId: 'electronics_mobile',
-                  isCompact: true, // Add compact mode
+              if (fashionTrending.isNotEmpty && electronicsTrending.isNotEmpty)
+                const SizedBox(width: 8),
+              if (electronicsTrending.isNotEmpty)
+                Expanded(
+                  child: _buildTrendingSlider(
+                    title: 'Trending Now',
+                    products: electronicsTrending,
+                    sliderId: 'electronics_mobile',
+                    isCompact: true, // Add compact mode
+                  ),
                 ),
-              ),
-          ],
-        );
-      }
+            ],
+          );
+        }
 
-      //  Desktop view - stacked vertically
+        //  Desktop view - stacked vertically
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -217,7 +218,7 @@ class _CategoryPageState extends State<CategoryPage> {
               _buildTrendingSlider(
                 title: ' Trending Now In Category',
                 products: electronicsTrending,
-                 sliderId: 'electronics_mobile', 
+                sliderId: 'electronics_mobile',
               ),
           ],
         );
@@ -234,7 +235,7 @@ class _CategoryPageState extends State<CategoryPage> {
             'Get the latest dresses, shorts, lightweight,\nand accessories',
         'offer': 'Up to 30% off on selected items',
         'imageCount': 5, // Number of images for this slide
-      'baseName': 'slide',
+        'baseName': 'slide',
       },
       {
         'title': 'BEACH READY',
@@ -242,7 +243,7 @@ class _CategoryPageState extends State<CategoryPage> {
             'Straw hats, sandals, linen shirts & summer totes.\nMake a splash with our new arrivals.',
         'offer': 'Free shipping on orders \$50+',
         'imageCount': 5,
-      'baseName': 'slide',
+        'baseName': 'slide',
       },
       {
         'title': 'SUMMER GADGETS',
@@ -250,7 +251,7 @@ class _CategoryPageState extends State<CategoryPage> {
             'Wireless earbuds, power banks & smart accessories.\nStay connected on the go.',
         'offer': 'Limited time offers',
         'imageCount': 5,
-      'baseName': 'slide',
+        'baseName': 'slide',
       },
     ];
 
@@ -277,14 +278,14 @@ class _CategoryPageState extends State<CategoryPage> {
               return Builder(
                 builder: (BuildContext context) {
                   List<String> images = [];
-                int count = slide['imageCount'] as int;
-                String baseName = slide['baseName'] as String;
-                for (int i = 1; i <= count; i++) {
-                  images.add('assets/images/heroslider/${baseName}_$i.jpg');
-                }
-                
-                // Add images to slide data
-                slide['images'] = images;
+                  int count = slide['imageCount'] as int;
+                  String baseName = slide['baseName'] as String;
+                  for (int i = 1; i <= count; i++) {
+                    images.add('assets/images/heroslider/${baseName}_$i.jpg');
+                  }
+
+                  // Add images to slide data
+                  slide['images'] = images;
                   return Container(
                     width: double.infinity,
                     margin: const EdgeInsets.symmetric(horizontal: 0),
@@ -323,9 +324,7 @@ class _CategoryPageState extends State<CategoryPage> {
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(4),
-                  color: isActive
-                      ? Colors.white
-                      : Colors.grey.withOpacity(0.7),
+                  color: isActive ? Colors.white : Colors.grey.withOpacity(0.7),
                   boxShadow: isActive
                       ? [
                           BoxShadow(
@@ -345,11 +344,11 @@ class _CategoryPageState extends State<CategoryPage> {
 
   Widget _buildHeroImage(String imageUrl) {
     if (imageUrl.isEmpty) {
-    return Container(
-      color: Colors.grey[300],
-      child: const Icon(Icons.broken_image, color: Colors.grey),
-    );
-  }
+      return Container(
+        color: Colors.grey[300],
+        child: const Icon(Icons.broken_image, color: Colors.grey),
+      );
+    }
     // If it's a local asset
     if (imageUrl.startsWith('assets/')) {
       String cleanPath = imageUrl.replaceFirst('assets/', '');
@@ -377,6 +376,7 @@ class _CategoryPageState extends State<CategoryPage> {
       },
     );
   }
+
   // ============= DESKTOP SLIDE =============
   Widget _buildDesktopSlide(Map<String, dynamic> slide) {
     final images = slide['images'] as List<String>;
@@ -638,13 +638,25 @@ class _CategoryPageState extends State<CategoryPage> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Center(
-                    child: Text(
-                      entry.key,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2B6E3B),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CategoryDetailPage(
+                            categoryName: entry.key,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Center(
+                      child: Text(
+                        entry.key,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2B6E3B),
+                        ),
                       ),
                     ),
                   ),
@@ -841,18 +853,30 @@ class _CategoryPageState extends State<CategoryPage> {
                                 },
                               ),
                             ),
-                            Padding(
-                              padding: const EdgeInsets.all(1.0),
-                              child: Text(
-                                entry.key,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2B6E3B),
+                            GestureDetector(
+                              onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CategoryDetailPage(
+                                    categoryName: entry.key,
+                                  ),
                                 ),
-                                textAlign: TextAlign.center,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              );
+                            },
+                              child: Padding(
+                                padding: const EdgeInsets.all(1.0),
+                                child: Text(
+                                  entry.key,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF2B6E3B),
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ),
                           ],
@@ -907,7 +931,7 @@ class _CategoryPageState extends State<CategoryPage> {
               _buildTrendingSlider(
                 title: ' New Arrivals',
                 products: fashionTrending,
-                 sliderId: 'fashion', 
+                sliderId: 'fashion',
               ),
             // const SizedBox(height: 20),
             if (electronicsTrending.isNotEmpty)
@@ -963,15 +987,19 @@ class _CategoryPageState extends State<CategoryPage> {
             ),
           ),
           // const SizedBox(height: 12),
-          _buildCarouselSlider(products, controller, sliderId,isCompact),
+          _buildCarouselSlider(products, controller, sliderId, isCompact),
         ],
       ),
     );
   }
 
   // ============= CAROUSEL SLIDER =============
-  Widget _buildCarouselSlider(List<Product> products,CarouselSliderController controller,
-  String sliderId,bool isCompact,) {
+  Widget _buildCarouselSlider(
+    List<Product> products,
+    CarouselSliderController controller,
+    String sliderId,
+    bool isCompact,
+  ) {
     final bool isMobile = MediaQuery.of(context).size.width < 768;
 
     return Stack(
@@ -979,100 +1007,103 @@ class _CategoryPageState extends State<CategoryPage> {
         CarouselSlider(
           carouselController: controller,
           options: CarouselOptions(
-            height:isMobile ? 240 : 200,
+            height: isMobile ? 240 : 200,
             autoPlay: false,
             viewportFraction: isMobile
                 ? 0.5
                 : 0.32, //  0.7 = show 70% width on mobile
             padEnds: false,
             scrollDirection: Axis.horizontal,
-            onPageChanged: (index, reason) {  //  ADD THIS
-            setState(() {
-              _updateSliderIndex(sliderId, index);
-            });
-          },
+            onPageChanged: (index, reason) {
+              //  ADD THIS
+              setState(() {
+                _updateSliderIndex(sliderId, index);
+              });
+            },
           ),
           items: products.map((product) {
             return Builder(
               builder: (BuildContext context) {
                 return Container(
-                  margin: EdgeInsets.symmetric(horizontal: isMobile ? 1.0 : 5.0),
-                  child: _buildTrendingItem(product,isCompact),
+                  margin: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 1.0 : 5.0,
+                  ),
+                  child: _buildTrendingItem(product, isCompact),
                 );
               },
             );
           }).toList(),
         ),
         // LEFT ARROW - Positioned at center-left
-      Positioned(
-        left: 0,
-        top: 0,
-        bottom: 0,
-        child: Center(
-          child: GestureDetector(
-            onTap: () {
-              controller.previousPage(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            },
-            child: Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.8),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 4,
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.chevron_left,
-                color: Color(0xFF2B6E3B),
-                size: 20,
-              ),
-            ),
-          ),
-        ),
-      ),
-      // RIGHT ARROW - Positioned at center-right
-      Positioned(
-        right: 0,
-        top: 0,
-        bottom: 0,
-        child: Center(
-          child: GestureDetector(
-            onTap: () {
-              controller.nextPage(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            },
-            child: Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.8),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 4,
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.chevron_right,
-                color: Color(0xFF2B6E3B),
-                size: 20,
+        Positioned(
+          left: 0,
+          top: 0,
+          bottom: 0,
+          child: Center(
+            child: GestureDetector(
+              onTap: () {
+                controller.previousPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              },
+              child: Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.8),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.chevron_left,
+                  color: Color(0xFF2B6E3B),
+                  size: 20,
+                ),
               ),
             ),
           ),
         ),
-      ),
+        // RIGHT ARROW - Positioned at center-right
+        Positioned(
+          right: 0,
+          top: 0,
+          bottom: 0,
+          child: Center(
+            child: GestureDetector(
+              onTap: () {
+                controller.nextPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              },
+              child: Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.8),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.chevron_right,
+                  color: Color(0xFF2B6E3B),
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -1135,16 +1166,16 @@ class _CategoryPageState extends State<CategoryPage> {
             ),
             const SizedBox(height: 8),
             Text(
-                product.name,
-                style: TextStyle(
-                  fontSize: isMobile ? 13 : 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                softWrap: true,
+              product.name,
+              style: TextStyle(
+                fontSize: isMobile ? 13 : 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: true,
+            ),
             Text(
               '\MMK${product.price.toStringAsFixed(2)}',
               style: TextStyle(
@@ -1235,7 +1266,7 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 
   // ============= DOT INDICATOR =============
-  Widget _buildDotIndicator(List<Product> products,String sliderId) {
+  Widget _buildDotIndicator(List<Product> products, String sliderId) {
     final currentIndex = _getSliderIndex(sliderId);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -1247,9 +1278,9 @@ class _CategoryPageState extends State<CategoryPage> {
           margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(4),
-            color: isActive 
-              ? const Color(0xFF2B6E3B)  //  Green when active
-              : Colors.grey[300],        //  Grey when inactive
+            color: isActive
+                ? const Color(0xFF2B6E3B) //  Green when active
+                : Colors.grey[300], //  Grey when inactive
           ),
         );
       }).toList(),
