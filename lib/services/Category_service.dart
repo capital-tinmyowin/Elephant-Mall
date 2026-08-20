@@ -100,7 +100,7 @@ class ApiService extends ChangeNotifier {
       final response = await http.post(
         Uri.parse(
           '$baseUrl/Favorites?userId=$userId&productId=$productId',
-        ), // ✅ Send as query params
+        ), // Send as query params
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -259,12 +259,10 @@ class ApiService extends ChangeNotifier {
     if (useMockDataStatic) {
       return MockApiService.getImageUrl(product);
     }
-
     // If not, use the product's image URL with proxy
     if (product.image != null && product.image!.isNotEmpty) {
       return getProxiedImageUrl(product.image!);
     }
-
     // Final fallback
     return 'assets/images/placeholders/default_placeholder.jpg';
   }
@@ -344,7 +342,6 @@ class ApiService extends ChangeNotifier {
   Future<void> loadCategories() async {
     _isLoading = true;
     notifyListeners();
-
     try {
       _categories = await _getCategoriesFromApi();
       _sortedCategories = _sortCategoriesByOrder(_categories);
@@ -362,7 +359,6 @@ class ApiService extends ChangeNotifier {
     if (_useMockData || useMockDataStatic) {
       return MockApiService.getMockCategories();
     }
-
     try {
       final url = Uri.parse('$baseUrl/categories');
 
@@ -399,7 +395,6 @@ class ApiService extends ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
-
     try {
       _selectedProduct = await _getProductByIdFromApi(id);
       print(' Loaded product: ${_selectedProduct?.name}');
@@ -413,48 +408,45 @@ class ApiService extends ChangeNotifier {
   }
 
   Future<Product> _getProductByIdFromApi(int id) async {
-  if (_useMockData || useMockDataStatic) {
-    return MockApiService.getMockProductById(id);
-  }
-
-  try {
-    final url = Uri.parse('$baseUrl/products/$id');
-    
-    final response = await http.get(
-      url,
-      headers: {'Content-Type': 'application/json'},
-    ).timeout(
-      const Duration(seconds: 3),
-      onTimeout: () {
-        print(' API timeout, using mock data');
-        useMockDataStatic = true;
-        throw Exception('Timeout');
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['success'] == true && data['data'] != null) {
-        return Product.fromJson(data['data']);
-      } else {
-        throw Exception(data['message'] ?? 'Failed to load product');
-      }
-    } else {
-      throw Exception('Failed to load product');
+    if (_useMockData || useMockDataStatic) {
+      return MockApiService.getMockProductById(id);
     }
-  } catch (e) {
-    print(' API Error: $e');
-    useMockDataStatic = true;
-    return MockApiService.getMockProductById(id);
+    try {
+      final url = Uri.parse('$baseUrl/products/$id');
+
+      final response = await http
+          .get(url, headers: {'Content-Type': 'application/json'})
+          .timeout(
+            const Duration(seconds: 3),
+            onTimeout: () {
+              print(' API timeout, using mock data');
+              useMockDataStatic = true;
+              throw Exception('Timeout');
+            },
+          );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true && data['data'] != null) {
+          return Product.fromJson(data['data']);
+        } else {
+          throw Exception(data['message'] ?? 'Failed to load product');
+        }
+      } else {
+        throw Exception('Failed to load product');
+      }
+    } catch (e) {
+      print(' API Error: $e');
+      useMockDataStatic = true;
+      return MockApiService.getMockProductById(id);
+    }
   }
-}
 
   // ============= LOAD PRODUCTS BY CATEGORY =============
   Future<void> loadProductsByCategory(String category) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
-
     try {
       _currentCategory = category;
       _selectedCategory = category;
@@ -479,10 +471,8 @@ class ApiService extends ChangeNotifier {
     if (_useMockData || useMockDataStatic) {
       return MockApiService.getMockProductsByCategory(category);
     }
-
     try {
       final url = Uri.parse('$baseUrl/products/category/$category');
-
       final response = await http
           .get(url, headers: {'Content-Type': 'application/json'})
           .timeout(
@@ -492,7 +482,6 @@ class ApiService extends ChangeNotifier {
               throw Exception('Timeout');
             },
           );
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true && data['data'] != null) {
@@ -515,7 +504,6 @@ class ApiService extends ChangeNotifier {
     if (_useMockData || useMockDataStatic) {
       return MockApiService.getMockTrendingProducts();
     }
-
     try {
       final url = Uri.parse('$baseUrl/products/trending');
 
@@ -528,7 +516,6 @@ class ApiService extends ChangeNotifier {
               throw Exception('Timeout');
             },
           );
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true && data['data'] != null) {
@@ -554,13 +541,11 @@ class ApiService extends ChangeNotifier {
     for (int i = 0; i < categoryOrder.length; i++) {
       orderMap[categoryOrder[i]] = i;
     }
-
     categories.sort((a, b) {
       final indexA = orderMap[a.categoryName] ?? 999;
       final indexB = orderMap[b.categoryName] ?? 999;
       return indexA.compareTo(indexB);
     });
-
     return categories;
   }
 
@@ -582,5 +567,90 @@ class ApiService extends ChangeNotifier {
     useMockDataStatic = useMock;
     loadProducts();
     notifyListeners();
+  }
+
+  List<Product> getProductsWithColorVariations(List<Product> products) {
+    List<Product> expandedProducts = [];
+
+    for (var product in products) {
+      if (product.colors.isNotEmpty) {
+        //  Get the base name without color
+        String baseName = _getProductNameWithoutColor(product.name);
+        // Create a separate product for each color
+        for (var color in product.colors) {
+          String colorName = _getColorName(color);
+          String newName = '$baseName - $colorName';
+          //  IMPORTANT: Keep the original product ID
+          expandedProducts.add(
+            Product(
+              id: product.id, //  Use original ID, NOT generated
+              name: newName,
+              price: product.price,
+              category: product.category,
+              image: _getColorImagePath(product, color),
+              rating: product.rating,
+              ratingCount: product.ratingCount,
+              description: product.description,
+              seller: product.seller,
+              productImages: product.productImages,
+              colors: [color],
+            ),
+          );
+        }
+      } else {
+        expandedProducts.add(product);
+      }
+    }
+    return expandedProducts;
+  }
+
+  //  Helper to get product name without color
+  String _getProductNameWithoutColor(String name) {
+    List<String> colorNames = [
+      'Black',
+      'White',
+      'Cream',
+      'Blue',
+      'Pink',
+      'Sky Blue',
+      'Brown',
+      'Gray',
+      'Flower',
+      'Green',
+      'Red',
+      'Purple',
+      'Orange',
+    ];
+    String cleanName = name;
+    for (var c in colorNames) {
+      cleanName = cleanName.replaceAll(c, '').trim();
+    }
+    // Remove trailing dashes or spaces
+    cleanName = cleanName.replaceAll(RegExp(r'\s*-\s*$'), '');
+    cleanName = cleanName.replaceAll(RegExp(r'^\s*-\s*'), '');
+    return cleanName.isEmpty ? name : cleanName;
+  }
+
+  // Helper to get proper color name
+  String _getColorName(String color) {
+    final colorMap = {
+      'black': 'Black',
+      'white': 'White',
+      'cream': 'Cream',
+      'blue': 'Blue',
+      'pink': 'Pink',
+      'skyblue': 'Sky Blue',
+      'brown': 'Brown',
+      'gray': 'Gray',
+      'flower': 'Flower',
+      'green': 'Green',
+      'red': 'Red',
+    };
+    return colorMap[color] ?? color;
+  }
+  // Helper to get image path for specific color
+  String _getColorImagePath(Product product, String color) {
+    String folder = MockApiService.getProductFolder(product);
+    return '$folder/$color.jpg';
   }
 }

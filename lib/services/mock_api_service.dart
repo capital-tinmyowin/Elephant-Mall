@@ -3,11 +3,8 @@ import 'package:elephant_mall/services/Category_service.dart';
 
 import '../models/Category.dart';
 import '../models/product.dart';
-
 class MockApiService {
-
   static const String baseImagePath = 'assets/images/categories/';
-  
   // Category folder mapping
   static const Map<String, String> categoryFolders = {
     'T-Shirts': 'tshirts',
@@ -31,7 +28,6 @@ class MockApiService {
   }
  static String getProductFolder(Product product) {
     String folder = getCategoryFolder(product.category);
-    
     // For T-Shirts with types
     if (product.category == 'T-Shirts') {
       if (product.name.contains('Classic')) {
@@ -152,7 +148,7 @@ class MockApiService {
 
     return '$baseImagePath$folder';
   }
-  // 🔥 Get product image path with subfolder support
+  // Get product image path with subfolder support
    static String getProductImagePath(Product product) {
     String folder = getProductFolder(product);
     
@@ -160,21 +156,17 @@ class MockApiService {
     if (product.colors.isNotEmpty) {
       return '$folder/${product.colors.first}.jpg';
     }
-    
     // Fallback
     return '$folder/default.jpg';
   }
-
   // Get image URL with local fallback
   static String getImageUrl(Product product) {
     // Only use local images if mock data is enabled
     if (!ApiService.useMockDataStatic) {
       return product.image ?? '';
     }
-    
     return getProductImagePath(product);
   }
-
   static List<Product> getMockProducts() {
     return [
       Product(
@@ -628,7 +620,7 @@ class MockApiService {
             "https://i.pinimg.com/736x/e0/41/a1/e041a16d06691b38cc35316dc48e1b16.jpg",
             "https://i.pinimg.com/736x/1b/9e/b1/1b9eb1ac0d99e6656414273a1e1b0141.jpg",
           ],
-          colors: ['Eph1','Eph2']
+          colors: ['Eph1','Eph2','Eph3','Eph4','Eph5']
       ),
       Product(
         id: 21,
@@ -741,7 +733,7 @@ class MockApiService {
   }
 
   static List<Product> getMockProductsByCategory(String category) {
-    if (category == "All") {
+    if (category == "All" || category == "All Items") {
       return getMockProducts();
     }
     return getMockProducts().where((p) => p.category == category).toList();
