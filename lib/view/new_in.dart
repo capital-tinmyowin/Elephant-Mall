@@ -16,9 +16,8 @@ class _NewInPageState extends State<NewInPage> {
   String selectedPrice = "All Prices";
   String selectedSort = "Newest";
 
-  // ------------------------------------------------------------
+  // ---------------------------------- --------------------------
   // SAMPLE DATA
-  // Later this list can come from your API / service.
   // ------------------------------------------------------------
   final List<NewInModel> allProducts = [
     NewInModel(
@@ -481,13 +480,13 @@ class _NewInPageState extends State<NewInPage> {
 
         const Spacer(),
 
-        Text(
-          "Showing 1–${filteredProducts.length} of ${allProducts.length} results",
-          style: const TextStyle(
-            fontSize: 11,
-            color: Colors.black54,
-          ),
-        ),
+        // Text(
+        //   "Showing 1–${filteredProducts.length} of ${allProducts.length} results",
+        //   style: const TextStyle(
+        //     fontSize: 11,
+        //     color: Colors.black54,
+        //   ),
+        // ),
       ],
     );
   }
