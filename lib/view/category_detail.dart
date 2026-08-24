@@ -1,3 +1,4 @@
+import 'package:elephant_mall/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -1161,19 +1162,11 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                       topLeft: Radius.circular(12),
                       bottomLeft: Radius.circular(12),
                     ),
-                    child: CachedNetworkImage(
+                    child: AppImage(
                       imageUrl: product.proxiedImageUrl,
                       width: double.infinity,
                       height: double.infinity,
                       fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: Colors.grey[200],
-                        child: const Center(child: CircularProgressIndicator()),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: Colors.grey[200],
-                        child: const Icon(Icons.image_not_supported, size: 40),
-                      ),
                     ),
                   ),
                   // Discount Badge
@@ -1364,18 +1357,10 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(12),
                     ),
-                    child: CachedNetworkImage(
+                    child: AppImage(
                       imageUrl: product.proxiedImageUrl,
                       width: double.infinity,
                       fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: Colors.grey[200],
-                        child: const Center(child: CircularProgressIndicator()),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: Colors.grey[200],
-                        child: const Icon(Icons.image_not_supported, size: 40),
-                      ),
                     ),
                   ),
                   // Discount Badge

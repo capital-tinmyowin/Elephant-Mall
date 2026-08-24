@@ -1,3 +1,4 @@
+import 'package:elephant_mall/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -89,48 +90,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
 Widget _buildImage(String imageUrl, double height, double width) {
-  if (imageUrl.isEmpty) {
-    return Container(
-      height: height,
-      width: width,
-      color: Colors.grey[200],
-      child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
-    );
-  }
-
   //  TRY BOTH WAYS - This will work no matter what
-  return Image.network(
-    imageUrl,
+  return AppImage(
+    imageUrl: imageUrl,
     height: height,
     width: width,
     fit: BoxFit.cover,
-    errorBuilder: (context, error, stackTrace) {
-      // If network fails, try as asset
-      return Image.asset(
-        imageUrl,
-        height: height,
-        width: width,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          // If asset fails, try without 'assets/'
-          String cleanPath = imageUrl.replaceFirst('assets/', '');
-          return Image.asset(
-            cleanPath,
-            height: height,
-            width: width,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                height: height,
-                width: width,
-                color: Colors.grey[200],
-                child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
-              );
-            },
-          );
-        },
-      );
-    },
   );
 }
 

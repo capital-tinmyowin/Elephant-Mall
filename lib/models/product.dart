@@ -61,7 +61,7 @@ class Product {
     return MockApiService.getProductImagePath(this);
   }
 
-  // 🔥 All product images (for gallery) - returns all colors
+  // All product images (for gallery) - returns all colors
   List<String> get proxiedAllImages {
     if (ApiService.useMockDataStatic) {
       List<String> images = [];

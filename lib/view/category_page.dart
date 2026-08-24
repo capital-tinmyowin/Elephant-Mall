@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:elephant_mall/view/category_detail.dart';
+import 'package:elephant_mall/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
@@ -351,9 +352,9 @@ class _CategoryPageState extends State<CategoryPage> {
     }
     // If it's a local asset
     if (imageUrl.startsWith('assets/')) {
-      String cleanPath = imageUrl.replaceFirst('assets/', '');
+      // String cleanPath = imageUrl.replaceFirst('assets/', '');
       return Image.asset(
-        cleanPath,
+        imageUrl,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
           return Container(
@@ -700,33 +701,11 @@ class _CategoryPageState extends State<CategoryPage> {
               padding: const EdgeInsets.all(2.0),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: CachedNetworkImage(
+                child: AppImage(
                   imageUrl: product.proxiedImageUrl,
                   height: 90,
                   width: 90,
                   fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    height: 70,
-                    width: 70,
-                    color: Colors.grey[200],
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF2B6E3B),
-                      ),
-                    ),
-                  ),
-                  errorWidget: (context, url, error) {
-                    return Container(
-                      height: 70,
-                      width: 70,
-                      color: Colors.grey[200],
-                      child: Icon(
-                        Icons.broken_image,
-                        size: 30,
-                        color: Colors.grey[400],
-                      ),
-                    );
-                  },
                 ),
               ),
             ),
@@ -835,22 +814,11 @@ class _CategoryPageState extends State<CategoryPage> {
                           children: [
                             ClipRRect(
                               borderRadius: BorderRadius.circular(8),
-                              child: Image.network(
-                                firstProduct.proxiedImageUrl,
+                              child: AppImage(
+                                imageUrl:firstProduct.proxiedImageUrl,
                                 height: 75,
                                 width: 85,
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    height: 70,
-                                    width: 70,
-                                    color: Colors.grey[200],
-                                    child: const Icon(
-                                      Icons.image_not_supported,
-                                      size: 30,
-                                    ),
-                                  );
-                                },
                               ),
                             ),
                             GestureDetector(
@@ -1141,27 +1109,11 @@ class _CategoryPageState extends State<CategoryPage> {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: CachedNetworkImage(
+              child: AppImage(
                 imageUrl: product.proxiedImageUrl,
                 height: isMobile ? 110 : 80,
                 // width: isMobile ? 110 : 80,
                 fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  height: isMobile ? 110 : 80,
-                  // width: isMobile ? 110 : 80,
-                  color: Colors.grey[200],
-                  child: const Center(
-                    child: CircularProgressIndicator(color: Color(0xFF2B6E3B)),
-                  ),
-                ),
-                errorWidget: (context, url, error) {
-                  return Container(
-                    height: isMobile ? 110 : 80,
-                    width: isMobile ? 110 : 80,
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.image_not_supported, size: 30),
-                  );
-                },
               ),
             ),
             const SizedBox(height: 8),
