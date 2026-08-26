@@ -109,7 +109,7 @@ class _SellerPageState extends State<NewSellerPage> {
                   children: [
 
                     SellerHeaderWidget(
-                      sellerName: sellerData["name"],
+                      sellerName: sellerData["Username"],
 
                       expandedInfo: expandedInfo,
 
@@ -209,8 +209,8 @@ class _SellerPageState extends State<NewSellerPage> {
 
                                             return SellerItemWidget(
 
-                                              title:
-                                                  item["title"],
+                                              productName:
+                                                  item["productName"],
 
                                               price:
                                                   item["price"],

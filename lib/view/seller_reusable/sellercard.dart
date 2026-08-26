@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 class SellerItemWidget extends StatelessWidget {
-  final String title;
+  final String productName;
   final int price;
   final double rating;
   final String description;
@@ -8,7 +8,7 @@ class SellerItemWidget extends StatelessWidget {
 
   const SellerItemWidget({
     super.key,
-    required this.title,
+    required this.productName,
     required this.price,
     required this.rating,
     required this.description,
@@ -46,7 +46,7 @@ class SellerItemWidget extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              title,
+                              productName,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(

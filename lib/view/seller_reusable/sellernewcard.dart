@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class SellerItemWidget extends StatefulWidget {
-  final String title;
+  final String productName;
   final int price;
   final double rating;
   final String description;
@@ -15,7 +15,7 @@ class SellerItemWidget extends StatefulWidget {
 
   const SellerItemWidget({
     super.key,
-    required this.title,
+    required this.productName,
     required this.price,
     required this.rating,
     required this.description,
@@ -39,7 +39,7 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
   void initState() {
     super.initState();
 
-    currentTitle = widget.title;
+    currentTitle = widget.productName;
     currentPrice = widget.price;
     currentRating = widget.rating;
     currentDescription = widget.description;
