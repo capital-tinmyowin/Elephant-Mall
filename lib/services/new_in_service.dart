@@ -6,7 +6,6 @@ class NewInService {
   // ------------------------------------------------------------
   // MOCK API RESPONSE
   // ------------------------------------------------------------
-  // Later, this JSON will come from your real API.
   static const String _mockJson = '''
   [
     {
