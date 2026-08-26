@@ -129,7 +129,17 @@ class _CommonHeaderState extends State<CommonHeader> {
                         ),
                       ),
                       onPressed: () {
-                        //  Navigate to Sell Page
+                        Navigator.pushReplacement(
+                          context,
+                          PageRouteBuilder(
+                            settings: const RouteSettings(name: "/sell"),
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) =>
+                                    const SellPage(),
+                            transitionDuration: Duration.zero,
+                            reverseTransitionDuration: Duration.zero,
+                          ),
+                        );
                       },
                       child: const Text("SELL ITEMS"),
                     ),
