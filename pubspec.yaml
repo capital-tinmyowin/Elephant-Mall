@@ -68,6 +68,33 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+    - assets/images/heroslider/
+    - assets/images/categories/
+    - assets/images/categories/accessories/Earing/
+    - assets/images/categories/accessories/Nail/
+    - assets/images/categories/accessories/Neck/
+    - assets/images/categories/appliances/Appliance/
+    - assets/images/categories/bags/ChainShoulderBag/
+    - assets/images/categories/bags/LeatherBag/
+    - assets/images/categories/blouses/ColorBlouse/
+    - assets/images/categories/blouses/WhiteBlouse/
+    - assets/images/categories/clearance/Item/
+    - assets/images/categories/clearance/NoteBook/
+    - assets/images/categories/electronics/Ipad/
+    - assets/images/categories/hats/UnisetHat/
+    - assets/images/categories/hats/WoolFedoraHat/
+    - assets/images/categories/headphones/Earphone/
+    - assets/images/categories/homedecor/HomeDecor/
+    - assets/images/categories/jeans/Long/
+    - assets/images/categories/jeans/Short/
+    - assets/images/categories/jeans/ShortSkirt/
+    - assets/images/categories/powerbanks/Powerbank/
+    - assets/images/categories/shoes/RunningShoe/
+    - assets/images/categories/shoes/Sneaker/
+    - assets/images/categories/shoes/WeddingHeel/
+    - assets/images/categories/tshirts/ClassicShirt/
+    - assets/images/categories/tshirts/ColumnShirt/
+    - assets/images/categories/tshirts/OverSize/
     - lib/uploads/
     - images/
     - lib/uploads/login.png

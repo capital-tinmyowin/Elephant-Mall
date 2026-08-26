@@ -1,13 +1,18 @@
 import 'package:elephant_mall/services/auth_service.dart';
-import 'package:elephant_mall/view/category_page.dart';
+import '../profile.dart';
 import 'package:elephant_mall/view/category_page.dart';
 import 'package:elephant_mall/view/favourite_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../home.dart';
 import '../sell.dart';
+<<<<<<< HEAD
 import '../login.dart';
 import '../new_in.dart';
+=======
+import '../login.dart'; // Change the path if your LoginPage is in another folder
+import '../sellernew.dart';
+>>>>>>> 91b240fdc28166240ae9afac41d5d31292b3ae06
 
 class CommonHeader extends StatefulWidget {
   const CommonHeader({super.key});
@@ -75,7 +80,7 @@ class _CommonHeaderState extends State<CommonHeader> {
                                 "MY FAVORITE",
                                 const SellPage(),
                               ),
-                              _menuItem(context, "ABOUT US", const SellPage()),
+                              _menuItem(context, "ABOUT US", const NewSellerPage()),
                             ],
                           ),
                         ),
@@ -223,7 +228,7 @@ class _CommonHeaderState extends State<CommonHeader> {
                       _menuItem(context, "SALE", const SellPage()),
                       _menuItem(context, "NEW IN", const NewInPage()),
                       _menuItem(context, "MY ORDERS", const SellPage()),
-                      _menuItem(context, "ABOUT US", const SellPage()),
+                      _menuItem(context, "ABOUT US", const NewSellerPage()),
                     ],
                   ),
                 ),
@@ -588,7 +593,7 @@ class CommonBottomBar extends StatelessWidget {
         break;
 
       case 4:
-        page = const SellPage();
+        page = const ProfilePage();
         break;
 
       default:

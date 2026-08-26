@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../models/promo.dart';
 import 'common/footer.dart';
 import 'common/header.dart';
+import '../view/product_detail_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -388,15 +389,26 @@ class _HomePageState extends State<HomePage> {
                             color: const Color(0xffF3F3F3),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Image.asset(
-                            item.photoPath,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Icon(
-                                Icons.image_not_supported,
-                                size: 30,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>  ProductDetailPage(productId: item.categoryId)
+                                ),
                               );
                             },
+                            child: Image.asset(
+                              item.photoPath,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.image_not_supported,
+                                  size: 30,
+                                );
+                              },
+                            ),
                           ),
                         ),
 
@@ -554,9 +566,17 @@ class _HomePageState extends State<HomePage> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              ProductDetailPage(productId: p.productId),
+                        ),
+                      );
+                    },
                     child: const Text(
-                      "ADD TO FAVORITE",
+                      "View Details",
                       style: TextStyle(color: Colors.white, fontSize: 11),
                     ),
                   ),
