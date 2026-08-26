@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/new_in.dart';
+import '../services/new_in_service.dart';
 import 'common/header.dart';
 import 'common/footer.dart';
 
@@ -16,101 +17,38 @@ class _NewInPageState extends State<NewInPage> {
   String selectedPrice = "All Prices";
   String selectedSort = "Newest";
 
-  // ---------------------------------- --------------------------
-  // SAMPLE DATA
-  // ------------------------------------------------------------
-  final List<NewInModel> allProducts = [
-    NewInModel(
-      id: 1,
-      name: "Men's Sneakers",
-      category: "Shoes",
-      price: 89.00,
-      rating: 4.5,
-      reviewCount: 24,
-      imagePath: "assets/images/products/sneakers.png",
-    ),
-    NewInModel(
-      id: 2,
-      name: "Women's Wristwatch",
-      category: "Accessories",
-      price: 65.00,
-      rating: 4.5,
-      reviewCount: 18,
-      imagePath: "assets/images/products/watch.png",
-    ),
-    NewInModel(
-      id: 3,
-      name: "Leather Backpack",
-      category: "Bags",
-      price: 110.00,
-      rating: 4.0,
-      reviewCount: 12,
-      imagePath: "assets/images/products/backpack.png",
-    ),
-    NewInModel(
-      id: 4,
-      name: "Linen Shirt (New Item)",
-      category: "Clothing",
-      price: 45.00,
-      rating: 4.5,
-      reviewCount: 15,
-      imagePath: "assets/images/products/shirt.png",
-    ),
-    NewInModel(
-      id: 5,
-      name: "Straw Hat (New Item)",
-      category: "Accessories",
-      price: 25.00,
-      rating: 4.0,
-      reviewCount: 21,
-      imagePath: "assets/images/products/hat.png",
-    ),
-    NewInModel(
-      id: 6,
-      name: "Cotton Blouse",
-      category: "Clothing",
-      price: 38.00,
-      rating: 4.5,
-      reviewCount: 17,
-      imagePath: "assets/images/products/blouse.png",
-    ),
-    NewInModel(
-      id: 7,
-      name: "Canvas Tote Bag",
-      category: "Bags",
-      price: 29.00,
-      rating: 4.5,
-      reviewCount: 16,
-      imagePath: "assets/images/products/tote_bag.png",
-    ),
-    NewInModel(
-      id: 8,
-      name: "Leather Sandals",
-      category: "Shoes",
-      price: 55.00,
-      rating: 4.0,
-      reviewCount: 14,
-      imagePath: "assets/images/products/sandals.png",
-    ),
-    NewInModel(
-      id: 9,
-      name: "Polarized Sunglasses",
-      category: "Accessories",
-      price: 35.00,
-      rating: 4.5,
-      reviewCount: 14,
-      imagePath: "assets/images/products/sunglasses.png",
-    ),
-    NewInModel(
-      id: 10,
-      name: "Heart Pendant Necklace",
-      category: "Jewelry",
-      price: 28.00,
-      rating: 4.5,
-      reviewCount: 13,
-      imagePath: "assets/images/products/necklace.png",
-    ),
-  ];
+  final NewInService _newInService = NewInService();
+
+  List<NewInModel> allProducts = [];
+
+  bool isLoading = true;
+  String? errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts();
+  }
+
+  Future<void> _loadProducts() async {
+    try {
+      final products = await _newInService.getNewInProducts();
+
+      if (!mounted) return;
+
+      setState(() {
+        allProducts = products;
+        isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        isLoading = false;
+        errorMessage = e.toString();
+      });
+    }
+  }
 
   // ------------------------------------------------------------
   // RESPONSIVE
@@ -139,9 +77,7 @@ class _NewInPageState extends State<NewInPage> {
       result = result.where((product) => product.price < 50).toList();
     } else if (selectedPrice == "50 - 100") {
       result = result
-          .where(
-            (product) => product.price >= 50 && product.price <= 100,
-          )
+          .where((product) => product.price >= 50 && product.price <= 100)
           .toList();
     } else if (selectedPrice == "Over 100") {
       result = result.where((product) => product.price > 100).toList();
@@ -166,6 +102,22 @@ class _NewInPageState extends State<NewInPage> {
   @override
   Widget build(BuildContext context) {
     final mobileView = isMobile(context);
+
+    if (isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (errorMessage != null) {
+      return Scaffold(
+        body: Center(
+          child: Text(
+            "Failed to load products",
+            style: const TextStyle(color: Colors.red),
+          ),
+        ),
+      );
+    }
+
     final products = filteredProducts;
 
     return Scaffold(
@@ -181,9 +133,7 @@ class _NewInPageState extends State<NewInPage> {
             child: SingleChildScrollView(
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: 1400,
-                  ),
+                  constraints: const BoxConstraints(maxWidth: 1600),
                   child: Padding(
                     padding: EdgeInsets.symmetric(
                       horizontal: mobileView ? 12 : 20,
@@ -192,14 +142,14 @@ class _NewInPageState extends State<NewInPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildBreadcrumb(),
+                        // _buildBreadcrumb(),
                         const SizedBox(height: 8),
 
                         _buildHeroBanner(mobileView),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 40),
 
                         _buildFilterRow(mobileView),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
 
                         _buildProductCount(products.length),
                         const SizedBox(height: 5),
@@ -231,37 +181,37 @@ class _NewInPageState extends State<NewInPage> {
   // BREADCRUMB
   // ------------------------------------------------------------
 
-  Widget _buildBreadcrumb() {
-    return Row(
-      children: [
-        const Text(
-          "Home",
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.grey,
-          ),
-        ),
+  // Widget _buildBreadcrumb() {
+  //   return Row(
+  //     children: [
+  //       const Text(
+  //         "Home",
+  //         style: TextStyle(
+  //           fontSize: 11,
+  //           color: Colors.grey,
+  //         ),
+  //       ),
 
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 6),
-          child: Icon(
-            Icons.chevron_right,
-            size: 14,
-            color: Colors.grey,
-          ),
-        ),
+  //       const Padding(
+  //         padding: EdgeInsets.symmetric(horizontal: 6),
+  //         child: Icon(
+  //           Icons.chevron_right,
+  //           size: 14,
+  //           color: Colors.grey,
+  //         ),
+  //       ),
 
-        const Text(
-          "New In",
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.orange,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
-  }
+  //       const Text(
+  //         "New In",
+  //         style: TextStyle(
+  //           fontSize: 11,
+  //           color: Colors.orange,
+  //           fontWeight: FontWeight.bold,
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   // ------------------------------------------------------------
   // HERO BANNER
@@ -269,14 +219,12 @@ class _NewInPageState extends State<NewInPage> {
 
   Widget _buildHeroBanner(bool mobileView) {
     return Container(
-      height: mobileView ? 150 : 170,
+      height: mobileView ? 150 : 200,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         image: const DecorationImage(
-          image: AssetImage(
-            "assets/images/promotion_banner.jpg",
-          ),
+          image: AssetImage("assets/newarrbanner.jpg"),
           fit: BoxFit.cover,
         ),
       ),
@@ -324,19 +272,14 @@ class _NewInPageState extends State<NewInPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(5),
                   ),
                 ),
                 child: const Text(
                   "EXPLORE NEW ARRIVALS",
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -444,12 +387,7 @@ class _NewInPageState extends State<NewInPage> {
           width: 180,
           child: _buildDropdown(
             value: selectedPrice,
-            items: const [
-              "All Prices",
-              "Under 50",
-              "50 - 100",
-              "Over 100",
-            ],
+            items: const ["All Prices", "Under 50", "50 - 100", "Over 100"],
             onChanged: (value) {
               setState(() {
                 selectedPrice = value!;
@@ -504,9 +442,7 @@ class _NewInPageState extends State<NewInPage> {
       height: 32,
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(
-          color: const Color(0xffD8D8D8),
-        ),
+        border: Border.all(color: const Color(0xffD8D8D8)),
         borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -514,21 +450,12 @@ class _NewInPageState extends State<NewInPage> {
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
-          icon: const Icon(
-            Icons.keyboard_arrow_down,
-            size: 16,
-          ),
-          style: const TextStyle(
-            fontSize: 11,
-            color: Colors.black87,
-          ),
+          icon: const Icon(Icons.keyboard_arrow_down, size: 16),
+          style: const TextStyle(fontSize: 11, color: Colors.black87),
           items: items.map((item) {
             return DropdownMenuItem<String>(
               value: item,
-              child: Text(
-                item,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(item, overflow: TextOverflow.ellipsis),
             );
           }).toList(),
           onChanged: onChanged,
@@ -546,10 +473,7 @@ class _NewInPageState extends State<NewInPage> {
       alignment: Alignment.centerRight,
       child: Text(
         "Showing 1–$count of ${allProducts.length} results",
-        style: const TextStyle(
-          fontSize: 10,
-          color: Colors.black54,
-        ),
+        style: const TextStyle(fontSize: 15, color: Colors.black54),
       ),
     );
   }
@@ -558,52 +482,31 @@ class _NewInPageState extends State<NewInPage> {
   // PRODUCT GRID
   // ------------------------------------------------------------
 
-  Widget _buildProductGrid(
-    List<NewInModel> products,
-    bool mobileView,
-  ) {
+  Widget _buildProductGrid(List<NewInModel> products, bool mobileView) {
     if (products.isEmpty) {
       return const SizedBox(
         height: 200,
         child: Center(
           child: Text(
             "No products found.",
-            style: TextStyle(
-              color: Colors.grey,
-            ),
+            style: TextStyle(color: Colors.grey),
           ),
         ),
       );
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        double cardWidth;
-
-        if (constraints.maxWidth >= 1100) {
-          cardWidth = 190;
-        } else if (constraints.maxWidth >= 800) {
-          cardWidth = 180;
-        } else if (constraints.maxWidth >= 500) {
-          cardWidth = 160;
-        } else {
-          cardWidth = 145;
-        }
-
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: products.length,
-          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: cardWidth,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            mainAxisExtent: mobileView ? 215 : 205,
-          ),
-          itemBuilder: (context, index) {
-            return _buildProductCard(products[index]);
-          },
-        );
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: products.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: mobileView ? 2 : 5,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        mainAxisExtent: mobileView ? 215 : 230,
+      ),
+      itemBuilder: (context, index) {
+        return _buildProductCard(products[index]);
       },
     );
   }
@@ -616,9 +519,7 @@ class _NewInPageState extends State<NewInPage> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(
-          color: const Color(0xffE1E1E1),
-        ),
+        border: Border.all(color: const Color(0xffE1E1E1)),
         borderRadius: BorderRadius.circular(7),
       ),
       child: Column(
@@ -626,7 +527,7 @@ class _NewInPageState extends State<NewInPage> {
         children: [
           // IMAGE
           SizedBox(
-            height: 105,
+            height: 120,
             child: Stack(
               children: [
                 Positioned.fill(
@@ -637,11 +538,7 @@ class _NewInPageState extends State<NewInPage> {
                       child: Image.asset(
                         product.imagePath,
                         fit: BoxFit.contain,
-                        errorBuilder: (
-                          context,
-                          error,
-                          stackTrace,
-                        ) {
+                        errorBuilder: (context, error, stackTrace) {
                           return Container(
                             color: const Color(0xffF4F4F4),
                             child: const Center(
@@ -702,15 +599,13 @@ class _NewInPageState extends State<NewInPage> {
 
           // PRODUCT NAME
           Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 7,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 7),
             child: Text(
-              product.name,
+              product.productName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                fontSize: 11,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
@@ -721,13 +616,11 @@ class _NewInPageState extends State<NewInPage> {
 
           // PRICE
           Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 7,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 7),
             child: Text(
               "${product.price.toStringAsFixed(2)} MMK",
               style: const TextStyle(
-                fontSize: 10,
+                fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
               ),
@@ -738,32 +631,24 @@ class _NewInPageState extends State<NewInPage> {
 
           // RATING
           Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 7,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 7),
             child: Row(
               children: [
-                ...List.generate(
-                  5,
-                  (index) {
-                    return Icon(
-                      index < product.rating.round()
-                          ? Icons.star
-                          : Icons.star_border,
-                      size: 12,
-                      color: Colors.orange,
-                    );
-                  },
-                ),
+                ...List.generate(5, (index) {
+                  return Icon(
+                    index < product.rating.round()
+                        ? Icons.star
+                        : Icons.star_border,
+                    size: 14,
+                    color: Colors.orange,
+                  );
+                }),
 
                 const SizedBox(width: 3),
 
                 Text(
                   "(${product.reviewCount})",
-                  style: const TextStyle(
-                    fontSize: 8,
-                    color: Colors.grey,
-                  ),
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ],
             ),
@@ -773,24 +658,17 @@ class _NewInPageState extends State<NewInPage> {
 
           // VIEW DETAILS BUTTON
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              7,
-              2,
-              7,
-              6,
-            ),
+            padding: const EdgeInsets.fromLTRB(7, 1, 7, 6),
             child: SizedBox(
               width: double.infinity,
-              height: 24,
+              height: 28,
               child: OutlinedButton(
                 onPressed: () {
                   // TODO:
                   // Navigate to product details page
                 },
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(
-                    color: Colors.orange,
-                  ),
+                  side: const BorderSide(color: Colors.orange),
                   padding: EdgeInsets.zero,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(5),
@@ -800,7 +678,7 @@ class _NewInPageState extends State<NewInPage> {
                   "View Details",
                   style: TextStyle(
                     color: Colors.orange,
-                    fontSize: 9,
+                    fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

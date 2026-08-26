@@ -6,7 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../home.dart';
 import '../sell.dart';
-import '../login.dart'; // Change the path if your LoginPage is in another folder
+import '../login.dart';
+import '../new_in.dart';
 
 class CommonHeader extends StatefulWidget {
   const CommonHeader({super.key});
@@ -68,7 +69,7 @@ class _CommonHeaderState extends State<CommonHeader> {
                                 const CategoryPage(),
                               ),
                               _menuItem(context, "SALE", const SellPage()),
-                              _menuItem(context, "NEW IN", const SellPage()),
+                              _menuItem(context, "NEW IN", const NewInPage()),
                               _menuItem(
                                 context,
                                 "MY FAVORITE",
@@ -210,7 +211,7 @@ class _CommonHeaderState extends State<CommonHeader> {
                       _menuItem(context, "HOME", const HomePage()),
                       _menuItem(context, "CATEGORIES", const CategoryPage()),
                       _menuItem(context, "SALE", const SellPage()),
-                      _menuItem(context, "NEW IN", const SellPage()),
+                      _menuItem(context, "NEW IN", const NewInPage()),
                       _menuItem(context, "MY ORDERS", const SellPage()),
                       _menuItem(context, "ABOUT US", const SellPage()),
                     ],
@@ -233,6 +234,9 @@ class _CommonHeaderState extends State<CommonHeader> {
 
       case "/category":
         return menuName == "CATEGORIES";
+
+      case "/new-in":
+        return menuName == "NEW IN";
 
       case "/sell":
         return menuName == "SALE";
@@ -476,6 +480,10 @@ class _CommonHeaderState extends State<CommonHeader> {
 
             case "CATEGORIES":
               routeName = "/category";
+              break;
+
+            case "NEW IN":
+              routeName = "/new-in";
               break;
 
             case "SALE":

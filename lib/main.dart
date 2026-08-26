@@ -49,7 +49,7 @@ class MyApp extends StatelessWidget {
         ),
         initialRoute: '/',
         routes: {
-          '/': (context) => const NewInPage(),
+          '/': (context) => const HomePage(),
           '/seller': (context) => const SellerPage(),
         },
       ),
