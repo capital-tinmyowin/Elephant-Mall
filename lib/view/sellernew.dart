@@ -41,28 +41,12 @@ class NewSellerPage extends StatefulWidget {
 
 class _SellerPageState extends State<NewSellerPage> {
   int? expandedInfo;
-
-  // Local copy of the JSON products.
   late List<dynamic> items;
 
   @override
   void initState() {
     super.initState();
-
-    // Make a mutable copy of the JSON list.
     items = List<dynamic>.from(sellerData["items"] as List<dynamic>);
-  }
-
-  void _updateItem(int index, Map<String, dynamic> updatedItem) {
-    setState(() {
-      items[index] = updatedItem;
-    });
-  }
-
-  void _deleteItem(int index) {
-    setState(() {
-      items.removeAt(index);
-    });
   }
 
   @override
