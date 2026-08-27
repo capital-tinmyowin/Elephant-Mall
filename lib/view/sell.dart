@@ -13,7 +13,10 @@ import 'common/footer.dart';
 import '../models/product_variant.dart';
 
 class SellPage extends StatefulWidget {
-  const SellPage({super.key});
+  final int? userID;
+  final int? productCode;
+
+  const SellPage({super.key, this.userID, this.productCode});
 
   @override
   State<SellPage> createState() => _SellPageState();
@@ -243,7 +246,7 @@ class _SellPageState extends State<SellPage> {
           title: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: const BoxDecoration(
-              color: Color(0xFFC77C2E), 
+              color: Color(0xFFC77C2E),
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(18),
                 topRight: Radius.circular(18),

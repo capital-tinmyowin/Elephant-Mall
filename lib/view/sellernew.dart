@@ -50,15 +50,10 @@ class _SellerPageState extends State<NewSellerPage> {
     super.initState();
 
     // Make a mutable copy of the JSON list.
-    items = List<dynamic>.from(
-      sellerData["items"] as List<dynamic>,
-    );
+    items = List<dynamic>.from(sellerData["items"] as List<dynamic>);
   }
 
-  void _updateItem(
-    int index,
-    Map<String, dynamic> updatedItem,
-  ) {
+  void _updateItem(int index, Map<String, dynamic> updatedItem) {
     setState(() {
       items[index] = updatedItem;
     });
@@ -77,14 +72,11 @@ class _SellerPageState extends State<NewSellerPage> {
     final mobile = isMobile(context);
     final desktop = isDesktop(context);
 
-
     return Scaffold(
       backgroundColor: const Color(0xffF3F3F3),
 
       bottomNavigationBar: mobile
-          ? const CommonBottomBar(
-              currentIndex: 2,
-            )
+          ? const CommonBottomBar(currentIndex: 2)
           : null,
 
       body: GestureDetector(
@@ -107,7 +99,6 @@ class _SellerPageState extends State<NewSellerPage> {
 
                 child: Column(
                   children: [
-
                     SellerHeaderWidget(
                       sellerName: sellerData["Username"],
 
@@ -134,7 +125,6 @@ class _SellerPageState extends State<NewSellerPage> {
                               child: SingleChildScrollView(
                                 child: Column(
                                   children: [
-
                                     const SizedBox(
                                       width: 220,
                                       child: SellerSideMenu(),
@@ -153,8 +143,7 @@ class _SellerPageState extends State<NewSellerPage> {
 
                           Expanded(
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
 
                               children: [
                                 const Align(
@@ -167,12 +156,10 @@ class _SellerPageState extends State<NewSellerPage> {
                                   child: FilterBar(),
                                 ),
 
-
                                 const SizedBox(height: 16),
 
                                 Expanded(
                                   child: SingleChildScrollView(
-
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
@@ -188,56 +175,28 @@ class _SellerPageState extends State<NewSellerPage> {
 
                                           gridDelegate:
                                               SliverGridDelegateWithFixedCrossAxisCount(
-                                            crossAxisCount:
-                                                getCrossAxisCount(width),
+                                                crossAxisCount:
+                                                    getCrossAxisCount(width),
 
-                                            crossAxisSpacing: 8,
+                                                crossAxisSpacing: 8,
 
-                                            mainAxisSpacing: 8,
+                                                mainAxisSpacing: 8,
 
-                                            childAspectRatio:
-                                                getAspectRatio(width),
-                                          ),
+                                                childAspectRatio:
+                                                    getAspectRatio(width),
+                                              ),
 
-
-                                          itemBuilder:
-                                              (context, index) {
-
-                                            final item =
-                                                items[index];
-
+                                          itemBuilder: (context, index) {
+                                            final item = items[index];
 
                                             return SellerItemWidget(
-
-                                              productName:
-                                                  item["productName"],
-
-                                              price:
-                                                  item["price"],
-
-                                              rating:
-                                                  item["rating"],
-
-                                              description:
-                                                  item["description"],
-
-                                              image:
-                                                  item["image"],
-                                              onUpdate:
-                                                  (updatedItem) {
-
-                                                _updateItem(
-                                                  index,
-                                                  updatedItem,
-                                                );
-                                              },
-
-                                              onDelete: () {
-
-                                                _deleteItem(
-                                                  index,
-                                                );
-                                              },
+                                              userID:sellerData["userID"] as int,
+                                              productCode:item["productCode"] as int,
+                                              productName:item["productName"] as String,
+                                              price: item["price"] as int,
+                                              rating: (item["rating"] as num).toDouble(),
+                                              description:item["description"] as String,
+                                              image: item["image"] as String,
                                             );
                                           },
                                         ),
@@ -248,33 +207,25 @@ class _SellerPageState extends State<NewSellerPage> {
                                               CrossAxisAlignment.start,
 
                                           children: [
-
                                             Expanded(
                                               child: ProductSection(
-                                                title:
-                                                    "Newest Arrivals",
+                                                title: "Newest Arrivals",
 
-                                                products:
-                                                    newestProducts,
+                                                products: newestProducts,
                                               ),
                                             ),
 
-
                                             const SizedBox(width: 10),
-
 
                                             Expanded(
                                               child: ProductSection(
-                                                title:
-                                                    "Best Sellers",
+                                                title: "Best Sellers",
 
-                                                products:
-                                                    bestSellerProducts,
+                                                products: bestSellerProducts,
                                               ),
                                             ),
                                           ],
                                         ),
-
 
                                         const SizedBox(height: 20),
                                       ],
@@ -292,8 +243,7 @@ class _SellerPageState extends State<NewSellerPage> {
               ),
             ),
 
-            if (!mobile)
-              const CommonFooter(),
+            if (!mobile) const CommonFooter(),
           ],
         ),
       ),
@@ -304,7 +254,6 @@ class _SellerPageState extends State<NewSellerPage> {
 bool isMobile(BuildContext context) {
   return MediaQuery.of(context).size.width < 450;
 }
-
 
 bool isDesktop(BuildContext context) {
   return MediaQuery.of(context).size.width > 800;
