@@ -6,13 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../home.dart';
 import '../sell.dart';
-<<<<<<< HEAD
 import '../login.dart';
 import '../new_in.dart';
-=======
-import '../login.dart'; // Change the path if your LoginPage is in another folder
 import '../sellernew.dart';
->>>>>>> 91b240fdc28166240ae9afac41d5d31292b3ae06
+import '../sale.dart';
 
 class CommonHeader extends StatefulWidget {
   const CommonHeader({super.key});
@@ -73,14 +70,18 @@ class _CommonHeaderState extends State<CommonHeader> {
                                 "CATEGORIES",
                                 const CategoryPage(),
                               ),
-                              _menuItem(context, "SALE", const SellPage()),
+                              _menuItem(context, "SALE", const SalePage()),
                               _menuItem(context, "NEW IN", const NewInPage()),
                               _menuItem(
                                 context,
                                 "MY FAVORITE",
                                 const SellPage(),
                               ),
-                              _menuItem(context, "ABOUT US", const NewSellerPage()),
+                              _menuItem(
+                                context,
+                                "ABOUT US",
+                                const NewSellerPage(),
+                              ),
                             ],
                           ),
                         ),
@@ -225,7 +226,7 @@ class _CommonHeaderState extends State<CommonHeader> {
                     children: [
                       _menuItem(context, "HOME", const HomePage()),
                       _menuItem(context, "CATEGORIES", const CategoryPage()),
-                      _menuItem(context, "SALE", const SellPage()),
+                      _menuItem(context, "SALE", const SalePage()),
                       _menuItem(context, "NEW IN", const NewInPage()),
                       _menuItem(context, "MY ORDERS", const SellPage()),
                       _menuItem(context, "ABOUT US", const NewSellerPage()),

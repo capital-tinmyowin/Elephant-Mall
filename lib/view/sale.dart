@@ -1,25 +1,26 @@
 import 'package:flutter/material.dart';
 
-import '../models/new_in.dart';
-import '../services/new_in_service.dart';
+import '../models/sale.dart';
+import '../services/sale_service.dart';
 import 'common/header.dart';
 import 'common/footer.dart';
 
-class NewInPage extends StatefulWidget {
-  const NewInPage({super.key});
+class SalePage extends StatefulWidget {
+  const SalePage({super.key});
 
   @override
-  State<NewInPage> createState() => _NewInPageState();
+  State<SalePage> createState() => _SalePageState();
 }
 
-class _NewInPageState extends State<NewInPage> {
+class _SalePageState extends State<SalePage> {
   String selectedCategory = "All Categories";
-  String selectedPrice = "All Prices";
-  String selectedSort = "Newest";
+  String selectedDiscount = "Discount %";
+  String selectedPrice = "Price Range";
+  String selectedSort = "Biggest Savings";
 
-  final NewInService _newInService = NewInService();
+  final SaleService _saleService = SaleService();
 
-  List<NewInModel> allProducts = [];
+  List<SaleModel> allProducts = [];
 
   bool isLoading = true;
   String? errorMessage;
@@ -30,9 +31,11 @@ class _NewInPageState extends State<NewInPage> {
     _loadProducts();
   }
 
+  // LOAD PRODUCTS
+
   Future<void> _loadProducts() async {
     try {
-      final products = await _newInService.getNewInProducts();
+      final products = await _saleService.getSaleProducts();
 
       if (!mounted) return;
 
@@ -58,32 +61,55 @@ class _NewInPageState extends State<NewInPage> {
 
   // FILTER PRODUCTS
 
-  List<NewInModel> get filteredProducts {
-    List<NewInModel> result = List.from(allProducts);
+  List<SaleModel> get filteredProducts {
+    List<SaleModel> result = List.from(allProducts);
 
-    // Category
+    // CATEGORY
+
     if (selectedCategory != "All Categories") {
       result = result
           .where((product) => product.category == selectedCategory)
           .toList();
     }
 
-    // Price
-    if (selectedPrice == "Under 50") {
-      result = result.where((product) => product.price < 50).toList();
-    } else if (selectedPrice == "50 - 100") {
-      result = result
-          .where((product) => product.price >= 50 && product.price <= 100)
-          .toList();
-    } else if (selectedPrice == "Over 100") {
-      result = result.where((product) => product.price > 100).toList();
+    // DISCOUNT
+
+    if (selectedDiscount == "20%+") {
+      result = result.where((product) => product.discount >= 20).toList();
+    } else if (selectedDiscount == "30%+") {
+      result = result.where((product) => product.discount >= 30).toList();
+    } else if (selectedDiscount == "40%+") {
+      result = result.where((product) => product.discount >= 40).toList();
     }
 
-    // Sort
-    if (selectedSort == "Price: Low to High") {
-      result.sort((a, b) => a.price.compareTo(b.price));
+    // PRICE
+
+    if (selectedPrice == "Under 30") {
+      result = result.where((product) => product.salePrice < 30).toList();
+    } else if (selectedPrice == "30 - 60") {
+      result = result
+          .where(
+            (product) => product.salePrice >= 30 && product.salePrice <= 60,
+          )
+          .toList();
+    } else if (selectedPrice == "Over 60") {
+      result = result.where((product) => product.salePrice > 60).toList();
+    }
+
+    // SORT
+
+    if (selectedSort == "Biggest Savings") {
+      result.sort(
+        (a, b) => (b.originalPrice - b.salePrice).compareTo(
+          a.originalPrice - a.salePrice,
+        ),
+      );
+    } else if (selectedSort == "Discount: High to Low") {
+      result.sort((a, b) => b.discount.compareTo(a.discount));
+    } else if (selectedSort == "Price: Low to High") {
+      result.sort((a, b) => a.salePrice.compareTo(b.salePrice));
     } else if (selectedSort == "Price: High to Low") {
-      result.sort((a, b) => b.price.compareTo(a.price));
+      result.sort((a, b) => b.salePrice.compareTo(a.salePrice));
     } else if (selectedSort == "Rating") {
       result.sort((a, b) => b.rating.compareTo(a.rating));
     }
@@ -105,7 +131,7 @@ class _NewInPageState extends State<NewInPage> {
       return Scaffold(
         body: Center(
           child: Text(
-            "Failed to load products",
+            "Failed to load sale products",
             style: const TextStyle(color: Colors.red),
           ),
         ),
@@ -119,10 +145,10 @@ class _NewInPageState extends State<NewInPage> {
 
       body: Column(
         children: [
-          // COMMON HEADER
+          // HEADER
           const CommonHeader(),
 
-          // PAGE CONTENT
+          // CONTENT
           Expanded(
             child: SingleChildScrollView(
               child: Center(
@@ -136,21 +162,25 @@ class _NewInPageState extends State<NewInPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // _buildBreadcrumb(),
                         const SizedBox(height: 8),
 
                         _buildHeroBanner(mobileView),
+
                         const SizedBox(height: 10),
 
                         _buildFilterRow(mobileView),
-                        const SizedBox(height: 10),
+
+                        const SizedBox(height: 8),
 
                         _buildProductCount(products.length),
+
                         const SizedBox(height: 5),
 
                         _buildProductGrid(products, mobileView),
 
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 20),
+
+                        _buildSaleCategories(mobileView),
                       ],
                     ),
                   ),
@@ -159,51 +189,19 @@ class _NewInPageState extends State<NewInPage> {
             ),
           ),
 
-          // COMMON FOOTER
+          // FOOTER
           if (!mobileView) const CommonFooter(),
         ],
       ),
 
+      // ==========================================================
       // MOBILE BOTTOM BAR
+      // ==========================================================
       bottomNavigationBar: mobileView
-          ? const CommonBottomBar(currentIndex: 0)
+          ? const CommonBottomBar(currentIndex: 2)
           : null,
     );
   }
-
-  // BREADCRUMB
-
-  // Widget _buildBreadcrumb() {
-  //   return Row(
-  //     children: [
-  //       const Text(
-  //         "Home",
-  //         style: TextStyle(
-  //           fontSize: 11,
-  //           color: Colors.grey,
-  //         ),
-  //       ),
-
-  //       const Padding(
-  //         padding: EdgeInsets.symmetric(horizontal: 6),
-  //         child: Icon(
-  //           Icons.chevron_right,
-  //           size: 14,
-  //           color: Colors.grey,
-  //         ),
-  //       ),
-
-  //       const Text(
-  //         "New In",
-  //         style: TextStyle(
-  //           fontSize: 11,
-  //           color: Colors.orange,
-  //           fontWeight: FontWeight.bold,
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
 
   // HERO BANNER
 
@@ -214,61 +212,64 @@ class _NewInPageState extends State<NewInPage> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         image: const DecorationImage(
-          image: AssetImage("assets/newarrbanner.jpg"),
+          image: const AssetImage("assets/salebanner.jpg"),
           fit: BoxFit.cover,
+          alignment: const Alignment(0, -0.3),
         ),
       ),
       child: Padding(
         padding: EdgeInsets.only(
-          left: mobileView ? 20 : 28,
-          top: mobileView ? 20 : 25,
+          left: mobileView ? 20 : 35,
+          top: mobileView ? 18 : 20,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "NEW IN THIS WEEK",
+              "MEGA SALE DEALS 🔥",
               style: TextStyle(
-                color: const Color(0xff3D2116),
-                fontSize: mobileView ? 24 : 32,
+                color: Colors.white,
+                fontSize: mobileView ? 24 : 34,
                 fontWeight: FontWeight.w800,
               ),
             ),
 
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
 
             Text(
-              "Fresh arrivals, handpicked for you.",
+              "Hot discounts on Yangon's trending fashion,",
               style: TextStyle(
-                color: const Color(0xff4A3328),
-                fontSize: mobileView ? 11 : 13,
+                color: Colors.white,
+                fontSize: mobileView ? 11 : 14,
+                fontWeight: FontWeight.w500,
               ),
             ),
 
             Text(
-              "Stay ahead of the trends in Yangon.",
+              "bags, shoes, and accessories.",
               style: TextStyle(
-                color: const Color(0xff4A3328),
-                fontSize: mobileView ? 11 : 13,
+                color: Colors.white,
+                fontSize: mobileView ? 11 : 14,
+                fontWeight: FontWeight.w500,
               ),
             ),
 
             const SizedBox(height: 10),
 
             SizedBox(
-              height: 28,
+              height: 30,
               child: ElevatedButton(
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
+                  backgroundColor: const Color(0xffF28C00),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(5),
+                    borderRadius: BorderRadius.circular(15),
                   ),
                 ),
                 child: const Text(
-                  "EXPLORE NEW ARRIVALS",
+                  "SHOP SALE NOW",
                   style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -310,16 +311,11 @@ class _NewInPageState extends State<NewInPage> {
 
               Expanded(
                 child: _buildDropdown(
-                  value: selectedPrice,
-                  items: const [
-                    "All Prices",
-                    "Under 50",
-                    "50 - 100",
-                    "Over 100",
-                  ],
+                  value: selectedDiscount,
+                  items: const ["Discount %", "20%+", "30%+", "40%+"],
                   onChanged: (value) {
                     setState(() {
-                      selectedPrice = value!;
+                      selectedDiscount = value!;
                     });
                   },
                 ),
@@ -329,23 +325,51 @@ class _NewInPageState extends State<NewInPage> {
 
           const SizedBox(height: 8),
 
-          _buildDropdown(
-            value: selectedSort,
-            items: const [
-              "Newest",
-              "Price: Low to High",
-              "Price: High to Low",
-              "Rating",
+          Row(
+            children: [
+              Expanded(
+                child: _buildDropdown(
+                  value: selectedPrice,
+                  items: const [
+                    "Price Range",
+                    "Under 30",
+                    "30 - 60",
+                    "Over 60",
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      selectedPrice = value!;
+                    });
+                  },
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              Expanded(
+                child: _buildDropdown(
+                  value: selectedSort,
+                  items: const [
+                    "Biggest Savings",
+                    "Discount: High to Low",
+                    "Price: Low to High",
+                    "Price: High to Low",
+                    "Rating",
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      selectedSort = value!;
+                    });
+                  },
+                ),
+              ),
             ],
-            onChanged: (value) {
-              setState(() {
-                selectedSort = value!;
-              });
-            },
           ),
         ],
       );
     }
+
+    // DESKTOP
 
     return Row(
       children: [
@@ -372,10 +396,25 @@ class _NewInPageState extends State<NewInPage> {
         const SizedBox(width: 10),
 
         SizedBox(
-          width: 180,
+          width: 150,
+          child: _buildDropdown(
+            value: selectedDiscount,
+            items: const ["Discount %", "20%+", "30%+", "40%+"],
+            onChanged: (value) {
+              setState(() {
+                selectedDiscount = value!;
+              });
+            },
+          ),
+        ),
+
+        const SizedBox(width: 10),
+
+        SizedBox(
+          width: 150,
           child: _buildDropdown(
             value: selectedPrice,
-            items: const ["All Prices", "Under 50", "50 - 100", "Over 100"],
+            items: const ["Price Range", "Under 30", "30 - 60", "Over 60"],
             onChanged: (value) {
               setState(() {
                 selectedPrice = value!;
@@ -391,7 +430,8 @@ class _NewInPageState extends State<NewInPage> {
           child: _buildDropdown(
             value: selectedSort,
             items: const [
-              "Newest",
+              "Biggest Savings",
+              "Discount: High to Low",
               "Price: Low to High",
               "Price: High to Low",
               "Rating",
@@ -405,14 +445,6 @@ class _NewInPageState extends State<NewInPage> {
         ),
 
         const Spacer(),
-
-        // Text(
-        //   "Showing 1–${filteredProducts.length} of ${allProducts.length} results",
-        //   style: const TextStyle(
-        //     fontSize: 11,
-        //     color: Colors.black54,
-        //   ),
-        // ),
       ],
     );
   }
@@ -450,7 +482,7 @@ class _NewInPageState extends State<NewInPage> {
     );
   }
 
-  // RESULT COUNT
+  // PRODUCT COUNT
 
   Widget _buildProductCount(int count) {
     return Align(
@@ -464,13 +496,13 @@ class _NewInPageState extends State<NewInPage> {
 
   // PRODUCT GRID
 
-  Widget _buildProductGrid(List<NewInModel> products, bool mobileView) {
+  Widget _buildProductGrid(List<SaleModel> products, bool mobileView) {
     if (products.isEmpty) {
       return const SizedBox(
         height: 200,
         child: Center(
           child: Text(
-            "No products found.",
+            "No sale products found.",
             style: TextStyle(color: Colors.grey),
           ),
         ),
@@ -482,10 +514,14 @@ class _NewInPageState extends State<NewInPage> {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: products.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        // 2 products on mobile
+        // 5 products on desktop
         crossAxisCount: mobileView ? 2 : 5,
+
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
-        mainAxisExtent: mobileView ? 215 : 230,
+
+        mainAxisExtent: mobileView ? 225 : 235,
       ),
       itemBuilder: (context, index) {
         return _buildProductCard(products[index]);
@@ -495,7 +531,7 @@ class _NewInPageState extends State<NewInPage> {
 
   // PRODUCT CARD
 
-  Widget _buildProductCard(NewInModel product) {
+  Widget _buildProductCard(SaleModel product) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -507,7 +543,7 @@ class _NewInPageState extends State<NewInPage> {
         children: [
           // IMAGE
           SizedBox(
-            height: 120,
+            height: 125,
             child: Stack(
               children: [
                 Positioned.fill(
@@ -535,6 +571,30 @@ class _NewInPageState extends State<NewInPage> {
                   ),
                 ),
 
+                // DISCOUNT BADGE
+                Positioned(
+                  top: 5,
+                  left: 5,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xffE85B0A),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: Text(
+                      "-${product.discount}%",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+
                 // NEW BADGE
                 if (product.isNew)
                   Positioned(
@@ -546,11 +606,11 @@ class _NewInPageState extends State<NewInPage> {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xff087A24),
+                        color: const Color(0xffE85B0A),
                         borderRadius: BorderRadius.circular(5),
                       ),
                       child: const Text(
-                        "NEW",
+                        "SALE",
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 9,
@@ -585,7 +645,7 @@ class _NewInPageState extends State<NewInPage> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: 11,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
@@ -597,13 +657,28 @@ class _NewInPageState extends State<NewInPage> {
           // PRICE
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 7),
-            child: Text(
-              "${product.price.toStringAsFixed(2)} MMK",
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
+            child: Row(
+              children: [
+                Text(
+                  "\$${product.originalPrice.toStringAsFixed(2)}",
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey,
+                    decoration: TextDecoration.lineThrough,
+                  ),
+                ),
+
+                const SizedBox(width: 5),
+
+                Text(
+                  "\$${product.salePrice.toStringAsFixed(2)}",
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -613,59 +688,201 @@ class _NewInPageState extends State<NewInPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 7),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                ...List.generate(5, (index) {
-                  return Icon(
-                    index < product.rating.round()
-                        ? Icons.star
-                        : Icons.star_border,
-                    size: 14,
-                    color: Colors.orange,
-                  );
-                }),
+                // Stars
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(5, (index) {
+                    return Icon(
+                      index < product.rating.round()
+                          ? Icons.star
+                          : Icons.star_border,
+                      size: 13,
+                      color: Colors.orange,
+                    );
+                  }),
+                ),
 
-                const SizedBox(width: 3),
+                const SizedBox(width: 5),
 
+                // Review count
                 Text(
                   "(${product.reviewCount})",
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  style: const TextStyle(fontSize: 10, color: Colors.grey),
                 ),
               ],
             ),
           ),
-
+          
           const Spacer(),
 
-          // VIEW DETAILS BUTTON
+          // VIEW DEAL BUTTON
           Padding(
             padding: const EdgeInsets.fromLTRB(7, 1, 7, 6),
             child: SizedBox(
               width: double.infinity,
               height: 28,
-              child: OutlinedButton(
+              child: ElevatedButton(
                 onPressed: () {
                   // TODO:
-                  // Navigate to product details page
+                  // Navigate to Product Detail
                 },
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.orange),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xffF28C00),
+                  foregroundColor: Colors.white,
                   padding: EdgeInsets.zero,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(5),
                   ),
                 ),
                 child: const Text(
-                  "View Details",
-                  style: TextStyle(
-                    color: Colors.orange,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  "VIEW DEAL",
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // SALE CATEGORY STRIP
+
+  Widget _buildSaleCategories(bool mobileView) {
+    final categories = [
+      {
+        "title": "Fashion Sale",
+        "subtitle": "Up to 50% Off",
+        "icon": Icons.checkroom,
+      },
+      {
+        "title": "Accessories Sale",
+        "subtitle": "Up to 50% Off",
+        "icon": Icons.watch,
+      },
+      {
+        "title": "Bags Sale",
+        "subtitle": "Up to 50% Off",
+        "icon": Icons.shopping_bag,
+      },
+      {
+        "title": "Shoes Sale",
+        "subtitle": "Up to 50% Off",
+        "icon": Icons.directions_run,
+      },
+      {
+        "title": "Clearance",
+        "subtitle": "Extra Discounts",
+        "icon": Icons.local_offer,
+      },
+    ];
+
+    Widget _buildSaleCategoryCard(
+      Map<String, Object> category, {
+      required double width,
+      required double height,
+    }) {
+      return Container(
+        width: width,
+        height: height,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: const Color(0xffE1E1E1)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            // ICON
+            Container(
+              width: 42,
+              height: 42,
+              decoration: const BoxDecoration(
+                color: Color(0xffEEF6EE),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                category["icon"] as IconData,
+                size: 22,
+                color: const Color(0xff3A7D44),
+              ),
+            ),
+
+            const SizedBox(width: 8),
+
+            // TEXT
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    category["title"] as String,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    category["subtitle"] as String,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 9, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+
+            const Icon(Icons.chevron_right, size: 18),
+          ],
+        ),
+      );
+    }
+
+    // MOBILE
+
+    if (mobileView) {
+      return SizedBox(
+        height: 85,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: categories.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 8),
+          itemBuilder: (context, index) {
+            return _buildSaleCategoryCard(
+              categories[index],
+              width: 180,
+              height: 85,
+            );
+          },
+        ),
+      );
+    }
+
+    // DESKTOP
+
+    return SizedBox(
+      height: 70,
+      width: double.infinity,
+      child: Row(
+        children: List.generate(categories.length, (index) {
+          return Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(
+                right: index == categories.length - 1 ? 0 : 8,
+              ),
+              child: _buildSaleCategoryCard(
+                categories[index],
+                width: double.infinity,
+                height: 70,
+              ),
+            ),
+          );
+        }),
       ),
     );
   }
