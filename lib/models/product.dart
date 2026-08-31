@@ -1,10 +1,11 @@
 import 'package:elephant_mall/services/mock_api_service.dart';
+import 'package:flutter/foundation.dart';
 
 import '../services/Category_service.dart';
 
 class Product {
-  final int id;
-  final String name;
+  final int productCode;
+  final String productName;
   final double price;
   final String category;
   final String image;
@@ -17,8 +18,8 @@ class Product {
   final bool isNew;
 
   Product({
-    required this.id,
-    required this.name,
+    required this.productCode,
+    required this.productName,
     required this.price,
     required this.category,
     required this.image,
@@ -28,7 +29,7 @@ class Product {
     this.seller,
     this.productImages,
     this.colors = const [],
-    this.isNew=false,
+    this.isNew = false,
   });
 
   // ============= IMAGE GETTERS =============
@@ -37,29 +38,100 @@ class Product {
   }
 
   // Main product image with local fallback
-  String get proxiedImageUrl {
-    // If using mock data
-    if (ApiService.useMockDataStatic) {
-      //  If image has a valid path, use it
-      if (image.isNotEmpty &&
-          (image.startsWith('images/') || image.startsWith('assets/'))) {
-        return image;
-      }
-      // Otherwise get from mock service (for products without direct image path)
-      return MockApiService.getProductImagePath(this);
-    }
+  // String get proxiedImageUrl {
+  //   // Force mock data on web
+  //   if (kIsWeb) {
+  //     ApiService.useMockDataStatic = true;
+  //   }
 
-    // If backend is running
+  //   // If using mock data
+  //   if (ApiService.useMockDataStatic) {
+  //     // If image is already a valid local path
+  //     if (image.isNotEmpty) {
+  //       // If it's a network URL, convert to local path
+  //       if (image.startsWith('http://') || image.startsWith('https://')) {
+  //         // Use mock service to get local path
+  //         return MockApiService.getProductImagePath(this);
+  //       }
+  //       // If it starts with images/ or assets/, use as-is
+  //       if (image.startsWith('images/')) {
+  //         return 'assets/$image';
+  //       }
+  //       if (image.startsWith('assets/')) {
+  //       return image;
+  //     }
+  //       // If it's just a filename, construct path
+  //       if (!image.contains('/')) {
+  //         return 'images/categories/${MockApiService.getCategoryFolder(category)}/$image';
+  //       }
+  //       return 'assets/$image';
+  //     }
+  //     // Fallback to mock service
+  //     return MockApiService.getProductImagePath(this);
+  //   }
+
+  //   // If backend is running
+  //   if (image.isNotEmpty) {
+  //     if (image.startsWith('http://') || image.startsWith('https://')) {
+  //       return image;
+  //     }
+  //     if (image.startsWith('images/') || image.startsWith('assets/')) {
+  //       return 'assets/$image';
+  //     }
+  //     if (image.startsWith('assets/')) {
+  //     return image;
+  //   }
+  //     return ApiService.getProxiedImageUrl(image);
+  //   }
+  //   return MockApiService.getProductImagePath(this);
+  // }
+
+  String get proxiedImageUrl {
+  // 🔥 If using mock data
+  if (ApiService.useMockDataStatic) {
     if (image.isNotEmpty) {
-      // If it's a local path, return as-is
-      if (image.startsWith('images/') || image.startsWith('assets/')) {
+      if (image.startsWith('http://') || image.startsWith('https://')) {
+        return MockApiService.getProductImagePath(this);
+      }
+      if (image.startsWith('images/')) {
+        return 'assets/$image';
+      }
+      if (image.startsWith('assets/')) {
         return image;
       }
-      return ApiService.getProxiedImageUrl(image);
+      if (!image.contains('/')) {
+        return 'images/categories/${MockApiService.getCategoryFolder(category)}/$image';
+      }
+      return 'assets/$image';
     }
-    // Final fallback
     return MockApiService.getProductImagePath(this);
   }
+
+  // 🔥 If image is empty, use placeholder
+  if (image.isEmpty) {
+    return 'https://picsum.photos/seed/${productCode.toString()}/200/200';
+  }
+  
+  // 🔥 If image is from Pinterest, use the backend proxy
+  if (image.contains('pinimg.com') || 
+      image.contains('pinterest')) {
+    final encodedUrl = Uri.encodeComponent(image);
+    return '${ApiService.baseUrl}/image/proxy?url=$encodedUrl';
+  }
+  
+  // 🔥 If it's a valid URL, return directly
+  if (image.startsWith('http://') || image.startsWith('https://')) {
+    return image;
+  }
+  
+  // 🔥 For local paths
+  if (image.startsWith('images/') || image.startsWith('assets/')) {
+    return 'assets/$image';
+  }
+  
+  // 🔥 Fallback
+  return 'https://picsum.photos/seed/${productCode.toString()}/200/200';
+}
 
   // All product images (for gallery) - returns all colors
   List<String> get proxiedAllImages {
@@ -95,34 +167,84 @@ class Product {
   // }
 
   factory Product.fromJson(Map<String, dynamic> json) {
-    //  DEBUG
-    print(' Parsing product: ${json['name']}');
-    print(' Seller data type: ${json['seller'].runtimeType}');
+    print('📦 Parsing product: ${json['productName'] ?? json['name']}');
+
+    // Get productCode
+    final productCode = json['productCode'] ?? json['id'] ?? 0;
+
+    // Get productName
+    final productName = json['productName'] ?? json['name'] ?? '';
+
+    // Get price
+    double price = 0;
+    if (json['price'] != null) {
+      price = (json['price'] as num).toDouble();
+    }
+
+    // Get category
+    String category = json['category'] ?? json['categoryName'] ?? '';
+
+    // 🔥 CRITICAL FIX: Check for ImageUrl (capital I) FIRST
+    String imageUrl =
+        json['ImageUrl'] ?? json['imageUrl'] ?? json['image'] ?? '';
+
+    print('🖼️ Raw ImageUrl from backend: ${json['ImageUrl']}');
+    print('🖼️ Final imageUrl: $imageUrl');
+
+    // If image is from blocked domain, use placeholder
+    if (imageUrl.contains('pinimg.com') ||
+        imageUrl.contains('pinterest') ||
+        imageUrl.contains('walmartimages.com') ||
+        imageUrl.contains('img.susercontent.com')) {
+      final hash = imageUrl.hashCode.abs().toString();
+      imageUrl = 'https://picsum.photos/seed/$hash/200/200';
+    }
+
+    // If empty, use placeholder
+    if (imageUrl.isEmpty) {
+      imageUrl = 'https://picsum.photos/seed/${productCode.toString()}/200/200';
+    }
+
+    // Get colors
+    List<String> colors = [];
+    if (json['colors'] != null && json['colors'] is List) {
+      colors = List<String>.from(json['colors']);
+    }
+
+    // Get seller
+    Seller? seller;
+    if (json['seller'] != null && json['seller'] is Map<String, dynamic>) {
+      seller = Seller.fromJson(json['seller']);
+    }
+
+    // Get product images
+    List<String> productImages = [];
+    if (json['productImages'] != null && json['productImages'] is List) {
+      productImages = List<String>.from(json['productImages']);
+    }
+    if (productImages.isEmpty && imageUrl.isNotEmpty) {
+      productImages = [imageUrl];
+    }
 
     return Product(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      price: (json['price'] ?? 0).toDouble(),
-      category: json['category'] ?? '',
-      image: json['imageUrl'] ?? json['image'] ?? '',
+      productCode: productCode,
+      productName: productName,
+      price: price,
+      category: category,
+      image: imageUrl,
       rating: (json['rating'] ?? 4.5).toDouble(),
       ratingCount: json['ratingCount'] ?? 0,
-      description: json['description'],
-      //  IMPORTANT: Parse Seller as Map, not as String
-      seller: json['seller'] != null && json['seller'] is Map<String, dynamic>
-          ? Seller.fromJson(json['seller'] as Map<String, dynamic>)
-          : null,
-      productImages:
-          json['productImages'] != null && json['productImages'] is List
-          ? List<String>.from(json['productImages'])
-          : null,
+      description: json['description'] ?? '',
+      seller: seller,
+      productImages: productImages,
+      colors: colors,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'name': name,
+      'id': productCode,
+      'name': productName,
       'price': price,
       'category': category,
       'image': image,

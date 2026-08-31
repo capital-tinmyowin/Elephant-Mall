@@ -7,8 +7,6 @@ class AppImage extends StatelessWidget {
   final double? width;
   final BoxFit? fit;
   final double? borderRadius;
-  final Widget? placeholder;
-  final Widget? errorWidget;
 
   const AppImage({
     super.key,
@@ -17,137 +15,68 @@ class AppImage extends StatelessWidget {
     this.width,
     this.fit,
     this.borderRadius,
-    this.placeholder,
-    this.errorWidget,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Check if it's a local asset
-    if (imageUrl.startsWith('assets/') || imageUrl.startsWith('images/')) {
-      return _buildLocalImage();
+    if (imageUrl.isEmpty) {
+      return _buildErrorWidget();
     }
 
-    // Check if it's a network URL
-    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-      return _buildNetworkImage();
+    // 🔥 For Pinterest images, force proxy
+     bool isAlreadyProxied = imageUrl.contains('/image/proxy');
+    
+    // 🔥 If it's a Pinterest image and NOT already proxied, add proxy
+    String finalUrl = imageUrl;
+    if (!isAlreadyProxied && 
+        (imageUrl.contains('pinimg.com') || imageUrl.contains('pinterest'))) {
+      // Don't encode again - the proxiedImageUrl already encoded it
+      finalUrl = imageUrl;
     }
-     if (imageUrl.contains('.jpg') || 
-        imageUrl.contains('.png') || 
-        imageUrl.contains('.jpeg') ||
-        imageUrl.contains('.gif') ||
-        imageUrl.contains('.webp')) {
-      return _buildLocalImage();
+
+    print('🖼️ AppImage loading: $finalUrl');
+
+    if (finalUrl.startsWith('http://') || finalUrl.startsWith('https://')) {
+      return _buildNetworkImage(finalUrl);
     }
-    // Fallback: try as local asset
-    return _buildLocalImage();
+
+    if (finalUrl.startsWith('assets/')) {
+      return _buildLocalImage(finalUrl);
+    }
+    return _buildLocalImage('assets/$finalUrl');
   }
 
-  Widget _buildLocalImage() {
-    String assetPath = imageUrl;
-    
-    // Ensure it has 'assets/' prefix if needed
-    if (!assetPath.startsWith('assets/') && 
-        !assetPath.startsWith('images/') &&
-        assetPath.contains('.')) {
-      // Try common asset paths
-      return _tryMultipleAssetPaths();
-    }
-
+  Widget _buildLocalImage(String path) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius ?? 0),
       child: Image.asset(
-        assetPath,
+        path,
         height: height,
         width: width,
         fit: fit ?? BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          // Try without 'assets/' prefix
-          String cleanPath = assetPath.replaceFirst('assets/', '');
-          return Image.asset(
-            cleanPath,
-            height: height,
-            width: width,
-            fit: fit ?? BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              // Try with 'assets/' prefix
-              String withAssets = 'assets/$cleanPath';
-              return Image.asset(
-                withAssets,
-                height: height,
-                width: width,
-                fit: fit ?? BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return _buildErrorWidget();
-                },
-              );
-            },
-          );
+          return _buildErrorWidget();
         },
       ),
     );
   }
 
-  Widget _tryMultipleAssetPaths() {
-    String path = imageUrl;
-    
-    // Try to extract just the filename
-    String fileName = path.split('/').last;
-    List<String> possiblePaths = [
-      'assets/images/$fileName',
-      'assets/$fileName',
-      'images/$fileName',
-      fileName,
-      'assets/$path',
-      path,
-    ];
-
-    // Try each path until one works
-    for (String testPath in possiblePaths) {
-      try {
-        // Check if asset exists (this is a simple check, might not work in all cases)
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(borderRadius ?? 0),
-          child: Image.asset(
-            testPath,
-            height: height,
-            width: width,
-            fit: fit ?? BoxFit.cover,
-          ),
-        );
-      } catch (e) {
-        continue;
-      }
-    }
-
-    // If all paths fail
-    return _buildErrorWidget();
-  }
-
-  Widget _buildNetworkImage() {
+  Widget _buildNetworkImage(String url) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius ?? 0),
       child: CachedNetworkImage(
-        imageUrl: imageUrl,
+        imageUrl: url,
         height: height,
         width: width,
         fit: fit ?? BoxFit.cover,
-        placeholder: (context, url) => placeholder ?? _buildPlaceholder(),
+        placeholder: (context, url) => _buildPlaceholder(),
         errorWidget: (context, url, error) {
-          // Try local asset as fallback
-          if (imageUrl.contains('/images/') || imageUrl.contains('/assets/')) {
-            String localPath = imageUrl.split('/').last;
-            return Image.asset(
-              localPath,
-              height: height,
-              width: width,
-              fit: fit ?? BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return _buildErrorWidget();
-              },
-            );
-          }
+          print('❌ Image error for URL: $url');
           return _buildErrorWidget();
+        },
+        httpHeaders: {
+          'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+          'Cache-Control': 'no-cache',
         },
       ),
     );
@@ -168,12 +97,28 @@ class AppImage extends StatelessWidget {
   }
 
   Widget _buildErrorWidget() {
-    return errorWidget ??
-        Container(
-          height: height,
-          width: width,
-          color: Colors.grey[200],
-          child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
-        );
+    return Container(
+      height: height,
+      width: width,
+      color: Colors.grey[200],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.image_not_supported,
+            size: height != null && height! > 60 ? 30 : 20,
+            color: Colors.grey[400],
+          ),
+          if (height != null && height! > 80)
+            Text(
+              'Image not found',
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey[500],
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
