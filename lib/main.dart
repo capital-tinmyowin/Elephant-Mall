@@ -9,7 +9,7 @@ import 'view/sell.dart';
 import 'view/login.dart';
 import 'view/seller.dart';
 import 'view/signup.dart';
-
+import 'view/new_in.dart';
 void main() {
   final apiService = ApiService();
 
@@ -49,7 +49,7 @@ class MyApp extends StatelessWidget {
         ),
         initialRoute: '/',
         routes: {
-          '/': (context) => const SellPage(),
+          '/': (context) => const HomePage(),
           '/seller': (context) => const SellerPage(),
         },
       ),

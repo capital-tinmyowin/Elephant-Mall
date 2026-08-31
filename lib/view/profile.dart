@@ -16,26 +16,29 @@ class _ProfilePageState extends State<ProfilePage> {
   int selectedMenu = 0;
 
   // PROFILE DATA
-  String fullName = "Test User";
-  String email = "user@example.com";
-  String phone = "+95 9 123 456 789";
-  String dateOfBirth = "May 12, 1995";
-  String gender = "Female";
-  String joinedOn = "Aug 10, 2022";
-  String location = "Yangon, Myanmar";
-
-  String aboutMe =
-      "I love fashion, lifestyle products, and finding "
-      "high-quality items for everyday life.\n"
-      "I’m also a seller offering selected products "
-      "with the best quality and service.";
-
-  String shopName = "User’s Collection";
-  String businessType = "Individual Seller";
-  String businessLocation = "Yangon, Myanmar";
-  String businessDescription =
-      "We offer carefully selected fashion and lifestyle "
-      "products with great quality and customer service.";
+  Map<String, dynamic> profileData = {
+    "personal": {
+      "fullName": "Test User",
+      "email": "user@example.com",
+      "phone": "+95 9 123 456 789",
+      "dateOfBirth": "May 12, 1995",
+      "gender": "Female",
+      "joinedOn": "Aug 10, 2022",
+      "location": "Yangon, Myanmar",
+      "accountTypes": ["Seller", "User", "Purchaser"],
+    },
+    "about": {
+      "description":
+          "I love fashion, lifestyle products, and finding high-quality items for everyday life.",
+    },
+    "business": {
+      "shopName": "User's Collection",
+      "businessType": "Individual Seller",
+      "businessLocation": "Yangon, Myanmar",
+      "businessDescription":
+          "We offer carefully selected fashion and lifestyle products with great quality and customer service.",
+    },
+  };
 
   // EDIT STATES
   bool isEditingPersonal = false;
@@ -48,7 +51,9 @@ class _ProfilePageState extends State<ProfilePage> {
   late TextEditingController phoneController;
   late TextEditingController dateOfBirthController;
   late TextEditingController genderController;
+  late TextEditingController joinedOnController;
   late TextEditingController locationController;
+  late TextEditingController accountTypesController;
   late TextEditingController aboutController;
   late TextEditingController shopNameController;
   late TextEditingController businessTypeController;
@@ -72,26 +77,60 @@ class _ProfilePageState extends State<ProfilePage> {
     {"title": "Help Center", "icon": Icons.help_outline},
   ];
 
-  // INIT
+  Map<String, dynamic> get personal =>
+      profileData["personal"] as Map<String, dynamic>;
+
+  Map<String, dynamic> get about =>
+      profileData["about"] as Map<String, dynamic>;
+
+  Map<String, dynamic> get business =>
+      profileData["business"] as Map<String, dynamic>;
+
   @override
   void initState() {
     super.initState();
-    fullNameController = TextEditingController(text: fullName);
-    emailController = TextEditingController(text: email);
-    phoneController = TextEditingController(text: phone);
-    dateOfBirthController = TextEditingController(text: dateOfBirth);
-    genderController = TextEditingController(text: gender);
-    locationController = TextEditingController(text: location);
-    aboutController = TextEditingController(text: aboutMe);
-    shopNameController = TextEditingController(text: shopName);
-    businessTypeController = TextEditingController(text: businessType);
-    businessLocationController = TextEditingController(text: businessLocation);
+    final personalData = profileData["personal"];
+    final aboutData = profileData["about"];
+    final businessData = profileData["business"];
+    fullNameController = TextEditingController(
+      text: personalData["fullName"] ?? "",
+    );
+    emailController = TextEditingController(text: personalData["email"] ?? "");
+    phoneController = TextEditingController(text: personalData["phone"] ?? "");
+    dateOfBirthController = TextEditingController(
+      text: personalData["dateOfBirth"] ?? "",
+    );
+    genderController = TextEditingController(
+      text: personalData["gender"] ?? "",
+    );
+    joinedOnController = TextEditingController(
+      text: personalData["joinedOn"] ?? "",
+    );
+    locationController = TextEditingController(
+      text: personalData["location"] ?? "",
+    );
+    accountTypesController = TextEditingController(
+      text: (personalData["accountTypes"] as List<dynamic>? ?? [])
+          .map((item) => item.toString())
+          .join(", "),
+    );
+    aboutController = TextEditingController(
+      text: aboutData["description"] ?? "",
+    );
+    shopNameController = TextEditingController(
+      text: businessData["shopName"] ?? "",
+    );
+    businessTypeController = TextEditingController(
+      text: businessData["businessType"] ?? "",
+    );
+    businessLocationController = TextEditingController(
+      text: businessData["businessLocation"] ?? "",
+    );
     businessDescriptionController = TextEditingController(
-      text: businessDescription,
+      text: businessData["businessDescription"] ?? "",
     );
   }
 
-  // DISPOSE
   @override
   void dispose() {
     fullNameController.dispose();
@@ -99,7 +138,9 @@ class _ProfilePageState extends State<ProfilePage> {
     phoneController.dispose();
     dateOfBirthController.dispose();
     genderController.dispose();
+    joinedOnController.dispose();
     locationController.dispose();
+    accountTypesController.dispose();
     aboutController.dispose();
     shopNameController.dispose();
     businessTypeController.dispose();
@@ -388,7 +429,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   : CrossAxisAlignment.center,
               children: [
                 Text(
-                  fullName,
+                  personal["fullName"] ?? "",
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -398,7 +439,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 5),
 
                 Text(
-                  email,
+                  personal["email"] ?? "",
                   style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                 ),
 
@@ -739,9 +780,22 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
 
                 buildInput(
+                  "Joined On",
+                  joinedOnController,
+                  Icons.access_time_outlined,
+                ),
+
+                buildInput(
                   "Location",
                   locationController,
                   Icons.language_outlined,
+                ),
+
+                buildInput(
+                  "Account Types",
+                  accountTypesController,
+                  Icons.sell_outlined,
+                  hintText: "Seller, User, Purchaser",
                 ),
               ],
             );
@@ -763,10 +817,32 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   Expanded(
                     child: buildInput(
+                      "Date of Birth",
+                      dateOfBirthController,
+                      Icons.calendar_month_outlined,
+                    ),
+                  ),
+                ],
+              ),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: buildInput(
                       "Email Address",
                       emailController,
                       Icons.email_outlined,
                       keyboardType: TextInputType.emailAddress,
+                    ),
+                  ),
+
+                  const SizedBox(width: 20),
+
+                  Expanded(
+                    child: buildInput(
+                      "Gender",
+                      genderController,
+                      Icons.person_add_alt_outlined,
                     ),
                   ),
                 ],
@@ -787,9 +863,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   Expanded(
                     child: buildInput(
-                      "Date of Birth",
-                      dateOfBirthController,
-                      Icons.calendar_month_outlined,
+                      "Joined On",
+                      joinedOnController,
+                      Icons.access_time_outlined,
                     ),
                   ),
                 ],
@@ -799,9 +875,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   Expanded(
                     child: buildInput(
-                      "Gender",
-                      genderController,
-                      Icons.person_add_alt_outlined,
+                      "Account Types",
+                      accountTypesController,
+                      Icons.sell_outlined,
+                      hintText: "Seller, User, Purchaser",
                     ),
                   ),
 
@@ -825,13 +902,21 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // UPDATE PERSONAL
   void updatePersonalInformation() {
+    final accountTypes = accountTypesController.text
+        .split(",")
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList();
+
     setState(() {
-      fullName = fullNameController.text.trim();
-      email = emailController.text.trim();
-      phone = phoneController.text.trim();
-      dateOfBirth = dateOfBirthController.text.trim();
-      gender = genderController.text.trim();
-      location = locationController.text.trim();
+      personal["fullName"] = fullNameController.text.trim();
+      personal["email"] = emailController.text.trim();
+      personal["phone"] = phoneController.text.trim();
+      personal["dateOfBirth"] = dateOfBirthController.text.trim();
+      personal["gender"] = genderController.text.trim();
+      personal["joinedOn"] = joinedOnController.text.trim();
+      personal["location"] = locationController.text.trim();
+      personal["accountTypes"] = accountTypes;
 
       isEditingPersonal = false;
     });
@@ -841,12 +926,18 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // CANCEL PERSONAL
   void cancelPersonalInformation() {
-    fullNameController.text = fullName;
-    emailController.text = email;
-    phoneController.text = phone;
-    dateOfBirthController.text = dateOfBirth;
-    genderController.text = gender;
-    locationController.text = location;
+    fullNameController.text = personal["fullName"] ?? "";
+    emailController.text = personal["email"] ?? "";
+    phoneController.text = personal["phone"] ?? "";
+    dateOfBirthController.text = personal["dateOfBirth"] ?? "";
+    genderController.text = personal["gender"] ?? "";
+    joinedOnController.text = personal["joinedOn"] ?? "";
+    locationController.text = personal["location"] ?? "";
+
+    accountTypesController.text =
+        (personal["accountTypes"] as List<dynamic>? ?? [])
+            .map((item) => item.toString())
+            .join(", ");
 
     setState(() {
       isEditingPersonal = false;
@@ -862,19 +953,19 @@ class _ProfilePageState extends State<ProfilePage> {
           profileInfoRow(
             icon: Icons.person_outline,
             title: "Full Name",
-            value: fullName,
+            value: personal["fullName"] ?? "",
           ),
 
           profileInfoRow(
             icon: Icons.email_outlined,
             title: "Email Address",
-            value: email,
+            value: personal["email"] ?? "",
           ),
 
           profileInfoRow(
             icon: Icons.phone_outlined,
             title: "Phone Number",
-            value: phone,
+            value: personal["phone"] ?? "",
           ),
 
           Row(
@@ -901,23 +992,15 @@ class _ProfilePageState extends State<ProfilePage> {
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: [
-                        accountBadge(
-                          "Seller",
-                          const Color(0xffffefe0),
-                          Colors.orange,
-                        ),
-                        accountBadge(
-                          "User",
-                          const Color(0xffe8f7ed),
-                          Colors.green,
-                        ),
-                        accountBadge(
-                          "Purchaser",
-                          const Color(0xffe9f1ff),
-                          Colors.blue,
-                        ),
-                      ],
+                      children: (personal["accountTypes"] as List<dynamic>)
+                          .map(
+                            (type) => accountBadge(
+                              type.toString(),
+                              const Color(0xffffefe0),
+                              Colors.orange,
+                            ),
+                          )
+                          .toList(),
                     ),
                   ],
                 ),
@@ -938,25 +1021,25 @@ class _ProfilePageState extends State<ProfilePage> {
           profileInfoRow(
             icon: Icons.calendar_month_outlined,
             title: "Date of Birth",
-            value: dateOfBirth,
+            value: personal["dateOfBirth"] ?? "",
           ),
 
           profileInfoRow(
             icon: Icons.person_add_alt_outlined,
             title: "Gender",
-            value: gender,
+            value: personal["gender"] ?? "",
           ),
 
           profileInfoRow(
             icon: Icons.access_time_outlined,
             title: "Joined On",
-            value: joinedOn,
+            value: personal["joinedOn"] ?? "",
           ),
 
           profileInfoRow(
             icon: Icons.language_outlined,
             title: "Location",
-            value: location,
+            value: personal["location"] ?? "",
           ),
         ],
       ),
@@ -1023,7 +1106,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
         const SizedBox(height: 15),
 
-        Text(aboutMe, style: const TextStyle(fontSize: 13, height: 1.6)),
+        Text(
+          about["description"] ?? "",
+          style: const TextStyle(fontSize: 13, height: 1.6),
+        ),
       ],
     );
   }
@@ -1048,7 +1134,7 @@ class _ProfilePageState extends State<ProfilePage> {
   // UPDATE ABOUT
   void updateAboutMe() {
     setState(() {
-      aboutMe = aboutController.text.trim();
+      about["description"] = aboutController.text.trim();
       isEditingAbout = false;
     });
 
@@ -1057,7 +1143,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // CANCEL ABOUT
   void cancelAboutMe() {
-    aboutController.text = aboutMe;
+    aboutController.text = about["description"] ?? "";
 
     setState(() {
       isEditingAbout = false;
@@ -1103,25 +1189,25 @@ class _ProfilePageState extends State<ProfilePage> {
           businessInfoRow(
             icon: Icons.storefront_outlined,
             title: "Shop / Business Name",
-            value: shopName,
+            value: business["shopName"] ?? "",
           ),
 
           businessInfoRow(
             icon: Icons.sell_outlined,
             title: "Business Type",
-            value: businessType,
+            value: business["businessType"] ?? "",
           ),
 
           businessInfoRow(
             icon: Icons.language_outlined,
             title: "Business Location",
-            value: businessLocation,
+            value: business["businessLocation"] ?? "",
           ),
 
           businessInfoRow(
             icon: Icons.info_outline,
             title: "Business Description",
-            value: businessDescription,
+            value: business["businessDescription"] ?? "",
           ),
         ],
       ),
@@ -1171,10 +1257,11 @@ class _ProfilePageState extends State<ProfilePage> {
   // UPDATE BUSINESS
   void updateBusinessInformation() {
     setState(() {
-      shopName = shopNameController.text.trim();
-      businessType = businessTypeController.text.trim();
-      businessLocation = businessLocationController.text.trim();
-      businessDescription = businessDescriptionController.text.trim();
+      business["shopName"] = shopNameController.text.trim();
+      business["businessType"] = businessTypeController.text.trim();
+      business["businessLocation"] = businessLocationController.text.trim();
+      business["businessDescription"] = businessDescriptionController.text
+          .trim();
 
       isEditingBusiness = false;
     });
@@ -1185,10 +1272,10 @@ class _ProfilePageState extends State<ProfilePage> {
   // CANCEL BUSINESS
 
   void cancelBusinessInformation() {
-    shopNameController.text = shopName;
-    businessTypeController.text = businessType;
-    businessLocationController.text = businessLocation;
-    businessDescriptionController.text = businessDescription;
+    shopNameController.text = business["shopName"] ?? "";
+    businessTypeController.text = business["businessType"] ?? "";
+    businessLocationController.text = business["businessLocation"] ?? "";
+    businessDescriptionController.text = business["businessDescription"] ?? "";
 
     setState(() {
       isEditingBusiness = false;
@@ -1201,6 +1288,7 @@ class _ProfilePageState extends State<ProfilePage> {
     TextEditingController controller,
     IconData icon, {
     TextInputType? keyboardType,
+    String? hintText,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
@@ -1209,6 +1297,7 @@ class _ProfilePageState extends State<ProfilePage> {
         keyboardType: keyboardType,
         decoration: InputDecoration(
           labelText: label,
+          hintText: hintText,
           prefixIcon: Icon(icon, size: 21),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           contentPadding: const EdgeInsets.symmetric(

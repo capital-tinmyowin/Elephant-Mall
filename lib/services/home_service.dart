@@ -217,129 +217,115 @@ class HomeService {
   Future<List<Product>> getProducts() async {
     final List jsonData=[
       {
-        "productId":1,
-        "name":"ဖိနပ်",
+        "productCode":1,
+        "productName":"ဖိနပ်",
         "description":"Comfort shoes",
         "price":150.45,
         "imagePath":"assets/man-sneaker.png",
-        "quantity":20,
         "rating":5
       },
       {
-        "productId":2,
-        "name":"Women's Wristwatch",
+        "productCode":2,
+        "productName":"Women's Wristwatch",
         "description":"Luxury watch",
         "price":65,
         "imagePath":"assets/woman-watch.png",
-        "quantity":10,
         "rating":4
       },
       {
-        "productId":3,
-        "name":"Leather Backpack",
+        "productCode":3,
+        "productName":"Leather Backpack",
         "description":"Travel bag",
         "price":11000,
         "imagePath":"assets/leatherBag.jpg",
-        "quantity":15,
         "rating":3
       },
       {
-        "productId":4,
-        "name":"အမျိုးသမီးဝတ်အင်္ကျီ",
+        "productCode":4,
+        "productName":"အမျိုးသမီးဝတ်အင်္ကျီ",
         "description":"Fashion shirt",
         "price":45,
         "imagePath":"assets/linen.webp",
-        "quantity":30,
         "rating":2
       },
        {
-        "productId":5,
-        "name":"အားကစားဖိနပ်",
+        "productCode":5,
+        "productName":"အားကစားဖိနပ်",
         "description":"Comfort shoes",
         "price":89,
         "imagePath":"assets/man-sneaker.png",
-        "quantity":20,
         "rating":1
       },
       {
-        "productId":6,
-        "name":"လက်ပတ်နာရီ",
+        "productCode":6,
+        "productName":"လက်ပတ်နာရီ",
         "description":"Luxury watch",
         "price":65,
         "imagePath":"assets/woman-watch.png",
-        "quantity":10,
         "rating":0
       },
       {
-        "productId":7,
-        "name":"Leather Backpack",
+        "productCode":7,
+        "productName":"Leather Backpack",
         "description":"Travel bag",
         "price":11,
         "imagePath":"assets/leatherBag.jpg",
-        "quantity":15,
         "rating":5
       },
       {
-        "productId":8,
-        "name":"အမျိုးသမီးဝတ်အင်္ကျီ",
+        "productCode":8,
+        "productName":"အမျိုးသမီးဝတ်အင်္ကျီ",
         "description":"Fashion shirt",
         "price":45,
         "imagePath":"assets/linen.webp",
-        "quantity":30,
         "rating":4
       },
       {
-        "productId":9,
-        "name":"Men's Sneakers",
+        "productCode":9,
+        "productName":"Men's Sneakers",
         "description":"Comfort shoes",
         "price":89,
         "imagePath":"assets/man-sneaker.png",
-        "quantity":20,
         "rating":5
       },
       {
-        "productId":10,
-        "name":"Women's Wristwatch",
+        "productCode":10,
+        "productName":"Women's Wristwatch",
         "description":"Luxury watch",
         "price":65,
         "imagePath":"assets/woman-watch.png",
-        "quantity":10,
         "rating":4
       },
       {
-        "productId":11,
-        "name":"သားရေကျောပိုးအိတ်",
+        "productCode":11,
+        "productName":"သားရေကျောပိုးအိတ်",
         "description":"Travel bag",
         "price":11,
         "imagePath":"assets/leatherBag.jpg",
-        "quantity":15,
         "rating":5
       },
       {
-        "productId":12,
-        "name":"Linen Shirt",
+        "productCode":12,
+        "productName":"Linen Shirt",
         "description":"Fashion shirt",
         "price":45,
         "imagePath":"assets/linen.webp",
-        "quantity":30,
         "rating":4
       },
         {
-        "productId":13,
-        "name":"Leather Backpack",
+        "productCode":13,
+        "productName":"Leather Backpack",
         "description":"Travel bag",
         "price":11000,
         "imagePath":"assets/leatherBag.jpg",
-        "quantity":15,
         "rating":3
       },
       {
-        "productId":14,
-        "name":"Linen Shirt",
+        "productCode":14,
+        "productName":"Linen Shirt",
         "description":"Fashion shirt",
         "price":45,
         "imagePath":"assets/linen.webp",
-        "quantity":30,
         "rating":2
       },
     ];
