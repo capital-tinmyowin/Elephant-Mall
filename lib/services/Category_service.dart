@@ -9,15 +9,17 @@ import 'mock_api_service.dart';
 class ApiService extends ChangeNotifier {
   static const String baseUrl = 'http://localhost:5150/api';
 
-  //  Static variable for mock data flag
+  // Static variable for mock data flag
   static bool useMockDataStatic = false;
+  static bool _apiAvailable = true;
 
-  //  Instance variable for mock data flag
+  // Instance variable for mock data flag
   bool _useMockData = false;
 
-  //  Getter for useMockData
+  // Getter for useMockData
   bool get useMockData => _useMockData;
 
+  // ============= AUTH METHODS =============
   Future<Map<String, dynamic>> register(
     String username,
     String email,
@@ -98,9 +100,7 @@ class ApiService extends ChangeNotifier {
   Future<Map<String, dynamic>> addFavorite(int userId, int productId) async {
     try {
       final response = await http.post(
-        Uri.parse(
-          '$baseUrl/Favorites?userId=$userId&productId=$productId',
-        ), // Send as query params
+        Uri.parse('$baseUrl/Favorites?userId=$userId&productId=$productId'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -120,7 +120,7 @@ class ApiService extends ChangeNotifier {
     }
   }
 
-  //  Setter for useMockData
+  // Setter for useMockData
   set useMockData(bool value) {
     _useMockData = value;
     useMockDataStatic = value;
@@ -151,7 +151,7 @@ class ApiService extends ChangeNotifier {
 
   void addToCart(Product product) {
     final existingItem = _cartItems.firstWhere(
-      (item) => item.product.id == product.id,
+      (item) => item.product.productCode == product.productCode,
       orElse: () => CartItem(product: product, quantity: 0),
     );
 
@@ -164,20 +164,20 @@ class ApiService extends ChangeNotifier {
   }
 
   void removeFromCart(int productId) {
-    _cartItems.removeWhere((item) => item.product.id == productId);
+    _cartItems.removeWhere((item) => item.product.productCode == productId);
     notifyListeners();
   }
 
   void updateCartQuantity(int productId, int quantity) {
     final item = _cartItems.firstWhere(
-      (item) => item.product.id == productId,
+      (item) => item.product.productCode == productId,
       orElse: () => CartItem(
-        product: Product(id: -1, name: '', price: 0, category: '', image: ''),
+        product: Product(productCode: -1, productName: '', price: 0, category: '', image: ''),
         quantity: 0,
       ),
     );
 
-    if (item.product.id != -1) {
+    if (item.product.productCode != -1) {
       if (quantity <= 0) {
         _cartItems.remove(item);
       } else {
@@ -193,18 +193,18 @@ class ApiService extends ChangeNotifier {
   }
 
   bool isInCart(int productId) {
-    return _cartItems.any((item) => item.product.id == productId);
+    return _cartItems.any((item) => item.product.productCode == productId);
   }
 
   int getCartItemQuantity(int productId) {
     final item = _cartItems.firstWhere(
-      (item) => item.product.id == productId,
+      (item) => item.product.productCode == productId,
       orElse: () => CartItem(
-        product: Product(id: -1, name: '', price: 0, category: '', image: ''),
+        product: Product(productCode: -1, productName: '', price: 0, category: '', image: ''),
         quantity: 0,
       ),
     );
-    return item.product.id != -1 ? item.quantity : 0;
+    return item.product.productCode != -1 ? item.quantity : 0;
   }
 
   // ============= PRODUCT STATE =============
@@ -248,10 +248,22 @@ class ApiService extends ChangeNotifier {
 
   // ============= IMAGE PROXY =============
   static String getProxiedImageUrl(String originalUrl) {
-    if (originalUrl.isEmpty) return '';
+  if (originalUrl.isEmpty) return '';
+  
+  // 🔥 For Pinterest images, use your backend proxy
+  if (originalUrl.contains('pinimg.com') || originalUrl.contains('pinterest')) {
     final encodedUrl = Uri.encodeComponent(originalUrl);
     return '$baseUrl/image/proxy?url=$encodedUrl';
   }
+  
+  // For other HTTP/HTTPS URLs, return directly
+  if (originalUrl.startsWith('http://') || originalUrl.startsWith('https://')) {
+    return originalUrl;
+  }
+  
+  final encodedUrl = Uri.encodeComponent(originalUrl);
+  return '$baseUrl/image/proxy?url=$encodedUrl';
+}
 
   // ============= GET LOCAL IMAGE URL =============
   static String getLocalImageUrl(Product product) {
@@ -274,18 +286,18 @@ class ApiService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      print('LOADING PRODUCTS...');
+      print('🔄 LOADING PRODUCTS...');
       _allProducts = await _getProductsFromApi();
       _filteredProducts = _allProducts;
-      print(' SUCCESS: Loaded ${_allProducts.length} products');
+      print('✅ SUCCESS: Loaded ${_allProducts.length} products');
 
       if (_allProducts.isEmpty) {
         _errorMessage = 'No products found in database';
-        print(' No products found');
+        print('⚠️ No products found');
       }
     } catch (e) {
       _errorMessage = 'Error loading products: $e';
-      print(' ERROR: $e');
+      print('❌ ERROR: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -293,50 +305,154 @@ class ApiService extends ChangeNotifier {
   }
 
   Future<List<Product>> _getProductsFromApi() async {
-    // Check if mock data is enabled
+    // 🔥 FIRST: Check if mock data is explicitly enabled
     if (_useMockData || useMockDataStatic) {
-      print(' Using mock data (forced)');
+      print('📦 Using mock data (forced)');
       return MockApiService.getMockProducts();
     }
 
+    // 🔥 SECOND: Check if API is known to be unavailable
+    if (!_apiAvailable) {
+      print('📦 API unavailable, using mock data');
+      useMockDataStatic = true;
+      return MockApiService.getMockProducts();
+    }
+
+    // 🔥 THIRD: Try to call the API
     try {
       final url = Uri.parse('$baseUrl/products');
-      print(' Requesting: $url');
+      print('📡 Requesting: $url');
 
       final response = await http
           .get(url, headers: {'Content-Type': 'application/json'})
           .timeout(
-            const Duration(seconds: 3),
+            const Duration(seconds: 5),
             onTimeout: () {
-              print(' API timeout, using mock data');
-              // If timeout, enable mock data
+              print('⏰ API timeout, using mock data');
+              _apiAvailable = false;
               useMockDataStatic = true;
               throw Exception('Timeout');
             },
           );
 
-      print(' Response status: ${response.statusCode}');
+      print('📡 Response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        if (data['success'] == true && data['data'] != null) {
+        final dynamic data = json.decode(response.body);
+        print('📦 Response data type: ${data.runtimeType}');
+        
+        // Check if it's the backend format (with 'data' field)
+        if (data is Map<String, dynamic> && data['data'] != null) {
           final List<dynamic> productsData = data['data'];
-          print('Found ${productsData.length} products from API');
-          return productsData.map((json) => Product.fromJson(json)).toList();
+          print('✅ Found ${productsData.length} products from API (backend format)');
+          _apiAvailable = true;
+          // Parse with proper field mapping
+          return productsData.map((json) => _parseProductFromJson(json)).toList();
+        } 
+        // Check if it's the direct format (array)
+        else if (data is List) {
+          print('✅ Found ${data.length} products from API (direct format)');
+          _apiAvailable = true;
+          return data.map((json) => _parseProductFromJson(json)).toList();
         } else {
-          throw Exception(data['message'] ?? 'API returned error');
+          throw Exception('Unexpected API response format');
         }
       } else {
         throw Exception('Failed to load products: ${response.statusCode}');
       }
     } catch (e) {
-      print(' API Error: $e');
-      print(' Using mock data as fallback');
-      // Enable mock data on error
+      print('❌ API Error: $e');
+      print('📦 Using mock data as fallback');
+      _apiAvailable = false;
       useMockDataStatic = true;
       return MockApiService.getMockProducts();
     }
   }
+
+  // 🔥 Parse product from backend format
+  Product _parseProductFromJson(Map<String, dynamic> json) {
+  final productCode = json['productCode'] ?? json['id'] ?? 0;
+  final productName = json['productName'] ?? json['name'] ?? '';
+  
+  double price = 0;
+  if (json['price'] != null) {
+    price = (json['price'] as num).toDouble();
+  }
+  
+  String category = json['category'] ?? json['categoryName'] ?? '';
+  
+  // Get image URL
+  String imageUrl = json['imageUrl'] ?? json['ImageUrl'] ?? json['image'] ?? '';
+  
+  print('🖼️ Raw imageUrl from backend: ${json['imageUrl']}');
+  
+  // 🔥 DON'T use images.weserv.nl - let the backend proxy handle it
+  // If it's a Pinterest image, keep the original URL - backend proxy will handle it
+  if (imageUrl.contains('pinimg.com') || imageUrl.contains('pinterest')) {
+    // Keep the original URL - don't proxy it here
+    print('🖼️ Pinterest image detected, backend proxy will handle: $imageUrl');
+  }
+  
+  // If empty, use placeholder
+  if (imageUrl.isEmpty) {
+    imageUrl = 'https://picsum.photos/seed/${productCode.toString()}/200/200';
+  }
+  
+  print('🖼️ Product: $productName, Final ImageUrl: $imageUrl');
+    
+    // Get colors
+    List<String> colors = [];
+    if (json['colors'] != null && json['colors'] is List) {
+      colors = List<String>.from(json['colors']);
+    }
+    
+    // Get seller
+    Seller? seller;
+    if (json['seller'] != null && json['seller'] is Map<String, dynamic>) {
+      seller = Seller.fromJson(json['seller']);
+    }
+    
+    // Get product images
+    List<String> productImages = [];
+    if (json['productImages'] != null && json['productImages'] is List) {
+      productImages = List<String>.from(json['productImages']);
+    }
+    if (productImages.isEmpty && imageUrl.isNotEmpty) {
+      productImages = [imageUrl];
+    }
+    
+    return Product(
+      productCode: productCode,
+      productName: productName,
+      price: price,
+      category: category,
+      image: imageUrl,
+      rating: (json['rating'] ?? 4.5).toDouble(),
+      ratingCount: json['ratingCount'] ?? 0,
+      description: json['description'] ?? '',
+      seller: seller,
+      productImages: productImages,
+      colors: colors,
+    );
+  }
+
+  // 🔥 Helper to check if domain is blocked
+  // bool _isBlockedDomain(String url) {
+  //   if (url.isEmpty) return true;
+    
+  //   final blockedDomains = [
+  //     'pinimg.com',
+  //     'pinterest',
+  //     'walmartimages.com',
+  //     'img.susercontent.com',
+  //     'gstatic.com',
+  //     'encrypted-tbn',
+  //     'shopee',
+  //     'walmart',
+  //   ];
+    
+  //   return blockedDomains.any((domain) => url.contains(domain));
+  // }
 
   // ============= LOAD CATEGORIES =============
   Future<void> loadCategories() async {
@@ -345,9 +461,9 @@ class ApiService extends ChangeNotifier {
     try {
       _categories = await _getCategoriesFromApi();
       _sortedCategories = _sortCategoriesByOrder(_categories);
-      print(' Loaded ${_sortedCategories.length} categories');
+      print('✅ Loaded ${_sortedCategories.length} categories');
     } catch (e) {
-      print(' Error loading categories: $e');
+      print('❌ Error loading categories: $e');
       _sortedCategories = _categories;
     } finally {
       _isLoading = false;
@@ -359,15 +475,21 @@ class ApiService extends ChangeNotifier {
     if (_useMockData || useMockDataStatic) {
       return MockApiService.getMockCategories();
     }
+
+    if (!_apiAvailable) {
+      return MockApiService.getMockCategories();
+    }
+
     try {
       final url = Uri.parse('$baseUrl/categories');
-
       final response = await http
           .get(url, headers: {'Content-Type': 'application/json'})
           .timeout(
             const Duration(seconds: 5),
             onTimeout: () {
-              print(' API timeout, using mock data');
+              print('⏰ API timeout, using mock categories');
+              _apiAvailable = false;
+              useMockDataStatic = true;
               throw Exception('Timeout');
             },
           );
@@ -376,18 +498,42 @@ class ApiService extends ChangeNotifier {
         final data = json.decode(response.body);
         if (data['success'] == true && data['data'] != null) {
           List<dynamic> categoriesData = data['data'];
-          return categoriesData.map((json) => Category.fromJson(json)).toList();
+          print('✅ Found ${categoriesData.length} categories from API');
+          _apiAvailable = true;
+          return categoriesData.map((json) => _parseCategoryFromJson(json)).toList();
+        } else if (data is List) {
+          print('✅ Found ${data.length} categories from API (direct format)');
+          _apiAvailable = true;
+          return data.map((json) => _parseCategoryFromJson(json)).toList();
         } else {
-          throw Exception(data['message'] ?? 'Failed to load categories');
+          throw Exception('Unexpected category response format');
         }
       } else {
         throw Exception('Failed to load categories');
       }
     } catch (e) {
-      print(' API Error: $e');
-      print(' Using mock categories as fallback');
+      print('❌ API Error: $e');
+      print('📦 Using mock categories as fallback');
+      _apiAvailable = false;
+      useMockDataStatic = true;
       return MockApiService.getMockCategories();
     }
+  }
+
+  Category _parseCategoryFromJson(Map<String, dynamic> json) {
+    final id = json['id'] ?? json['categoryId'] ?? 0;
+    final name = json['name'] ?? json['categoryName'] ?? '';
+    String imagePath = json['categoryImageUrl'] ?? json['photoPath'] ?? json['imageUrl'] ?? json['icon'] ?? '';
+    
+    if (imagePath.isEmpty) {
+      imagePath = 'assets/images/placeholders/category_placeholder.jpg';
+    }
+    
+    return Category(
+      categoryId: id,
+      categoryName: name,
+      photoPath: imagePath,
+    );
   }
 
   // ============= LOAD PRODUCT DETAIL =============
@@ -397,10 +543,10 @@ class ApiService extends ChangeNotifier {
     notifyListeners();
     try {
       _selectedProduct = await _getProductByIdFromApi(id);
-      print(' Loaded product: ${_selectedProduct?.name}');
+      print('✅ Loaded product: ${_selectedProduct?.productName}');
     } catch (e) {
       _errorMessage = 'Error loading product detail: $e';
-      print(' Error loading product detail: $e');
+      print('❌ Error loading product detail: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -411,15 +557,20 @@ class ApiService extends ChangeNotifier {
     if (_useMockData || useMockDataStatic) {
       return MockApiService.getMockProductById(id);
     }
+
+    if (!_apiAvailable) {
+      return MockApiService.getMockProductById(id);
+    }
+
     try {
       final url = Uri.parse('$baseUrl/products/$id');
-
       final response = await http
           .get(url, headers: {'Content-Type': 'application/json'})
           .timeout(
-            const Duration(seconds: 3),
+            const Duration(seconds: 5),
             onTimeout: () {
-              print(' API timeout, using mock data');
+              print('⏰ API timeout, using mock product');
+              _apiAvailable = false;
               useMockDataStatic = true;
               throw Exception('Timeout');
             },
@@ -428,7 +579,8 @@ class ApiService extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true && data['data'] != null) {
-          return Product.fromJson(data['data']);
+          _apiAvailable = true;
+          return _parseProductFromJson(data['data']);
         } else {
           throw Exception(data['message'] ?? 'Failed to load product');
         }
@@ -436,7 +588,8 @@ class ApiService extends ChangeNotifier {
         throw Exception('Failed to load product');
       }
     } catch (e) {
-      print(' API Error: $e');
+      print('❌ API Error: $e');
+      _apiAvailable = false;
       useMockDataStatic = true;
       return MockApiService.getMockProductById(id);
     }
@@ -455,12 +608,10 @@ class ApiService extends ChangeNotifier {
       } else {
         _filteredProducts = await _getProductsByCategoryFromApi(category);
       }
-      print(
-        ' Loaded ${_filteredProducts.length} products for category: $category',
-      );
+      print('✅ Loaded ${_filteredProducts.length} products for category: $category');
     } catch (e) {
       _errorMessage = 'Error loading products by category: $e';
-      print(' Error loading products by category: $e');
+      print('❌ Error loading products by category: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -471,6 +622,11 @@ class ApiService extends ChangeNotifier {
     if (_useMockData || useMockDataStatic) {
       return MockApiService.getMockProductsByCategory(category);
     }
+
+    if (!_apiAvailable) {
+      return MockApiService.getMockProductsByCategory(category);
+    }
+
     try {
       final url = Uri.parse('$baseUrl/products/category/$category');
       final response = await http
@@ -478,15 +634,22 @@ class ApiService extends ChangeNotifier {
           .timeout(
             const Duration(seconds: 5),
             onTimeout: () {
-              print(' API timeout, using mock data');
+              print('⏰ API timeout, using mock products');
+              _apiAvailable = false;
+              useMockDataStatic = true;
               throw Exception('Timeout');
             },
           );
+          
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true && data['data'] != null) {
           List<dynamic> productsData = data['data'];
-          return productsData.map((json) => Product.fromJson(json)).toList();
+          _apiAvailable = true;
+          return productsData.map((json) => _parseProductFromJson(json)).toList();
+        } else if (data is List) {
+          _apiAvailable = true;
+          return data.map((json) => _parseProductFromJson(json)).toList();
         } else {
           throw Exception(data['message'] ?? 'Failed to load products');
         }
@@ -494,43 +657,79 @@ class ApiService extends ChangeNotifier {
         throw Exception('Failed to load products by category');
       }
     } catch (e) {
-      print(' API Error: $e');
+      print('❌ API Error: $e');
+      _apiAvailable = false;
+      useMockDataStatic = true;
       return MockApiService.getMockProductsByCategory(category);
     }
   }
 
   // ============= GET TRENDING PRODUCTS =============
-  Future<List<Product>> getTrendingProducts() async {
+  List<Product> _trendingProducts = [];
+bool _isTrendingLoading = false;
+
+List<Product> get trendingProducts => _trendingProducts;
+bool get isTrendingLoading => _isTrendingLoading;
+
+// 🔥 Load trending products from backend or mock
+Future<void> loadTrendingProducts() async {
+  if (_isTrendingLoading) return;
+  
+  _isTrendingLoading = true;
+  notifyListeners();
+
+  try {
+    _trendingProducts = await _fetchTrendingProducts();
+  } catch (e) {
+    print('❌ Error loading trending: $e');
+    _trendingProducts = [];
+  } finally {
+    _isTrendingLoading = false;
+    notifyListeners();
+  }
+}
+  Future<List<Product>> _fetchTrendingProducts() async {
     if (_useMockData || useMockDataStatic) {
       return MockApiService.getMockTrendingProducts();
     }
+
+    if (!_apiAvailable) {
+      return MockApiService.getMockTrendingProducts();
+    }
+
     try {
       final url = Uri.parse('$baseUrl/products/trending');
-
       final response = await http
           .get(url, headers: {'Content-Type': 'application/json'})
           .timeout(
             const Duration(seconds: 5),
             onTimeout: () {
-              print(' API timeout, using mock data');
+              print('⏰ API timeout, using mock trending');
+              _apiAvailable = false;
+              useMockDataStatic = true;
               throw Exception('Timeout');
             },
           );
+          
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true && data['data'] != null) {
           List<dynamic> productsData = data['data'];
-          return productsData.map((json) => Product.fromJson(json)).toList();
+          _apiAvailable = true;
+          return productsData.map((json) => _parseProductFromJson(json)).toList();
+        } else if (data is List) {
+          _apiAvailable = true;
+          return data.map((json) => _parseProductFromJson(json)).toList();
         } else {
-          throw Exception(
-            data['message'] ?? 'Failed to load trending products',
-          );
+          throw Exception(data['message'] ?? 'Failed to load trending products');
         }
       } else {
         throw Exception('Failed to load trending products');
       }
     } catch (e) {
-      print(' API Error: $e');
+      print('❌ API Error: $e');
+      _apiAvailable = false;
+      useMockDataStatic = true;
       return MockApiService.getMockTrendingProducts();
     }
   }
@@ -561,33 +760,31 @@ class ApiService extends ChangeNotifier {
   }
 
   // ============= TOGGLE MOCK DATA =============
-  //  RENAMED: Changed from useMockData to toggleMockData to avoid conflict
   void toggleMockData(bool useMock) {
     _useMockData = useMock;
     useMockDataStatic = useMock;
+    _apiAvailable = !useMock;
     loadProducts();
     notifyListeners();
   }
 
+  // ============= GET PRODUCTS WITH COLOR VARIATIONS =============
   List<Product> getProductsWithColorVariations(List<Product> products) {
     List<Product> expandedProducts = [];
 
     for (var product in products) {
       if (product.colors.isNotEmpty) {
-        //  Get the base name without color
-        String baseName = _getProductNameWithoutColor(product.name);
-        // Create a separate product for each color
+        String baseName = _getProductNameWithoutColor(product.productName);
         for (var color in product.colors) {
           String colorName = _getColorName(color);
           String newName = '$baseName - $colorName';
-          //  IMPORTANT: Keep the original product ID
           expandedProducts.add(
             Product(
-              id: product.id, //  Use original ID, NOT generated
-              name: newName,
+              productCode: product.productCode,
+              productName: newName,
               price: product.price,
               category: product.category,
-              image: _getColorImagePath(product, color),
+              image: product.image ?? '',
               rating: product.rating,
               ratingCount: product.ratingCount,
               description: product.description,
@@ -604,34 +801,20 @@ class ApiService extends ChangeNotifier {
     return expandedProducts;
   }
 
-  //  Helper to get product name without color
   String _getProductNameWithoutColor(String name) {
     List<String> colorNames = [
-      'Black',
-      'White',
-      'Cream',
-      'Blue',
-      'Pink',
-      'Sky Blue',
-      'Brown',
-      'Gray',
-      'Flower',
-      'Green',
-      'Red',
-      'Purple',
-      'Orange',
+      'Black', 'White', 'Cream', 'Blue', 'Pink', 'Sky Blue',
+      'Brown', 'Gray', 'Flower', 'Green', 'Red', 'Purple', 'Orange'
     ];
     String cleanName = name;
     for (var c in colorNames) {
       cleanName = cleanName.replaceAll(c, '').trim();
     }
-    // Remove trailing dashes or spaces
     cleanName = cleanName.replaceAll(RegExp(r'\s*-\s*$'), '');
     cleanName = cleanName.replaceAll(RegExp(r'^\s*-\s*'), '');
     return cleanName.isEmpty ? name : cleanName;
   }
 
-  // Helper to get proper color name
   String _getColorName(String color) {
     final colorMap = {
       'black': 'Black',
@@ -646,11 +829,6 @@ class ApiService extends ChangeNotifier {
       'green': 'Green',
       'red': 'Red',
     };
-    return colorMap[color] ?? color;
-  }
-  // Helper to get image path for specific color
-  String _getColorImagePath(Product product, String color) {
-    String folder = MockApiService.getProductFolder(product);
-    return '$folder/$color.jpg';
+    return colorMap[color.toLowerCase()] ?? color;
   }
 }

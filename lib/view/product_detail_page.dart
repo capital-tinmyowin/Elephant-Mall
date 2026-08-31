@@ -98,51 +98,6 @@ Widget _buildImage(String imageUrl, double height, double width) {
     fit: BoxFit.cover,
   );
 }
-
-// Helper to check if asset exists
-Future<bool> _assetExists(String path) async {
-  try {
-    await rootBundle.load(path);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
-// Helper to find alternative paths
-String _findAlternativePath(String path) {
-  // Try different casing
-  String fileName = path.split('/').last;
-  String folder = path.split('/').reversed.skip(1).first;
-  
-  // Try to find the file with different casing
-  List<String> possiblePaths = [
-    path,
-    path.toLowerCase(),
-    path.toUpperCase(),
-    path.replaceFirst(fileName, fileName.toLowerCase()),
-    path.replaceFirst(fileName, fileName.toUpperCase()),
-  ];
-  
-  // Try different extensions
-  String basePath = path.replaceAll('.jpg', '');
-  possiblePaths.add('$basePath.png');
-  possiblePaths.add('$basePath.jpeg');
-  
-  return possiblePaths.firstWhere(
-    (p) => p != path,
-    orElse: () => path,
-  );
-}
-
-Widget _buildPlaceholder(double height, double width) {
-  return Container(
-    height: height,
-    width: width,
-    color: Colors.grey[200],
-    child: const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
-  );
-}
   // ============= DESKTOP LAYOUT =============
   Widget _buildDesktopLayout(Product product) {
   final bool isSmallScreen = MediaQuery.of(context).size.width < 1000;
@@ -401,7 +356,7 @@ Widget _buildProductGallery(Product product) {
         ? product.category
         : 'Fashion';
     final String sku =
-        'EL-${category.substring(0, category.length > 3 ? 3 : category.length).toUpperCase()}-${product.id}';
+        'EL-${category.substring(0, category.length > 3 ? 3 : category.length).toUpperCase()}-${product.productCode}';
     final String qty = '22';
 
     return Column(
@@ -409,7 +364,7 @@ Widget _buildProductGallery(Product product) {
       children: [
         // Title
         Text(
-          product.name,
+          product.productName,
           style: const TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
@@ -518,11 +473,11 @@ Widget _buildProductGallery(Product product) {
         Expanded(
           child: Consumer<ApiService>(
             builder: (context, cartController, child) {
-              final inCart = cartController.isInCart(product.id);
+              final inCart = cartController.isInCart(product.productCode);
               return ElevatedButton(
                 onPressed: () {
                   if (inCart) {
-                    cartController.removeItem(product.id);
+                    cartController.removeItem(product.productCode);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Removed from favourites'),
@@ -835,7 +790,7 @@ Widget _buildProductGallery(Product product) {
                 context,
                 MaterialPageRoute(
                   builder: (context) =>
-                      ProductDetailPage(productId: sellerProduct.id),
+                      ProductDetailPage(productId: sellerProduct.productCode),
                 ),
               );
             },
@@ -869,9 +824,9 @@ Widget _buildProductGallery(Product product) {
                       vertical: 6.0,
                     ),
                     child: Text(
-                      sellerProduct.name.length > 18
-                          ? '${sellerProduct.name.substring(0, 15)}...'
-                          : sellerProduct.name,
+                      sellerProduct.productName.length > 18
+                          ? '${sellerProduct.productName.substring(0, 15)}...'
+                          : sellerProduct.productName,
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -910,7 +865,7 @@ Widget _buildProductGallery(Product product) {
         .where(
           (p) =>
               p.seller?.name == currentProduct.seller?.name &&
-              p.id != currentProduct.id,
+              p.productCode != currentProduct.productCode,
         )
         .take(8)
         .toList();

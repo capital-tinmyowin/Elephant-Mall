@@ -1102,10 +1102,11 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: isMobile ? 180 : 250, // 🔥 Only this changes
+            maxCrossAxisExtent: isMobile ? 180 : 250, // Only this changes
             crossAxisSpacing: 16,
             mainAxisSpacing: 24,
             childAspectRatio: 0.54,
+            mainAxisExtent: isMobile ? 290 : 380,
           ),
           itemCount: products.length,
           itemBuilder: (context, index) {
@@ -1123,7 +1124,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductDetailPage(productId: product.id),
+            builder: (context) => ProductDetailPage(productId: product.productCode),
           ),
         );
       },
@@ -1170,7 +1171,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                     ),
                   ),
                   // Discount Badge
-                  if (product.id % 2 == 0)
+                  if (product.productCode % 2 == 0)
                     Positioned(
                       top: 8,
                       left: 8,
@@ -1184,7 +1185,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          '${((product.id % 3) + 1) * 5}% OFF',
+                          '${((product.productCode % 3) + 1) * 5}% OFF',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
@@ -1204,7 +1205,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      product.name,
+                      product.productName,
                       style: TextStyle(
                         fontSize: isMobile ? 14 : 16,
                         fontWeight: FontWeight.w600,
@@ -1225,7 +1226,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        if (product.id % 2 == 0)
+                        if (product.productCode % 2 == 0)
                           Text(
                             '\$${(product.price * 1.15).toStringAsFixed(2)}',
                             style: TextStyle(
@@ -1283,7 +1284,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                             context,
                             MaterialPageRoute(
                               builder: (context) =>
-                                  ProductDetailPage(productId: product.id),
+                                  ProductDetailPage(productId: product.productCode),
                             ),
                           );
                         },
@@ -1327,7 +1328,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductDetailPage(productId: product.id),
+            builder: (context) => ProductDetailPage(productId: product.productCode),
           ),
         );
       },
@@ -1364,7 +1365,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                     ),
                   ),
                   // Discount Badge
-                  if (product.id % 2 == 0)
+                  if (product.productCode % 2 == 0)
                     Positioned(
                       top: 8,
                       left: 8,
@@ -1378,7 +1379,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          '${((product.id % 3) + 1) * 5}% OFF',
+                          '${((product.productCode % 3) + 1) * 5}% OFF',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
@@ -1419,7 +1420,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                 mainAxisSize: MainAxisSize.min, // Add this
                 children: [
                   Text(
-                    product.name,
+                    product.productName,
                     style: TextStyle(
                       fontSize: isMobile ? 12 : 14,
                       fontWeight: FontWeight.w600,
@@ -1440,7 +1441,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      if (product.id % 2 == 0)
+                      if (product.productCode % 2 == 0)
                         Text(
                           '\$${(product.price * 1.15).toStringAsFixed(2)}',
                           style: TextStyle(
@@ -1504,7 +1505,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                           context,
                           MaterialPageRoute(
                             builder: (context) =>
-                                ProductDetailPage(productId: product.id),
+                                ProductDetailPage(productId: product.productCode),
                           ),
                         );
                       },
