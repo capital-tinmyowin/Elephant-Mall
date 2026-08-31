@@ -10,7 +10,7 @@ class Category {
   });
 
   factory Category.fromJson(Map<String, dynamic> json) {
-    // 🔥 Get image from multiple possible fields
+    // Get image from multiple possible fields
     String imagePath = json['categoryImageUrl'] ?? 
                        json['photoPath'] ?? 
                        json['imageUrl'] ?? 

@@ -37,57 +37,8 @@ class Product {
     return colors.isNotEmpty ? colors.first : 'default';
   }
 
-  // Main product image with local fallback
-  // String get proxiedImageUrl {
-  //   // Force mock data on web
-  //   if (kIsWeb) {
-  //     ApiService.useMockDataStatic = true;
-  //   }
-
-  //   // If using mock data
-  //   if (ApiService.useMockDataStatic) {
-  //     // If image is already a valid local path
-  //     if (image.isNotEmpty) {
-  //       // If it's a network URL, convert to local path
-  //       if (image.startsWith('http://') || image.startsWith('https://')) {
-  //         // Use mock service to get local path
-  //         return MockApiService.getProductImagePath(this);
-  //       }
-  //       // If it starts with images/ or assets/, use as-is
-  //       if (image.startsWith('images/')) {
-  //         return 'assets/$image';
-  //       }
-  //       if (image.startsWith('assets/')) {
-  //       return image;
-  //     }
-  //       // If it's just a filename, construct path
-  //       if (!image.contains('/')) {
-  //         return 'images/categories/${MockApiService.getCategoryFolder(category)}/$image';
-  //       }
-  //       return 'assets/$image';
-  //     }
-  //     // Fallback to mock service
-  //     return MockApiService.getProductImagePath(this);
-  //   }
-
-  //   // If backend is running
-  //   if (image.isNotEmpty) {
-  //     if (image.startsWith('http://') || image.startsWith('https://')) {
-  //       return image;
-  //     }
-  //     if (image.startsWith('images/') || image.startsWith('assets/')) {
-  //       return 'assets/$image';
-  //     }
-  //     if (image.startsWith('assets/')) {
-  //     return image;
-  //   }
-  //     return ApiService.getProxiedImageUrl(image);
-  //   }
-  //   return MockApiService.getProductImagePath(this);
-  // }
-
   String get proxiedImageUrl {
-  // 🔥 If using mock data
+  // If using mock data
   if (ApiService.useMockDataStatic) {
     if (image.isNotEmpty) {
       if (image.startsWith('http://') || image.startsWith('https://')) {
@@ -107,29 +58,29 @@ class Product {
     return MockApiService.getProductImagePath(this);
   }
 
-  // 🔥 If image is empty, use placeholder
+  // If image is empty, use placeholder
   if (image.isEmpty) {
     return 'https://picsum.photos/seed/${productCode.toString()}/200/200';
   }
   
-  // 🔥 If image is from Pinterest, use the backend proxy
+  //  If image is from Pinterest, use the backend proxy
   if (image.contains('pinimg.com') || 
       image.contains('pinterest')) {
     final encodedUrl = Uri.encodeComponent(image);
     return '${ApiService.baseUrl}/image/proxy?url=$encodedUrl';
   }
   
-  // 🔥 If it's a valid URL, return directly
+  // If it's a valid URL, return directly
   if (image.startsWith('http://') || image.startsWith('https://')) {
     return image;
   }
   
-  // 🔥 For local paths
+  // For local paths
   if (image.startsWith('images/') || image.startsWith('assets/')) {
     return 'assets/$image';
   }
   
-  // 🔥 Fallback
+  // Fallback
   return 'https://picsum.photos/seed/${productCode.toString()}/200/200';
 }
 
@@ -184,7 +135,7 @@ class Product {
     // Get category
     String category = json['category'] ?? json['categoryName'] ?? '';
 
-    // 🔥 CRITICAL FIX: Check for ImageUrl (capital I) FIRST
+    //  CRITICAL FIX: Check for ImageUrl (capital I) FIRST
     String imageUrl =
         json['ImageUrl'] ?? json['imageUrl'] ?? json['image'] ?? '';
 

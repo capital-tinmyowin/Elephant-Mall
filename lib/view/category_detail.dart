@@ -1495,12 +1495,6 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        // ScaffoldMessenger.of(context).showSnackBar(
-                        //   SnackBar(
-                        //     content: Text('${product.name} added to cart!'),
-                        //     duration: const Duration(seconds: 1),
-                        //   ),
-                        // );
                         Navigator.push(
                           context,
                           MaterialPageRoute(

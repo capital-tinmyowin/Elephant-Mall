@@ -250,7 +250,7 @@ class ApiService extends ChangeNotifier {
   static String getProxiedImageUrl(String originalUrl) {
   if (originalUrl.isEmpty) return '';
   
-  // 🔥 For Pinterest images, use your backend proxy
+  // For Pinterest images, use your backend proxy
   if (originalUrl.contains('pinimg.com') || originalUrl.contains('pinterest')) {
     final encodedUrl = Uri.encodeComponent(originalUrl);
     return '$baseUrl/image/proxy?url=$encodedUrl';
@@ -286,18 +286,14 @@ class ApiService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      print('🔄 LOADING PRODUCTS...');
       _allProducts = await _getProductsFromApi();
       _filteredProducts = _allProducts;
-      print('✅ SUCCESS: Loaded ${_allProducts.length} products');
 
       if (_allProducts.isEmpty) {
         _errorMessage = 'No products found in database';
-        print('⚠️ No products found');
       }
     } catch (e) {
       _errorMessage = 'Error loading products: $e';
-      print('❌ ERROR: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -305,53 +301,46 @@ class ApiService extends ChangeNotifier {
   }
 
   Future<List<Product>> _getProductsFromApi() async {
-    // 🔥 FIRST: Check if mock data is explicitly enabled
+    //  FIRST: Check if mock data is explicitly enabled
     if (_useMockData || useMockDataStatic) {
-      print('📦 Using mock data (forced)');
       return MockApiService.getMockProducts();
     }
 
-    // 🔥 SECOND: Check if API is known to be unavailable
+    //  SECOND: Check if API is known to be unavailable
     if (!_apiAvailable) {
-      print('📦 API unavailable, using mock data');
       useMockDataStatic = true;
       return MockApiService.getMockProducts();
     }
 
-    // 🔥 THIRD: Try to call the API
+    //  THIRD: Try to call the API
     try {
       final url = Uri.parse('$baseUrl/products');
-      print('📡 Requesting: $url');
+      print(' Requesting: $url');
 
       final response = await http
           .get(url, headers: {'Content-Type': 'application/json'})
           .timeout(
             const Duration(seconds: 5),
             onTimeout: () {
-              print('⏰ API timeout, using mock data');
               _apiAvailable = false;
               useMockDataStatic = true;
               throw Exception('Timeout');
             },
           );
 
-      print('📡 Response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final dynamic data = json.decode(response.body);
-        print('📦 Response data type: ${data.runtimeType}');
         
         // Check if it's the backend format (with 'data' field)
         if (data is Map<String, dynamic> && data['data'] != null) {
           final List<dynamic> productsData = data['data'];
-          print('✅ Found ${productsData.length} products from API (backend format)');
           _apiAvailable = true;
           // Parse with proper field mapping
           return productsData.map((json) => _parseProductFromJson(json)).toList();
         } 
         // Check if it's the direct format (array)
         else if (data is List) {
-          print('✅ Found ${data.length} products from API (direct format)');
           _apiAvailable = true;
           return data.map((json) => _parseProductFromJson(json)).toList();
         } else {
@@ -361,15 +350,13 @@ class ApiService extends ChangeNotifier {
         throw Exception('Failed to load products: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ API Error: $e');
-      print('📦 Using mock data as fallback');
       _apiAvailable = false;
       useMockDataStatic = true;
       return MockApiService.getMockProducts();
     }
   }
 
-  // 🔥 Parse product from backend format
+  // Parse product from backend format
   Product _parseProductFromJson(Map<String, dynamic> json) {
   final productCode = json['productCode'] ?? json['id'] ?? 0;
   final productName = json['productName'] ?? json['name'] ?? '';
@@ -384,21 +371,17 @@ class ApiService extends ChangeNotifier {
   // Get image URL
   String imageUrl = json['imageUrl'] ?? json['ImageUrl'] ?? json['image'] ?? '';
   
-  print('🖼️ Raw imageUrl from backend: ${json['imageUrl']}');
+  print(' Raw imageUrl from backend: ${json['imageUrl']}');
   
-  // 🔥 DON'T use images.weserv.nl - let the backend proxy handle it
+  //  DON'T use images.weserv.nl - let the backend proxy handle it
   // If it's a Pinterest image, keep the original URL - backend proxy will handle it
   if (imageUrl.contains('pinimg.com') || imageUrl.contains('pinterest')) {
-    // Keep the original URL - don't proxy it here
-    print('🖼️ Pinterest image detected, backend proxy will handle: $imageUrl');
   }
   
   // If empty, use placeholder
   if (imageUrl.isEmpty) {
     imageUrl = 'https://picsum.photos/seed/${productCode.toString()}/200/200';
   }
-  
-  print('🖼️ Product: $productName, Final ImageUrl: $imageUrl');
     
     // Get colors
     List<String> colors = [];
@@ -436,24 +419,6 @@ class ApiService extends ChangeNotifier {
     );
   }
 
-  // 🔥 Helper to check if domain is blocked
-  // bool _isBlockedDomain(String url) {
-  //   if (url.isEmpty) return true;
-    
-  //   final blockedDomains = [
-  //     'pinimg.com',
-  //     'pinterest',
-  //     'walmartimages.com',
-  //     'img.susercontent.com',
-  //     'gstatic.com',
-  //     'encrypted-tbn',
-  //     'shopee',
-  //     'walmart',
-  //   ];
-    
-  //   return blockedDomains.any((domain) => url.contains(domain));
-  // }
-
   // ============= LOAD CATEGORIES =============
   Future<void> loadCategories() async {
     _isLoading = true;
@@ -461,9 +426,7 @@ class ApiService extends ChangeNotifier {
     try {
       _categories = await _getCategoriesFromApi();
       _sortedCategories = _sortCategoriesByOrder(_categories);
-      print('✅ Loaded ${_sortedCategories.length} categories');
     } catch (e) {
-      print('❌ Error loading categories: $e');
       _sortedCategories = _categories;
     } finally {
       _isLoading = false;
@@ -498,11 +461,9 @@ class ApiService extends ChangeNotifier {
         final data = json.decode(response.body);
         if (data['success'] == true && data['data'] != null) {
           List<dynamic> categoriesData = data['data'];
-          print('✅ Found ${categoriesData.length} categories from API');
           _apiAvailable = true;
           return categoriesData.map((json) => _parseCategoryFromJson(json)).toList();
         } else if (data is List) {
-          print('✅ Found ${data.length} categories from API (direct format)');
           _apiAvailable = true;
           return data.map((json) => _parseCategoryFromJson(json)).toList();
         } else {
@@ -512,8 +473,6 @@ class ApiService extends ChangeNotifier {
         throw Exception('Failed to load categories');
       }
     } catch (e) {
-      print('❌ API Error: $e');
-      print('📦 Using mock categories as fallback');
       _apiAvailable = false;
       useMockDataStatic = true;
       return MockApiService.getMockCategories();
@@ -543,10 +502,8 @@ class ApiService extends ChangeNotifier {
     notifyListeners();
     try {
       _selectedProduct = await _getProductByIdFromApi(id);
-      print('✅ Loaded product: ${_selectedProduct?.productName}');
     } catch (e) {
       _errorMessage = 'Error loading product detail: $e';
-      print('❌ Error loading product detail: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -569,7 +526,6 @@ class ApiService extends ChangeNotifier {
           .timeout(
             const Duration(seconds: 5),
             onTimeout: () {
-              print('⏰ API timeout, using mock product');
               _apiAvailable = false;
               useMockDataStatic = true;
               throw Exception('Timeout');
@@ -588,7 +544,6 @@ class ApiService extends ChangeNotifier {
         throw Exception('Failed to load product');
       }
     } catch (e) {
-      print('❌ API Error: $e');
       _apiAvailable = false;
       useMockDataStatic = true;
       return MockApiService.getMockProductById(id);
@@ -608,10 +563,8 @@ class ApiService extends ChangeNotifier {
       } else {
         _filteredProducts = await _getProductsByCategoryFromApi(category);
       }
-      print('✅ Loaded ${_filteredProducts.length} products for category: $category');
     } catch (e) {
       _errorMessage = 'Error loading products by category: $e';
-      print('❌ Error loading products by category: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -634,7 +587,7 @@ class ApiService extends ChangeNotifier {
           .timeout(
             const Duration(seconds: 5),
             onTimeout: () {
-              print('⏰ API timeout, using mock products');
+              print(' API timeout, using mock products');
               _apiAvailable = false;
               useMockDataStatic = true;
               throw Exception('Timeout');
@@ -657,7 +610,7 @@ class ApiService extends ChangeNotifier {
         throw Exception('Failed to load products by category');
       }
     } catch (e) {
-      print('❌ API Error: $e');
+      print(' API Error: $e');
       _apiAvailable = false;
       useMockDataStatic = true;
       return MockApiService.getMockProductsByCategory(category);
@@ -671,7 +624,7 @@ bool _isTrendingLoading = false;
 List<Product> get trendingProducts => _trendingProducts;
 bool get isTrendingLoading => _isTrendingLoading;
 
-// 🔥 Load trending products from backend or mock
+// Load trending products from backend or mock
 Future<void> loadTrendingProducts() async {
   if (_isTrendingLoading) return;
   
@@ -681,7 +634,6 @@ Future<void> loadTrendingProducts() async {
   try {
     _trendingProducts = await _fetchTrendingProducts();
   } catch (e) {
-    print('❌ Error loading trending: $e');
     _trendingProducts = [];
   } finally {
     _isTrendingLoading = false;
@@ -704,7 +656,6 @@ Future<void> loadTrendingProducts() async {
           .timeout(
             const Duration(seconds: 5),
             onTimeout: () {
-              print('⏰ API timeout, using mock trending');
               _apiAvailable = false;
               useMockDataStatic = true;
               throw Exception('Timeout');
@@ -727,7 +678,6 @@ Future<void> loadTrendingProducts() async {
         throw Exception('Failed to load trending products');
       }
     } catch (e) {
-      print('❌ API Error: $e');
       _apiAvailable = false;
       useMockDataStatic = true;
       return MockApiService.getMockTrendingProducts();

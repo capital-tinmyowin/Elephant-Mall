@@ -108,7 +108,7 @@ class _CategoryPageState extends State<CategoryPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeroCarousel(false),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
               _buildDesktopProducts(),
             ],
           ),
@@ -140,92 +140,92 @@ class _CategoryPageState extends State<CategoryPage> {
 
   // ============= MOBILE TRENDING SECTION =============
   Widget _buildMobileTrendingSection() {
-  return Consumer<ApiService>(
-    builder: (context, productController, child) {
-      // Get trending products from the service
-      final trending = productController.trendingProducts;
-      
-      if (trending.isEmpty) {
-        return const SizedBox.shrink();
-      }
+    return Consumer<ApiService>(
+      builder: (context, productController, child) {
+        // Get trending products from the service
+        final trending = productController.trendingProducts;
 
-      final fashionTrending = trending
-          .where(
-            (p) =>
-                p.category == "Blouses" ||
-                p.category == "Jeans" ||
-                p.category == "Bags" ||
-                p.category == "Shoes" ||
-                p.category == "T-Shirts",
-          )
-          .take(5)
-          .toList();
+        if (trending.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
-      final electronicsTrending = trending
-          .where(
-            (p) =>
-                p.category == "Electronics" ||
-                p.category == "Power Banks" ||
-                p.category == "Headphones",
-          )
-          .take(5)
-          .toList();
+        final fashionTrending = trending
+            .where(
+              (p) =>
+                  p.category == "Blouses" ||
+                  p.category == "Jeans" ||
+                  p.category == "Bags" ||
+                  p.category == "Shoes" ||
+                  p.category == "T-Shirts",
+            )
+            .take(5)
+            .toList();
 
-      final bool isMobile = MediaQuery.of(context).size.width < 768;
+        final electronicsTrending = trending
+            .where(
+              (p) =>
+                  p.category == "Electronics" ||
+                  p.category == "Power Banks" ||
+                  p.category == "Headphones",
+            )
+            .take(5)
+            .toList();
 
-      if (fashionTrending.isEmpty && electronicsTrending.isEmpty) {
-        return const SizedBox.shrink();
-      }
+        final bool isMobile = MediaQuery.of(context).size.width < 768;
 
-      if (isMobile) {
-        return Row(
+        if (fashionTrending.isEmpty && electronicsTrending.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        if (isMobile) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (fashionTrending.isNotEmpty)
+                Expanded(
+                  child: _buildTrendingSlider(
+                    title: 'New Arrivals',
+                    products: fashionTrending,
+                    sliderId: 'fashion_mobile',
+                    isCompact: true,
+                  ),
+                ),
+              if (fashionTrending.isNotEmpty && electronicsTrending.isNotEmpty)
+                const SizedBox(width: 8),
+              if (electronicsTrending.isNotEmpty)
+                Expanded(
+                  child: _buildTrendingSlider(
+                    title: 'Trending Now',
+                    products: electronicsTrending,
+                    sliderId: 'electronics_mobile',
+                    isCompact: true,
+                  ),
+                ),
+            ],
+          );
+        }
+
+        return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (fashionTrending.isNotEmpty)
-              Expanded(
-                child: _buildTrendingSlider(
-                  title: 'New Arrivals',
-                  products: fashionTrending,
-                  sliderId: 'fashion_mobile',
-                  isCompact: true,
-                ),
+              _buildTrendingSlider(
+                title: ' New Arrivals',
+                products: fashionTrending,
+                sliderId: 'fashion_mobile',
               ),
-            if (fashionTrending.isNotEmpty && electronicsTrending.isNotEmpty)
-              const SizedBox(width: 8),
+            const SizedBox(height: 20),
             if (electronicsTrending.isNotEmpty)
-              Expanded(
-                child: _buildTrendingSlider(
-                  title: 'Trending Now',
-                  products: electronicsTrending,
-                  sliderId: 'electronics_mobile',
-                  isCompact: true,
-                ),
+              _buildTrendingSlider(
+                title: ' Trending Now In Category',
+                products: electronicsTrending,
+                sliderId: 'electronics_mobile',
               ),
           ],
         );
-      }
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (fashionTrending.isNotEmpty)
-            _buildTrendingSlider(
-              title: ' New Arrivals',
-              products: fashionTrending,
-              sliderId: 'fashion_mobile',
-            ),
-          const SizedBox(height: 20),
-          if (electronicsTrending.isNotEmpty)
-            _buildTrendingSlider(
-              title: ' Trending Now In Category',
-              products: electronicsTrending,
-              sliderId: 'electronics_mobile',
-            ),
-        ],
-      );
-    },
-  );
-}
+      },
+    );
+  }
 
   // ============= HERO CAROUSEL =============
   Widget _buildHeroCarousel(bool isMobile) {
@@ -344,11 +344,8 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 
   Widget _buildHeroImage(String imageUrl) {
-      // String cleanPath = imageUrl.replaceFirst('assets/', '');
-      return AppImage(
-        imageUrl:  imageUrl,
-        fit: BoxFit.cover,
-      );
+    // String cleanPath = imageUrl.replaceFirst('assets/', '');
+    return AppImage(imageUrl: imageUrl, fit: BoxFit.cover);
   }
 
   // ============= DESKTOP SLIDE =============
@@ -617,9 +614,8 @@ class _CategoryPageState extends State<CategoryPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => CategoryDetailPage(
-                            categoryName: entry.key,
-                          ),
+                          builder: (context) =>
+                              CategoryDetailPage(categoryName: entry.key),
                         ),
                       );
                     },
@@ -650,7 +646,8 @@ class _CategoryPageState extends State<CategoryPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductDetailPage(productId: product.productCode),
+            builder: (context) =>
+                ProductDetailPage(productId: product.productCode),
           ),
         );
       },
@@ -767,8 +764,9 @@ class _CategoryPageState extends State<CategoryPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) =>
-                                ProductDetailPage(productId: firstProduct.productCode),
+                            builder: (context) => ProductDetailPage(
+                              productId: firstProduct.productCode,
+                            ),
                           ),
                         );
                       },
@@ -788,7 +786,7 @@ class _CategoryPageState extends State<CategoryPage> {
                             ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: AppImage(
-                                imageUrl:firstProduct.proxiedImageUrl,
+                                imageUrl: firstProduct.proxiedImageUrl,
                                 height: 75,
                                 width: 85,
                                 fit: BoxFit.cover,
@@ -796,15 +794,15 @@ class _CategoryPageState extends State<CategoryPage> {
                             ),
                             GestureDetector(
                               onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => CategoryDetailPage(
-                                    categoryName: entry.key,
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => CategoryDetailPage(
+                                      categoryName: entry.key,
+                                    ),
                                   ),
-                                ),
-                              );
-                            },
+                                );
+                              },
                               child: Padding(
                                 padding: const EdgeInsets.all(1.0),
                                 child: Text(
@@ -836,255 +834,65 @@ class _CategoryPageState extends State<CategoryPage> {
 
   // ============= TRENDING SIDEBAR =============
   Widget _buildTrendingSidebar() {
-  return Consumer<ApiService>(
-    builder: (context, productController, child) {
-      // Get trending products from the service
-      final trending = productController.trendingProducts;
-      
-      // If no trending products, show nothing
-      if (trending.isEmpty) {
-        return const SizedBox.shrink();
-      }
+    return Consumer<ApiService>(
+      builder: (context, productController, child) {
+        // Get trending products from the service
+        final trending = productController.trendingProducts;
 
-      // Split trending products into fashion and electronics
-      final fashionTrending = trending
-          .where(
-            (p) =>
-                p.category == "Blouses" ||
-                p.category == "Jeans" ||
-                p.category == "Bags" ||
-                p.category == "Shoes" ||
-                p.category == "T-Shirts",
-          )
-          .take(5)
-          .toList();
+        // If no trending products, show nothing
+        if (trending.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
-      final electronicsTrending = trending
-          .where(
-            (p) =>
-                p.category == "Electronics" ||
-                p.category == "Power Banks" ||
-                p.category == "Headphones",
-          )
-          .take(5)
-          .toList();
+        // Split trending products into fashion and electronics
+        final fashionTrending = trending
+            .where(
+              (p) =>
+                  p.category == "Blouses" ||
+                  p.category == "Jeans" ||
+                  p.category == "Bags" ||
+                  p.category == "Shoes" ||
+                  p.category == "T-Shirts",
+            )
+            .take(5)
+            .toList();
 
-      // If no filtered trending products, show nothing
-      if (fashionTrending.isEmpty && electronicsTrending.isEmpty) {
-        return const SizedBox.shrink();
-      }
+        final electronicsTrending = trending
+            .where(
+              (p) =>
+                  p.category == "Electronics" ||
+                  p.category == "Power Banks" ||
+                  p.category == "Headphones",
+            )
+            .take(5)
+            .toList();
 
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (fashionTrending.isNotEmpty)
-            _buildTrendingSlider(
-              title: ' New Arrivals',
-              products: fashionTrending,
-              sliderId: 'fashion',
-            ),
-          if (electronicsTrending.isNotEmpty)
-            _buildTrendingSlider(
-              title: ' Trending Now In Category',
-              products: electronicsTrending,
-              sliderId: 'electronics',
-            ),
-        ],
-      );
-    },
-  );
-}
+        // If no filtered trending products, show nothing
+        if (fashionTrending.isEmpty && electronicsTrending.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
-//   Widget _buildCategorySection() {
-//   return Consumer<ApiService>(
-//     builder: (context, productController, child) {
-//       final bool isMobile = MediaQuery.of(context).size.width < 768;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (fashionTrending.isNotEmpty)
+              _buildTrendingSlider(
+                title: ' New Arrivals',
+                products: fashionTrending,
+                sliderId: 'fashion',
+              ),
+            if (electronicsTrending.isNotEmpty)
+              _buildTrendingSlider(
+                title: ' Trending Now In Category',
+                products: electronicsTrending,
+                sliderId: 'electronics',
+              ),
+          ],
+        );
+      },
+    );
+  }
 
-//       // Get unique categories from products
-//       final categories = productController.products
-//           .map((p) => p.category)
-//           .where((cat) => cat.isNotEmpty)
-//           .toSet()
-//           .toList()
-//         ..sort();
-
-//       if (categories.isEmpty) {
-//         return const SizedBox.shrink();
-//       }
-
-//       return Column(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           const Text(
-//             '📂 Shop by Category',
-//             style: TextStyle(
-//               fontSize: 16,
-//               fontWeight: FontWeight.bold,
-//               color: Color(0xFF2D3E2B),
-//             ),
-//           ),
-//           const SizedBox(height: 10),
-//           isMobile
-//               ? _buildMobileCategoryChips(categories)
-//               : _buildDesktopCategoryChips(categories),
-//         ],
-//       );
-//     },
-//   );
-// }
-
-// // ============= MOBILE CATEGORY CHIPS =============
-// Widget _buildMobileCategoryChips(List<String> categories) {
-//   return SizedBox(
-//     height: 40,
-//     child: ListView.builder(
-//       scrollDirection: Axis.horizontal,
-//       physics: const BouncingScrollPhysics(),
-//       itemCount: categories.length,
-//       itemBuilder: (context, index) {
-//         final category = categories[index];
-//         return Padding(
-//           padding: const EdgeInsets.only(right: 8.0),
-//           child: GestureDetector(
-//             onTap: () {
-//               Navigator.push(
-//                 context,
-//                 MaterialPageRoute(
-//                   builder: (context) => CategoryDetailPage(
-//                     categoryName: category,
-//                   ),
-//                 ),
-//               );
-//             },
-//             child: Container(
-//               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-//               decoration: BoxDecoration(
-//                 color: Colors.grey[200],
-//                 borderRadius: BorderRadius.circular(40),
-//               ),
-//               child: Row(
-//                 children: [
-//                   // 🔥 Show category icon
-//                   Container(
-//                     width: 20,
-//                     height: 20,
-//                     margin: const EdgeInsets.only(right: 6),
-//                     child: _getCategoryIcon(category, size: 16),
-//                   ),
-//                   Text(
-//                     category,
-//                     style: const TextStyle(
-//                       color: Colors.black87,
-//                       fontSize: 13,
-//                       fontWeight: FontWeight.w500,
-//                     ),
-//                   ),
-//                 ],
-//               ),
-//             ),
-//           ),
-//         );
-//       },
-//     ),
-//   );
-// }
-
-// // ============= DESKTOP CATEGORY CHIPS =============
-// Widget _buildDesktopCategoryChips(List<String> categories) {
-//   return Wrap(
-//     spacing: 8.0,
-//     runSpacing: 8.0,
-//     children: categories.map((category) {
-//       return GestureDetector(
-//         onTap: () {
-//           Navigator.push(
-//             context,
-//             MaterialPageRoute(
-//               builder: (context) => CategoryDetailPage(
-//                 categoryName: category,
-//               ),
-//             ),
-//           );
-//         },
-//         child: Container(
-//           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-//           decoration: BoxDecoration(
-//             color: Colors.grey[200],
-//             borderRadius: BorderRadius.circular(40),
-//           ),
-//           child: Row(
-//             mainAxisSize: MainAxisSize.min,
-//             children: [
-//               _getCategoryIcon(category, size: 20),
-//               const SizedBox(width: 6),
-//               Text(
-//                 category,
-//                 style: const TextStyle(
-//                   color: Colors.black87,
-//                   fontSize: 13,
-//                   fontWeight: FontWeight.w500,
-//                 ),
-//               ),
-//             ],
-//           ),
-//         ),
-//       );
-//     }).toList(),
-//   );
-// }
-
-// ============= CATEGORY ICON =============
-// Widget _getCategoryIcon(String category, {double size = 20}) {
-//   IconData iconData;
-//   switch (category) {
-//     case 'T-Shirts':
-//       iconData = Icons.checkroom;
-//       break;
-//     case 'Blouses':
-//       iconData = Icons.checkroom;
-//       break;
-//     case 'Bags':
-//       iconData = Icons.shopping_bag;
-//       break;
-//     case 'Hats':
-//       iconData = Icons.beach_access;
-//       break;
-//     case 'Shoes':
-//       iconData = Icons.snowshoeing_sharp;
-//       break;
-//     case 'Jeans':
-//       iconData = Icons.style;
-//       break;
-//     case 'Accessories':
-//       iconData = Icons.watch;
-//       break;
-//     case 'Electronics':
-//       iconData = Icons.electrical_services;
-//       break;
-//     case 'Headphones':
-//       iconData = Icons.headphones;
-//       break;
-//     case 'Power Banks':
-//       iconData = Icons.battery_charging_full;
-//       break;
-//     case 'Clearance':
-//       iconData = Icons.local_offer;
-//       break;
-//     case 'Home Decor':
-//       iconData = Icons.home;
-//       break;
-//     case 'Appliances':
-//       iconData = Icons.kitchen;
-//       break;
-//     default:
-//       iconData = Icons.category;
-//   }
-//   return Icon(
-//     iconData,
-//     size: size,
-//     color: const Color(0xFF2B6E3B),
-//   );
-// }
   // ============= TRENDING SLIDER =============
   Widget _buildTrendingSlider({
     required String title,
@@ -1256,7 +1064,8 @@ class _CategoryPageState extends State<CategoryPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductDetailPage(productId: product.productCode),
+            builder: (context) =>
+                ProductDetailPage(productId: product.productCode),
           ),
         );
       },
