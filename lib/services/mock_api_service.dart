@@ -30,118 +30,118 @@ class MockApiService {
     String folder = getCategoryFolder(product.category);
     // For T-Shirts with types
     if (product.category == 'T-Shirts') {
-      if (product.name.contains('Classic')) {
+      if (product.productName.contains('Classic')) {
         return '$baseImagePath$folder/ClassicShirt';
       }
-      if (product.name.contains('OverSize')) {
+      if (product.productName.contains('OverSize')) {
         return '$baseImagePath$folder/OverSize';
       }
-      if (product.name.contains('Column')) {
+      if (product.productName.contains('Column')) {
         return '$baseImagePath$folder/ColumnShirt';
       }
     }
     //for Blouse
     if (product.category == 'Blouses') {
-      if (product.name.contains('White')) {
+      if (product.productName.contains('White')) {
         return '$baseImagePath$folder/WhiteBlouse';
       }
-      if (product.name.contains('Color')) {
+      if (product.productName.contains('Color')) {
         return '$baseImagePath$folder/ColorBlouse';
       }
     }
     
     // For Bags with types
     if (product.category == 'Bags') {
-      if (product.name.contains('Leather')) {
+      if (product.productName.contains('Leather')) {
         return '$baseImagePath$folder/LeatherBag';
       }
-      if (product.name.contains('Chain')) {
+      if (product.productName.contains('Chain')) {
         return '$baseImagePath$folder/ChainShoulderBag';
       }
     }
     //for Hat
      if (product.category == 'Hats') {
-      if (product.name.contains('Wool Fedora Hat')) {
+      if (product.productName.contains('Wool Fedora Hat')) {
         return '$baseImagePath$folder/WoolFedoraHat';
       }
-      if (product.name.contains('Uniset Hat')) {
+      if (product.productName.contains('Uniset Hat')) {
         return '$baseImagePath$folder/UnisetHat';
       }
     }
     //Shoes
     if (product.category == 'Shoes') {
-      if (product.name.contains('Running Shoes')) {
+      if (product.productName.contains('Running Shoes')) {
         return '$baseImagePath$folder/RunningShoe';
       }
-      if (product.name.contains('Wedding Heel')) {
+      if (product.productName.contains('Wedding Heel')) {
         return '$baseImagePath$folder/WeddingHeel';
       }
-      if (product.name.contains('Sneaker Shoe')) {
+      if (product.productName.contains('Sneaker Shoe')) {
         return '$baseImagePath$folder/Sneaker';
       }
     }
   //Jeans
   if (product.category == 'Jeans') {
-      if (product.name.contains('Long Jeans')) {
+      if (product.productName.contains('Long Jeans')) {
         return '$baseImagePath$folder/Long';
       }
-      if (product.name.contains('Jean Short Skirt')) {
+      if (product.productName.contains('Jean Short Skirt')) {
         return '$baseImagePath$folder/ShortSkirt';
       }
-      if (product.name.contains('Short Jean')) {
+      if (product.productName.contains('Short Jean')) {
         return '$baseImagePath$folder/Short';
       }
     }
   //Accessories
   if (product.category == 'Accessories') {
-      if (product.name.contains('Neck Accessories')) {
+      if (product.productName.contains('Neck Accessories')) {
         return '$baseImagePath$folder/Neck';
       }
-      if (product.name.contains('Earring Set')) {
+      if (product.productName.contains('Earring Set')) {
         return '$baseImagePath$folder/Earing';
       }
-      if (product.name.contains('Press On Nail')) {
+      if (product.productName.contains('Press On Nail')) {
         return '$baseImagePath$folder/Nail';
       }
     }
     //Electronics
   if (product.category == 'Electronics') {
-      if (product.name.contains('Ipad 10th Gen')) {
+      if (product.productName.contains('Ipad 10th Gen')) {
         return '$baseImagePath$folder/Ipad';
       }
-      if (product.name.contains('Earring Set')) {
+      if (product.productName.contains('Earring Set')) {
         return '$baseImagePath$folder/Earing';
       }
-      if (product.name.contains('Press On Nail')) {
+      if (product.productName.contains('Press On Nail')) {
         return '$baseImagePath$folder/Nail';
       }
     }
      //Headphones
   if (product.category == 'Headphones') {
-      if (product.name.contains('Earphone')) {
+      if (product.productName.contains('Earphone')) {
         return '$baseImagePath$folder/Earphone';
       }
     }
     if (product.category == 'Power Banks') {
-      if (product.name.contains('Powerbank')) {
+      if (product.productName.contains('Powerbank')) {
         return '$baseImagePath$folder/Powerbank';
       }
     }
     if (product.category == 'Clearance') {
-      if (product.name.contains('Clearance Item')) {
+      if (product.productName.contains('Clearance Item')) {
         return '$baseImagePath$folder/Item';
       }
-      if (product.name.contains('Clearance Note Book')) {
+      if (product.productName.contains('Clearance Note Book')) {
         return '$baseImagePath$folder/NoteBook';
       }
     }
     if (product.category == 'Home Decor') {
-      if (product.name.contains('Home Decor')) {
+      if (product.productName.contains('Home Decor')) {
         return '$baseImagePath$folder/HomeDecor';
       }
     }
     if (product.category == 'Appliances') {
-      if (product.name.contains('Appliance')) {
+      if (product.productName.contains('Appliance')) {
         return '$baseImagePath$folder/Appliance';
       }
     }
@@ -159,6 +159,15 @@ class MockApiService {
     // Fallback
     return '$folder/default.jpg';
   }
+
+  static String getCleanImagePath(Product product) {
+    String path = getProductImagePath(product);
+    // Remove 'assets/' if present (AppImage will add it back)
+    if (path.startsWith('assets/')) {
+      path = path.substring(7); // Remove 'assets/'
+    }
+    return path;
+  }
   // Get image URL with local fallback
   static String getImageUrl(Product product) {
     // Only use local images if mock data is enabled
@@ -170,8 +179,8 @@ class MockApiService {
   static List<Product> getMockProducts() {
     return [
       Product(
-      id: 1,
-      name: "Classic T-Shirt",
+      productCode: 1,
+      productName: "Classic T-Shirt",
       price: 19.99,
       category: "T-Shirts",
       image: "https://i.pinimg.com/736x/ff/55/b5/ff55b572cdc9e5c7bcb9e1e46aca153b.jpg",
@@ -193,8 +202,8 @@ class MockApiService {
       colors: ['black', 'white', 'cream', 'blue', 'pink','skyblue'],
     ),
     Product(
-      id: 2,
-      name: "OverSize T-Shirt",
+      productCode: 2,
+      productName: "OverSize T-Shirt",
       price: 19.99,
       category: "T-Shirts",
       image: "https://i.pinimg.com/1200x/7b/9b/64/7b9b64157c65859e958063af2284b620.jpg",
@@ -216,8 +225,8 @@ class MockApiService {
       colors: ['white', 'black', 'brown'],
     ),
     Product(
-      id: 3,
-      name: "Column T-Shirt",
+      productCode: 3,
+      productName: "Column T-Shirt",
       price: 19.99,
       category: "T-Shirts",
       image: "https://i.pinimg.com/1200x/2d/7b/21/2d7b21a072cd538589f63358fbd35520.jpg",
@@ -239,8 +248,8 @@ class MockApiService {
       colors: ['white','black','blue'],
     ),
     Product(
-      id: 4,
-      name: "White Blouse",
+      productCode: 4,
+      productName: "White Blouse",
       price: 39.99,
       category: "Blouses",
       image: "https://i.pinimg.com/1200x/bd/6c/f9/bd6cf9e39bb3ea86086bb1f89c789ee6.jpg",
@@ -261,8 +270,8 @@ class MockApiService {
       colors: ['white','flower']
     ),
     Product(
-      id: 5,
-      name: "Color Blouse",
+      productCode: 5,
+      productName: "Color Blouse",
       price: 39.99,
       category: "Blouses",
       image: "https://i.pinimg.com/736x/14/3f/4a/143f4ab55d79b2b53a9c6a342153bbbf.jpg",
@@ -283,8 +292,8 @@ class MockApiService {
       colors: ['pink','red']
     ),
     Product(
-      id: 6,
-      name: "Leather Bag",
+      productCode: 6,
+      productName: "Leather Bag",
       price: 34.99,
       category: "Bags",
       image: "https://i.pinimg.com/1200x/f2/df/79/f2df7979c3e9fd8bfdf6b51aa9aca09e.jpg",
@@ -306,8 +315,8 @@ class MockApiService {
       colors: ['black', 'white', 'green', 'pink'],
     ),
     Product(
-      id: 7,
-      name: "Chain Shoulder Bag",
+      productCode: 7,
+      productName: "Chain Shoulder Bag",
       price: 34.99,
       category: "Bags",
       image: "https://i.pinimg.com/1200x/2b/a4/3c/2ba43c436ea17b8eef0082b9be1bacf1.jpg",
@@ -327,8 +336,8 @@ class MockApiService {
       colors: ['black','size'],
     ),
     Product(
-      id: 8,
-      name: "Wool Fedora Hat",
+      productCode: 8,
+      productName: "Wool Fedora Hat",
       price: 24.99,
       category: "Hats",
       image: "https://i.pinimg.com/736x/4e/81/11/4e8111d7aea3eeb01500a1f6ad88cdae.jpg",
@@ -348,8 +357,8 @@ class MockApiService {
       colors: ['gray','black']
     ),
     Product(
-      id: 9,
-      name: "Uniset Hat",
+      productCode: 9,
+      productName: "Uniset Hat",
       price: 18.99,
       category: "Hats",
       image: "https://i.pinimg.com/1200x/c1/a4/59/c1a4597079ec099708a6548cde6dd4c3.jpg",
@@ -371,8 +380,8 @@ class MockApiService {
       colors: ['white','black','pink','red'],
     ),
     Product(
-      id: 10,
-      name: "Running Shoes",
+      productCode: 10,
+      productName: "Running Shoes",
       price: 49.99,
       category: "Shoes",
       image: "https://i.pinimg.com/736x/71/4f/a1/714fa1434d9f007388ddf0da7be76873.jpg",
@@ -394,8 +403,8 @@ class MockApiService {
       colors: ['white','black','blue','gray'],
     ),
     Product(
-      id: 11,
-      name: "Wedding Heel",
+      productCode: 11,
+      productName: "Wedding Heel",
       price: 79.99,
       category: "Shoes",
       image: "https://i.pinimg.com/1200x/ee/bf/89/eebf8909f870ef5d7170a5289f43489d.jpg",
@@ -416,8 +425,8 @@ class MockApiService {
       colors: ['w1','w2','w3'],
     ),
     Product(
-      id: 12,
-      name: "Sneaker Shoe",
+      productCode: 12,
+      productName: "Sneaker Shoe",
       price: 49.99,
       category: "Shoes",
       image: "https://i.pinimg.com/1200x/57/62/a6/5762a6c77d9ac297e2cdce5de6287875.jpg",
@@ -435,8 +444,8 @@ class MockApiService {
       colors: ['brown'],
     ),
     Product(
-      id: 13,
-      name: "Long Jeans",
+      productCode: 13,
+      productName: "Long Jeans",
       price: 59.99,
       category: "Jeans",
       image: "https://i.pinimg.com/1200x/fa/7d/b7/fa7db741cf6848f1c657e56af9bd17e2.jpg",
@@ -458,8 +467,8 @@ class MockApiService {
       colors: ['L1','L2','L3','L4'],
     ),
     Product(
-      id: 14,
-      name: "Jean Short Skirt",
+      productCode: 14,
+      productName: "Jean Short Skirt",
       price: 64.99,
       category: "Jeans",
       image: "https://i.pinimg.com/736x/df/07/36/df0736a899239fb28bc263b5e8501057.jpg",
@@ -481,8 +490,8 @@ class MockApiService {
       colors: ['S1','S2','S3','S4']
     ),
     Product(
-      id: 15,
-      name: "Short Jean",
+      productCode: 15,
+      productName: "Short Jean",
       price: 64.99,
       category: "Jeans",
       image: "https://i.pinimg.com/736x/ae/bf/3c/aebf3cf06bbf805f760b5584c03afab3.jpg",
@@ -504,8 +513,8 @@ class MockApiService {
       colors: ['stblack','stblue','stbrown','stwhite'],
     ),
       Product(
-        id: 16,
-        name: "Neck Accessories",
+        productCode: 16,
+        productName: "Neck Accessories",
         price: 29.99,
         category: "Accessories",
         image: "https://i.pinimg.com/1200x/60/d6/8a/60d68a58460c418cffd3f90d682348cc.jpg",
@@ -528,8 +537,8 @@ class MockApiService {
           colors: ['N1','N2','N3','N4','N5'],
       ),
       Product(
-        id: 17,
-        name: "Earring Set",
+        productCode: 17,
+        productName: "Earring Set",
         price: 29.99,
         category: "Accessories",
         image: "https://i.pinimg.com/1200x/a7/ea/42/a7ea4264c4902eeddd377d1aff6a66f1.jpg",
@@ -552,8 +561,8 @@ class MockApiService {
           colors: ['E1','E2','E3','E4','E5'],
       ),
       Product(
-        id: 18,
-        name: "Press On Nail",
+        productCode: 18,
+        productName: "Press On Nail",
         price: 29.99,
         category: "Accessories",
         image: "https://i.pinimg.com/1200x/47/8b/93/478b93513e17080d67216f973316acb4.jpg",
@@ -576,8 +585,8 @@ class MockApiService {
           colors: ['N1','N2','N3','N4','N5']
       ),
       Product(
-        id: 19,
-        name: "Ipad 10th Gen",
+        productCode: 19,
+        productName: "Ipad 10th Gen",
         price: 89.99,
         category: "Electronics",
         image: "https://i5.walmartimages.com/seo/2022-Apple-10-9-inch-iPad-Wi-Fi-64GB-Pink-10th-Generation_4fdae443-4f60-4a3e-9efe-12758bf5f128.f4d7333626b4e6b27e8be25d1f698373.jpeg",
@@ -599,8 +608,8 @@ class MockApiService {
           colors: ['I1','I2','I3','I4']
       ),
       Product(
-        id: 20,
-        name: "Earphone",
+        productCode: 20,
+        productName: "Earphone",
         price: 29.99,
         category: "Headphones",
         image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTndMcJW71HLgi9ntgoterJiJJjLxbtOVVpyA&s",
@@ -623,8 +632,8 @@ class MockApiService {
           colors: ['Eph1','Eph2','Eph3','Eph4','Eph5']
       ),
       Product(
-        id: 21,
-        name: "Powerbank",
+        productCode: 21,
+        productName: "Powerbank",
         price: 39.99,
         category: "Power Banks",
         image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSnwF3fpDIATeZ_9o5h3vNu_X8KUHSq5O739g&s",
@@ -646,8 +655,8 @@ class MockApiService {
           colors: ['pb1','pb2','pb3','pb4']
       ),
       Product(
-        id: 22,
-        name: "Clearance Item",
+        productCode: 22,
+        productName: "Clearance Item",
         price: 29.99,
         category: "Clearance",
         image: "https://i.pinimg.com/736x/11/ed/ea/11edead26397e78cd63030dda2d4ee10.jpg",
@@ -664,8 +673,8 @@ class MockApiService {
         colors: ['C1']
       ),
       Product(
-        id: 25,
-        name: "Clearance Note Book",
+        productCode: 25,
+        productName: "Clearance Note Book",
         price: 29.99,
         category: "Clearance",
         image:"https://down-ph.img.susercontent.com/file/4231c5fe7c003aa574a9153de9ea6116",
@@ -682,8 +691,8 @@ class MockApiService {
         colors: ['C2']
       ),
       Product(
-        id: 23,
-        name: "Home Decor",
+        productCode: 23,
+        productName: "Home Decor",
         price: 29.99,
         category: "Home Decor",
         image: "https://i.pinimg.com/736x/4e/6d/4e/4e6d4eb03c6518de8b527b4bd30eab55.jpg",
@@ -706,8 +715,8 @@ class MockApiService {
         colors: ['H1','H2','H3','H4','H5']
       ),
       Product(
-        id: 24,
-        name: "Appliance",
+        productCode: 24,
+        productName: "Appliance",
         price: 29.99,
         category: "Appliances",
         image: "https://i.pinimg.com/736x/73/39/1c/73391c325a95b74a077bbac31a260da4.jpg",
@@ -740,7 +749,7 @@ class MockApiService {
   }
 
   static Product getMockProductById(int id) {
-    return getMockProducts().firstWhere((p) => p.id == id);
+    return getMockProducts().firstWhere((p) => p.productCode == id);
   }
 
   static List<Category> getMockCategories() {
@@ -765,40 +774,188 @@ class MockApiService {
   static List<Product> getMockTrendingProducts() {
     return [
       Product(
-        id: 4,
-        name: "White Blouse",
-        price: 39.99,
-        category: "Blouses",
-        image: "https://i.pinimg.com/1200x/bd/6c/f9/bd6cf9e39bb3ea86086bb1f89c789ee6.jpg",
-        rating: 4.8,
-        ratingCount: 234,
-      ),
+      productCode: 1,
+      productName: "Classic T-Shirt",
+      price: 19.99,
+      category: "T-Shirts",
+      image: "https://i.pinimg.com/736x/ff/55/b5/ff55b572cdc9e5c7bcb9e1e46aca153b.jpg",
+      rating: 4.7,
+      ratingCount: 234,
+      seller: Seller(
+          id: 1,
+          name: "Sarah J.",
+          rating: 4.7,
+          ratingCount: 234,
+          joinDate: DateTime.now(),
+        ),
+      description: "Soft cotton jersey t-shirt, breathable fabric. Perfect for daily wear.",
+      productImages: [
+        "https://i.pinimg.com/1200x/dd/67/30/dd6730be42684378f2abd82900072e72.jpg",
+        "https://i.pinimg.com/736x/bd/a0/ca/bda0ca23a55ffd326145a2dbb8e139f4.jpg",
+        "https://i.pinimg.com/1200x/51/6e/ab/516eab223c22a36d1051ba9bc46f5695.jpg",
+      ],
+      colors: ['black', 'white', 'cream', 'blue', 'pink','skyblue'],
+    ),
       Product(
-        id: 13,
-        name: "Long Jeans",
-        price: 59.99,
-        category: "Jeans",
-        image: "https://i.pinimg.com/1200x/fa/7d/b7/fa7db741cf6848f1c657e56af9bd17e2.jpg",
-        rating: 4.6,
-        ratingCount: 189,
-      ),
+      productCode: 4,
+      productName: "White Blouse",
+      price: 39.99,
+      category: "Blouses",
+      image: "https://i.pinimg.com/1200x/bd/6c/f9/bd6cf9e39bb3ea86086bb1f89c789ee6.jpg",
+      rating: 4.9,
+      ratingCount: 234,
+      seller: Seller(
+          id: 1,
+          name: "Sarah J.",
+          rating: 4.7,
+          ratingCount: 234,
+          joinDate: DateTime.now(),
+        ),
+      description: "Luxurious silk blend, perfect for office or brunch.",
+      productImages: [
+        "https://i.pinimg.com/1200x/d3/db/ae/d3dbaeb17fcee123f3c128fd9e0c1223.jpg",
+        "https://i.pinimg.com/736x/14/3f/4a/143f4ab55d79b2b53a9c6a342153bbbf.jpg",
+      ],
+      colors: ['white','flower']
+    ),
       Product(
-        id: 19,
-        name: "Ipad 10th Gen",
+      productCode: 6,
+      productName: "Leather Bag",
+      price: 34.99,
+      category: "Bags",
+      image: "https://i.pinimg.com/1200x/f2/df/79/f2df7979c3e9fd8bfdf6b51aa9aca09e.jpg",
+      rating: 4.9,
+      ratingCount: 456,
+      seller: Seller(
+          id: 1,
+          name: "Sarah J.",
+          rating: 4.7,
+          ratingCount: 234,
+          joinDate: DateTime.now(),
+        ),
+      description: "Handwoven straw tote, roomy interior. Ideal for beach or market.",
+      productImages: [
+        "https://i.pinimg.com/736x/41/27/d5/4127d552a7c2825f40373caf13498abe.jpg",
+        "https://i.pinimg.com/736x/a6/65/b4/a665b473466c9ecc932501038b63349c.jpg",
+        "https://i.pinimg.com/1200x/8e/5d/4e/8e5d4e3ae705b36622ca969dd5f3b187.jpg",
+      ],
+      colors: ['black', 'white', 'green', 'pink'],
+    ),
+     Product(
+      productCode: 10,
+      productName: "Running Shoes",
+      price: 49.99,
+      category: "Shoes",
+      image: "https://i.pinimg.com/736x/71/4f/a1/714fa1434d9f007388ddf0da7be76873.jpg",
+      rating: 4.8,
+      ratingCount: 567,
+      seller: Seller(
+          id: 2,
+          name: "Sunny Days",
+          rating: 4.7,
+          ratingCount: 234,
+          joinDate: DateTime.now(),
+        ),
+      description: "Comfortable footbed, leather straps. True to size.",
+      productImages: [
+        "https://i.pinimg.com/1200x/78/72/65/787265628f6bed641d4fd4e4e08565ae.jpg",
+        "https://i.pinimg.com/736x/71/b3/44/71b34468e864cf0d74a842e48bf9a323.jpg",
+        "https://i.pinimg.com/1200x/23/ca/47/23ca47a3bd603425460c669259cbb215.jpg",
+      ],
+      colors: ['white','black','blue','gray'],
+    ),
+      Product(
+      productCode: 13,
+      productName: "Long Jeans",
+      price: 59.99,
+      category: "Jeans",
+      image: "https://i.pinimg.com/1200x/fa/7d/b7/fa7db741cf6848f1c657e56af9bd17e2.jpg",
+      rating: 4.5,
+      ratingCount: 189,
+      seller: Seller(
+          id: 3,
+          name: "John Doe",
+          rating: 4.7,
+          ratingCount: 234,
+          joinDate: DateTime.now(),
+        ),
+      description: "Stretch denim, slim leg, classic blue wash.",
+      productImages: [
+        "https://i.pinimg.com/736x/b3/a1/7b/b3a17b022e01e7fcc9d27215e2879272.jpg",
+        "https://i.pinimg.com/1200x/5b/42/20/5b422004959a5b1b909242233602a8e7.jpg",
+        "https://i.pinimg.com/1200x/ab/f7/41/abf741d4cf5b5b2984593fab0e0f1af1.jpg",
+      ],
+      colors: ['L1','L2','L3','L4'],
+    ),
+      Product(
+        productCode: 19,
+        productName: "Ipad 10th Gen",
         price: 89.99,
         category: "Electronics",
         image: "https://i5.walmartimages.com/seo/2022-Apple-10-9-inch-iPad-Wi-Fi-64GB-Pink-10th-Generation_4fdae443-4f60-4a3e-9efe-12758bf5f128.f4d7333626b4e6b27e8be25d1f698373.jpeg",
         rating: 4.7,
         ratingCount: 892,
+        seller: Seller(
+          id: 4,
+          name: "Emma Style",
+          rating: 4.7,
+          ratingCount: 234,
+          joinDate: DateTime.now(),
+        ),
+        description: "Apple iPad 10.9-inch, A14 Bionic chip.",
+        productImages: [
+            "https://i.pinimg.com/736x/5f/5a/0f/5f5a0f5dc3e79507d21307977ff48d26.jpg",
+            "https://i.pinimg.com/736x/a4/3a/31/a43a3139c7dbe8cdf069747a1adbf065.jpg",
+            "https://i.pinimg.com/736x/03/50/b4/0350b4a8e67383b0b9f2117782b22724.jpg",
+          ],
+          colors: ['I1','I2','I3','I4']
       ),
       Product(
-        id: 21,
-        name: "Powerbank",
+        productCode: 20,
+        productName: "Earphone",
+        price: 29.99,
+        category: "Headphones",
+        image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTndMcJW71HLgi9ntgoterJiJJjLxbtOVVpyA&s",
+        rating: 4.4,
+        ratingCount: 234,
+        seller: Seller(
+          id: 4,
+          name: "Emma Style",
+          rating: 4.7,
+          ratingCount: 234,
+          joinDate: DateTime.now(),
+        ),
+        description: "Bluetooth 5.0, long battery life.",
+        productImages: [
+            "https://i.pinimg.com/1200x/7d/b9/5c/7db95c3d96c5abd7072f01fcc69b21b7.jpg",
+            "https://i.pinimg.com/736x/d6/69/30/d66930383d6b21a09e4182d433e67e3d.jpg",
+            "https://i.pinimg.com/736x/e0/41/a1/e041a16d06691b38cc35316dc48e1b16.jpg",
+            "https://i.pinimg.com/736x/1b/9e/b1/1b9eb1ac0d99e6656414273a1e1b0141.jpg",
+          ],
+          colors: ['Eph1','Eph2','Eph3','Eph4','Eph5']
+      ),
+      Product(
+        productCode: 21,
+        productName: "Powerbank",
         price: 39.99,
         category: "Power Banks",
         image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSnwF3fpDIATeZ_9o5h3vNu_X8KUHSq5O739g&s",
         rating: 4.5,
         ratingCount: 342,
+        seller: Seller(
+          id: 2,
+          name: "Sunny Days",
+          rating: 4.7,
+          ratingCount: 234,
+          joinDate: DateTime.now(),
+        ),
+        description: "Dual USB output, fast charging.",
+        productImages: [
+            "https://i.pinimg.com/736x/5c/a1/99/5ca19986d3af978a1a8f3c54cc735f93.jpg",
+            "https://i.pinimg.com/736x/18/db/7f/18db7fe2ac7dfd458029317fab2d612d.jpg",
+            "https://i.pinimg.com/1200x/9d/d5/39/9dd539a08fec5a2c382e3789ab836841.jpg",
+          ],
+          colors: ['pb1','pb2','pb3','pb4']
       ),
     ];
   }
