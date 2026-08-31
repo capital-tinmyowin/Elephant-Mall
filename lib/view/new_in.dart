@@ -21,13 +21,43 @@ class _NewInPageState extends State<NewInPage> {
 
   List<NewInModel> allProducts = [];
 
+  List<String> categories = [];
+
   bool isLoading = true;
+  bool isCategoryLoading = true;
+
   String? errorMessage;
+  String? categoryErrorMessage;
 
   @override
   void initState() {
     super.initState();
     _loadProducts();
+    _loadCategories();
+  }
+
+  List<String> get categoryDropdownItems {
+    return ["All Categories", ...categories];
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final result = await _newInService.getCategories();
+
+      if (!mounted) return;
+
+      setState(() {
+        categories = result;
+        isCategoryLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        isCategoryLoading = false;
+        categoryErrorMessage = e.toString();
+      });
+    }
   }
 
   Future<void> _loadProducts() async {
@@ -97,9 +127,9 @@ class _NewInPageState extends State<NewInPage> {
   Widget build(BuildContext context) {
     final mobileView = isMobile(context);
 
-    if (isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+    // if (isLoading) {
+    //   return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    // }
 
     if (errorMessage != null) {
       return Scaffold(
@@ -290,17 +320,12 @@ class _NewInPageState extends State<NewInPage> {
               Expanded(
                 child: _buildDropdown(
                   value: selectedCategory,
-                  items: const [
-                    "All Categories",
-                    "Shoes",
-                    "Clothing",
-                    "Bags",
-                    "Accessories",
-                    "Jewelry",
-                  ],
+                  items: categoryDropdownItems,
                   onChanged: (value) {
+                    if (value == null) return;
+
                     setState(() {
-                      selectedCategory = value!;
+                      selectedCategory = value;
                     });
                   },
                 ),
@@ -353,17 +378,12 @@ class _NewInPageState extends State<NewInPage> {
           width: 180,
           child: _buildDropdown(
             value: selectedCategory,
-            items: const [
-              "All Categories",
-              "Shoes",
-              "Clothing",
-              "Bags",
-              "Accessories",
-              "Jewelry",
-            ],
+            items: categoryDropdownItems,
             onChanged: (value) {
+              if (value == null) return;
+
               setState(() {
-                selectedCategory = value!;
+                selectedCategory = value;
               });
             },
           ),

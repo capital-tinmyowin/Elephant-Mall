@@ -251,11 +251,11 @@ class _CommonHeaderState extends State<CommonHeader> {
       case "/category":
         return menuName == "CATEGORIES";
 
+      case "/sale":
+        return menuName == "SALE";
+
       case "/new-in":
         return menuName == "NEW IN";
-
-      case "/sell":
-        return menuName == "SALE";
 
       case "/favorite":
         return menuName == "MY FAVORITE";
@@ -471,94 +471,89 @@ class _CommonHeaderState extends State<CommonHeader> {
     );
   }
 
-  Widget _menuItem(BuildContext context, String text, Widget? page) {
-    final bool isActive = isCurrentPage(text);
+Widget _menuItem(BuildContext context, String text, Widget? page) {
+  final bool isActive = isCurrentPage(text);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    child: InkWell(
+      onTap: () {
+        if (_isMenuOpen) {
+          setState(() {
+            _isMenuOpen = false;
+          });
+        }
 
-      child: InkWell(
-        onTap: () {
-          if (_isMenuOpen) {
-            setState(() {
-              _isMenuOpen = false;
-            });
-          }
+        if (page == null) return;
 
-          if (page == null) return;
+        String routeName;
 
-          String routeName;
+        switch (text) {
+          case "HOME":
+            routeName = "/home";
+            break;
 
-          switch (text) {
-            case "HOME":
-              routeName = "/home";
-              break;
+          case "CATEGORIES":
+            routeName = "/category";
+            break;
 
-            case "CATEGORIES":
-              routeName = "/category";
-              break;
+          case "SALE":
+            routeName = "/sale";
+            break;
 
-            case "NEW IN":
-              routeName = "/new-in";
-              break;
+          case "NEW IN":
+            routeName = "/new-in";
+            break;
 
-            case "SALE":
-              routeName = "/sell";
-              break;
+          case "MY FAVORITE":
+            routeName = "/favorite";
+            break;
 
-            case "MY FAVORITE":
-              routeName = "/favorite";
-              break;
+          case "ABOUT US":
+            routeName = "/about";
+            break;
 
-            case "ABOUT US":
-              routeName = "/about";
-              break;
+          default:
+            routeName = "/";
+        }
 
-            default:
-              routeName = "/";
-          }
-
-          Navigator.pushReplacement(
-            context,
-
-            PageRouteBuilder(
-              settings: RouteSettings(name: routeName),
-
-              pageBuilder: (context, animation, secondaryAnimation) => page,
-
-              transitionDuration: Duration.zero,
-
-              reverseTransitionDuration: Duration.zero,
-            ),
-          );
-        },
-
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-
-          decoration: BoxDecoration(
-            color: isActive ? const Color(0xFFC77C2E) : Colors.transparent,
-
-            borderRadius: BorderRadius.circular(6),
+        // CHANGE pushReplacement TO push
+        Navigator.push(
+          context,
+          PageRouteBuilder(
+            settings: RouteSettings(name: routeName),
+            pageBuilder: (context, animation, secondaryAnimation) => page,
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
           ),
+        );
+      },
 
-          child: Text(
-            text,
-
-            style: TextStyle(
-              fontSize: 14,
-
-              fontWeight: FontWeight.bold,
-
-              color: isActive ? Colors.white : Colors.black,
-            ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 8,
+        ),
+        decoration: BoxDecoration(
+          color: isActive
+              ? const Color(0xFFC77C2E)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: isActive ? Colors.white : Colors.black,
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 } // <-- CLOSE CommonHeader HERE
 
 // ===============================
@@ -581,7 +576,6 @@ class CommonBottomBar extends StatelessWidget {
         break;
 
       case 1:
-        page = const CategoryPage();
         page = const CategoryPage();
         break;
 
