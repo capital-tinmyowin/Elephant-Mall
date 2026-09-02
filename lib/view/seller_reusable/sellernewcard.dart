@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:elephant_mall/view/sell.dart';
 
 class SellerItemWidget extends StatefulWidget {
   final String title;
@@ -35,6 +36,8 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
   late String currentDescription;
   late String currentImage;
 
+  final int productCodetest = 1001;
+
   @override
   void initState() {
     super.initState();
@@ -66,10 +69,7 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
                   /// Product image
                   AspectRatio(
                     aspectRatio: 4 / 3,
-                    child: Image.asset(
-                      currentImage,
-                      fit: BoxFit.cover,
-                    ),
+                    child: Image.asset(currentImage, fit: BoxFit.cover),
                   ),
 
                   /// Product information
@@ -95,9 +95,7 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
 
                               Text(
                                 "⭐ $currentRating",
-                                style: TextStyle(
-                                  fontSize: isSmall ? 10 : 12,
-                                ),
+                                style: TextStyle(fontSize: isSmall ? 10 : 12),
                               ),
                             ],
                           ),
@@ -137,8 +135,7 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
                                       backgroundColor: Colors.orange,
                                       padding: EdgeInsets.zero,
                                       shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(8),
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
                                     ),
                                     onPressed: () {},
@@ -167,8 +164,7 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
                                         color: Colors.green,
                                       ),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(8),
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
                                     ),
                                     onPressed: () {},
@@ -206,11 +202,16 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
                       minHeight: 36,
                     ),
                     padding: EdgeInsets.zero,
-                    icon: const Icon(
-                      Icons.edit,
-                      size: 18,
-                    ),
-                    onPressed: _showEditDialog,
+                    icon: const Icon(Icons.edit, size: 18),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              SellPage(productCode: productCodetest),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -226,9 +227,7 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
   // ----------------------------------------------------------
 
   void _showEditDialog() {
-    final titleController = TextEditingController(
-      text: currentTitle,
-    );
+    final titleController = TextEditingController(text: currentTitle);
 
     final priceController = TextEditingController(
       text: currentPrice.toString(),
@@ -275,8 +274,7 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
                             bottom: 5,
                             child: FloatingActionButton.small(
                               onPressed: () async {
-                                final newImage =
-                                    await _pickImage();
+                                final newImage = await _pickImage();
 
                                 if (newImage != null) {
                                   setDialogState(() {
@@ -346,9 +344,7 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
               actions: [
                 /// DELETE
                 TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.red,
-                  ),
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
                   onPressed: () {
                     Navigator.pop(dialogContext);
 
@@ -374,7 +370,7 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
                           int.tryParse(priceController.text) ?? currentPrice,
                       "rating":
                           double.tryParse(ratingController.text) ??
-                              currentRating,
+                          currentRating,
                       "description": descriptionController.text,
                       "image": editedImage,
                     };
@@ -383,8 +379,7 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
                       currentTitle = newProduct["title"] as String;
                       currentPrice = newProduct["price"] as int;
                       currentRating = newProduct["rating"] as double;
-                      currentDescription =
-                          newProduct["description"] as String;
+                      currentDescription = newProduct["description"] as String;
                       currentImage = newProduct["image"] as String;
                     });
 
@@ -428,18 +423,12 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
   Widget _buildEditImage(String image) {
     // Later when using API, this can become Image.network()
     if (image.startsWith("http")) {
-      return Image.network(
-        image,
-        fit: BoxFit.cover,
-      );
+      return Image.network(image, fit: BoxFit.cover);
     }
 
     // Picked local image
     if (!kIsWeb && image.startsWith("/")) {
-      return Image.file(
-        File(image),
-        fit: BoxFit.cover,
-      );
+      return Image.file(File(image), fit: BoxFit.cover);
     }
 
     // Existing Flutter asset
@@ -447,12 +436,7 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
       image,
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) {
-        return const Center(
-          child: Icon(
-            Icons.image_not_supported,
-            size: 40,
-          ),
-        );
+        return const Center(child: Icon(Icons.image_not_supported, size: 40));
       },
     );
   }
@@ -467,9 +451,7 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
       builder: (context) {
         return AlertDialog(
           title: const Text("Delete Product?"),
-          content: Text(
-            'Are you sure you want to delete "$currentTitle"?',
-          ),
+          content: Text('Are you sure you want to delete "$currentTitle"?'),
           actions: [
             TextButton(
               onPressed: () {
@@ -479,9 +461,7 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
             ),
 
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () {
                 Navigator.pop(context);
 

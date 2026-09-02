@@ -123,9 +123,9 @@ class _SalePageState extends State<SalePage> {
   Widget build(BuildContext context) {
     final mobileView = isMobile(context);
 
-    if (isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+    // if (isLoading) {
+    //   return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    // }
 
     if (errorMessage != null) {
       return Scaffold(
