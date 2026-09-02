@@ -129,19 +129,11 @@ class NewInService {
       'https://www.capital-sys.net/CKMMallAPI/api/category/all';
 
   Future<List<String>> getCategories() async {
-    print("1. getCategories() START");
-
     try {
-      print("2. About to call API");
-
       final response = await http.get(
         Uri.parse(_categoryUrl),
         headers: {'Accept': 'application/json'},
       );
-
-      print("3. API request completed");
-      print("4. Status Code: ${response.statusCode}");
-      print("5. Response Body: ${response.body}");
 
       if (response.statusCode != 200) {
         throw Exception('Failed to load categories: ${response.statusCode}');
@@ -149,15 +141,10 @@ class NewInService {
 
       final List<dynamic> jsonData = jsonDecode(response.body);
 
-      print("6. JSON decoded");
-      print("7. JSON length: ${jsonData.length}");
-
       final categories = jsonData
           .map<String>((json) => json['name'].toString())
           .where((name) => name.toLowerCase() != 'root')
           .toList();
-
-      print("8. Categories: $categories");
 
       return categories;
     } catch (e, stackTrace) {
@@ -169,4 +156,5 @@ class NewInService {
       rethrow;
     }
   }
+
 }

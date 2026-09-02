@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
 import 'dart:typed_data';
+
 import '../services/product_service.dart';
 import '../models/Category.dart';
+import '../models/product_variant.dart';
+import '../models/sell_product_model.dart';
+
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+
 import 'common/header.dart';
 import 'common/footer.dart';
-import '../models/product_variant.dart';
 
 class SellPage extends StatefulWidget {
-  const SellPage({super.key});
+  final int? productCode;
+
+  const SellPage({super.key, this.productCode});
 
   @override
   State<SellPage> createState() => _SellPageState();
@@ -57,7 +62,62 @@ class _SellPageState extends State<SellPage> {
   @override
   void initState() {
     super.initState();
+
+    // Always load categories.
     loadCategories();
+
+    // Only load product data when productCode is provided.
+    if (widget.productCode != null) {
+      loadProduct(widget.productCode!);
+    }
+  }
+
+  void loadProduct(int productCode) {
+    final SellProductModel? product = productService.getSellProductByCode(
+      productCode,
+    );
+
+    // Product code was provided but product was not found.
+    if (product == null) {
+      debugPrint('Product not found for product code: $productCode');
+      return;
+    }
+
+    debugPrint('Product found: ${product.productCode}');
+
+    // BIND TEXT FIELDS
+
+    titleController.text = product.title;
+
+    descriptionController.text = product.description;
+
+    priceController.text = product.price;
+
+    skuController.text = product.sku;
+
+    qtyController.text = product.quantity;
+
+    phoneController.text = product.phoneNumber;
+
+    messengerController.text = product.messengerLink;
+
+    telegramController.text = product.telegram;
+
+    viberController.text = product.viber;
+
+    // BIND CATEGORIES + VARIANTS
+
+    setState(() {
+      selectedCategoryIds = List<int>.from(product.categoryIds);
+
+      variants = List<ProductVariant>.from(product.variants);
+
+      // Show Telegram if data exists.
+      telegramVisible = product.telegram.trim().isNotEmpty;
+
+      // Show Viber if data exists.
+      viberVisible = product.viber.trim().isNotEmpty;
+    });
   }
 
   void _removeImage(int index) {
@@ -243,7 +303,7 @@ class _SellPageState extends State<SellPage> {
           title: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: const BoxDecoration(
-              color: Color(0xFFC77C2E), 
+              color: Color(0xFFC77C2E),
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(18),
                 topRight: Radius.circular(18),
@@ -487,18 +547,23 @@ class _SellPageState extends State<SellPage> {
                     child: Column(
                       children: [
                         /// TITLE
-                        const Center(
+                        /// TITLE
+                        Center(
                           child: Column(
                             children: [
                               Text(
-                                "Create Your Listing",
-                                style: TextStyle(
+                                widget.productCode != null
+                                    ? "Edit Your Listing"
+                                    : "Create Your Listing",
+                                style: const TextStyle(
                                   fontSize: 30,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF3C6E2A),
                                 ),
                               ),
-                              SizedBox(height: 5),
+
+                              const SizedBox(height: 5),
+
                               const Text(
                                 "Start Selling in Yangon",
                                 style: TextStyle(
