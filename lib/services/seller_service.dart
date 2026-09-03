@@ -1,8 +1,10 @@
 final Map<String, dynamic> sellerData = {
-  "name": "John Corner",
+  "Username": "John Corner",
+  "userID" : 1,
   "items": [
     {
-      "title": "Straw Sun Hat ",
+      "productCode": 1,
+      "productName": "Straw Sun Hat ",
       "price": 45000,
       "rating": 4.7,
       "description":
@@ -10,7 +12,8 @@ final Map<String, dynamic> sellerData = {
       "image": "assets/sunhat.jpg",
     },
     {
-      "title": "Straw Sun Hat ",
+      "productCode": 2,
+      "productName": "Straw Sun Hat ",
       "price": 45000,
       "rating": 4.7,
       "description":
@@ -18,7 +21,8 @@ final Map<String, dynamic> sellerData = {
       "image": "assets/sunhat.jpg",
     },
     {
-      "title": "Straw Sun Hat ",
+      "productCode": 3,
+      "productName": "Straw Sun Hat ",
       "price": 45000,
       "rating": 4.7,
       "description":
@@ -26,7 +30,8 @@ final Map<String, dynamic> sellerData = {
       "image": "assets/sunhat.jpg",
     },
     {
-      "title": " Wool Hat",
+      "productCode": 4,
+      "productName": " Wool Hat",
       "price": 45000,
       "rating": 4.8,
       "description":
@@ -34,7 +39,8 @@ final Map<String, dynamic> sellerData = {
       "image": "assets/woolhat.jpg",
     },
     {
-      "title": " Wool Hat",
+      "productCode": 5,
+      "productName": " Wool Hat",
       "price": 45000,
       "rating": 4.8,
       "description":
@@ -42,7 +48,8 @@ final Map<String, dynamic> sellerData = {
       "image": "assets/woolhat.jpg",
     },
     {
-      "title": "Leather Bag",
+      "productCode": 6,
+      "productName": "Leather Bag",
       "price": 120000,
       "rating": 4.8,
       "description":
@@ -50,7 +57,8 @@ final Map<String, dynamic> sellerData = {
       "image": "assets/leatherBag.jpg",
     },
     {
-      "title": "Leather Bag",
+      "productCode": 7,
+      "productName": "Leather Bag",
       "price": 120000,
       "rating": 4.8,
       "description":

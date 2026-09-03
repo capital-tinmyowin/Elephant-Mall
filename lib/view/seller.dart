@@ -70,7 +70,7 @@ class _SellerPageState extends State<SellerPage> {
                   children: [
                     /// Seller Header
                     SellerHeaderWidget(
-                      sellerName: sellerData["name"],
+                      sellerName: sellerData["Username"],
                       expandedInfo: expandedInfo,
                       onExpandChanged: (v) {
                         setState(() => expandedInfo = v);
@@ -152,7 +152,7 @@ class _SellerPageState extends State<SellerPage> {
                                             final item = items[index];
 
                                             return SellerItemWidget(
-                                              title: item["title"],
+                                              productName: item["productName"],
                                               price: item["price"],
                                               rating: item["rating"],
                                               description: item["description"],
