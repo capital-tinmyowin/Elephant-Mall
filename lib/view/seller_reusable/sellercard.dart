@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:elephant_mall/view/product_detail_page.dart';
+
 class SellerItemWidget extends StatelessWidget {
   final String productName;
+  final int productCode;
   final int price;
   final double rating;
   final String description;
@@ -9,6 +12,7 @@ class SellerItemWidget extends StatelessWidget {
   const SellerItemWidget({
     super.key,
     required this.productName,
+    required this.productCode,
     required this.price,
     required this.rating,
     required this.description,
@@ -130,7 +134,16 @@ class SellerItemWidget extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
-                                onPressed: () {},
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ProductDetailPage(
+                                        productId: productCode,
+                                      ),
+                                    ),
+                                  );
+                                },
                                 child: Text(
                                   "View Details",
                                   style: TextStyle(
@@ -155,4 +168,3 @@ class SellerItemWidget extends StatelessWidget {
     );
   }
 }
- 
