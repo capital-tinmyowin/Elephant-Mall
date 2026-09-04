@@ -150,7 +150,7 @@ class _NewInPageState extends State<NewInPage> {
       body: Column(
         children: [
           // COMMON HEADER
-          const CommonHeader(),
+          const CommonHeader(showMobileHeader: true),
 
           // PAGE CONTENT
           Expanded(
