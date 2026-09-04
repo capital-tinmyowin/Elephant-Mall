@@ -113,7 +113,7 @@ class NewInService {
   ''';
 
   // ------------------------------------------------------------
-  // GET NEW IN PRODUCTS
+  // GET NEW IN PRODUCTS 
   // ------------------------------------------------------------
 
   Future<List<NewInModel>> getNewInProducts() async {
