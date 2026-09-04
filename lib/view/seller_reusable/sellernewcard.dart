@@ -1,28 +1,25 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:elephant_mall/view/sell.dart';
+import 'package:elephant_mall/view/product_detail_page.dart';
 
 class SellerItemWidget extends StatefulWidget {
-  final String title;
+  final int userID;
+  final int productCode;
+  final String productName;
   final int price;
   final double rating;
   final String description;
   final String image;
 
-  final Function(Map<String, dynamic>)? onUpdate;
-  final VoidCallback? onDelete;
-
   const SellerItemWidget({
     super.key,
-    required this.title,
+    required this.userID,
+    required this.productCode,
+    required this.productName,
     required this.price,
     required this.rating,
     required this.description,
     required this.image,
-    this.onUpdate,
-    this.onDelete,
   });
 
   @override
@@ -42,7 +39,7 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
   void initState() {
     super.initState();
 
-    currentTitle = widget.title;
+    currentTitle = widget.productName;
     currentPrice = widget.price;
     currentRating = widget.rating;
     currentDescription = widget.description;
@@ -167,7 +164,17 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                     ),
-                                    onPressed: () {},
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              ProductDetailPage(
+                                                productId: widget.productCode,
+                                              ),
+                                        ),
+                                      );
+                                    },
                                     child: Text(
                                       "View Details",
                                       style: TextStyle(
@@ -217,262 +224,6 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
               ),
             ],
           ),
-        );
-      },
-    );
-  }
-
-  // ----------------------------------------------------------
-  // EDIT DIALOG
-  // ----------------------------------------------------------
-
-  void _showEditDialog() {
-    final titleController = TextEditingController(text: currentTitle);
-
-    final priceController = TextEditingController(
-      text: currentPrice.toString(),
-    );
-
-    final ratingController = TextEditingController(
-      text: currentRating.toString(),
-    );
-
-    final descriptionController = TextEditingController(
-      text: currentDescription,
-    );
-
-    String editedImage = currentImage;
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text("Edit Product"),
-
-              content: SizedBox(
-                width: 450,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      /// IMAGE
-                      Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: SizedBox(
-                              width: 180,
-                              height: 130,
-                              child: _buildEditImage(editedImage),
-                            ),
-                          ),
-
-                          Positioned(
-                            right: 5,
-                            bottom: 5,
-                            child: FloatingActionButton.small(
-                              onPressed: () async {
-                                final newImage = await _pickImage();
-
-                                if (newImage != null) {
-                                  setDialogState(() {
-                                    editedImage = newImage;
-                                  });
-                                }
-                              },
-                              child: const Icon(Icons.camera_alt),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      /// TITLE
-                      TextField(
-                        controller: titleController,
-                        decoration: const InputDecoration(
-                          labelText: "Product Name",
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      /// PRICE
-                      TextField(
-                        controller: priceController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: "Price",
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      /// RATING
-                      TextField(
-                        controller: ratingController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: const InputDecoration(
-                          labelText: "Rating",
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      /// DESCRIPTION
-                      TextField(
-                        controller: descriptionController,
-                        maxLines: 3,
-                        decoration: const InputDecoration(
-                          labelText: "Description",
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              actions: [
-                /// DELETE
-                TextButton(
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
-                  onPressed: () {
-                    Navigator.pop(dialogContext);
-
-                    _confirmDelete();
-                  },
-                  child: const Text("Delete"),
-                ),
-
-                const Spacer(),
-
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(dialogContext);
-                  },
-                  child: const Text("Cancel"),
-                ),
-
-                ElevatedButton(
-                  onPressed: () {
-                    final newProduct = {
-                      "title": titleController.text,
-                      "price":
-                          int.tryParse(priceController.text) ?? currentPrice,
-                      "rating":
-                          double.tryParse(ratingController.text) ??
-                          currentRating,
-                      "description": descriptionController.text,
-                      "image": editedImage,
-                    };
-
-                    setState(() {
-                      currentTitle = newProduct["title"] as String;
-                      currentPrice = newProduct["price"] as int;
-                      currentRating = newProduct["rating"] as double;
-                      currentDescription = newProduct["description"] as String;
-                      currentImage = newProduct["image"] as String;
-                    });
-
-                    widget.onUpdate?.call(newProduct);
-
-                    Navigator.pop(dialogContext);
-                  },
-                  child: const Text("Save"),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // ----------------------------------------------------------
-  // IMAGE PICKER
-  // ----------------------------------------------------------
-
-  Future<String?> _pickImage() async {
-    final picker = ImagePicker();
-
-    final pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 80,
-    );
-
-    if (pickedFile == null) {
-      return null;
-    }
-
-    return pickedFile.path;
-  }
-
-  // ----------------------------------------------------------
-  // IMAGE PREVIEW
-  // ----------------------------------------------------------
-
-  Widget _buildEditImage(String image) {
-    // Later when using API, this can become Image.network()
-    if (image.startsWith("http")) {
-      return Image.network(image, fit: BoxFit.cover);
-    }
-
-    // Picked local image
-    if (!kIsWeb && image.startsWith("/")) {
-      return Image.file(File(image), fit: BoxFit.cover);
-    }
-
-    // Existing Flutter asset
-    return Image.asset(
-      image,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        return const Center(child: Icon(Icons.image_not_supported, size: 40));
-      },
-    );
-  }
-
-  // ----------------------------------------------------------
-  // DELETE CONFIRMATION
-  // ----------------------------------------------------------
-
-  void _confirmDelete() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Delete Product?"),
-          content: Text('Are you sure you want to delete "$currentTitle"?'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text("Cancel"),
-            ),
-
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              onPressed: () {
-                Navigator.pop(context);
-
-                widget.onDelete?.call();
-              },
-              child: const Text(
-                "Delete",
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
         );
       },
     );

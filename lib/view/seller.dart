@@ -70,7 +70,7 @@ class _SellerPageState extends State<SellerPage> {
                   children: [
                     /// Seller Header
                     SellerHeaderWidget(
-                      sellerName: sellerData["name"],
+                      sellerName: sellerData["Username"],
                       expandedInfo: expandedInfo,
                       onExpandChanged: (v) {
                         setState(() => expandedInfo = v);
@@ -152,7 +152,8 @@ class _SellerPageState extends State<SellerPage> {
                                             final item = items[index];
 
                                             return SellerItemWidget(
-                                              title: item["title"],
+                                              productName: item["productName"],
+                                              productCode:item["productCode"],
                                               price: item["price"],
                                               rating: item["rating"],
                                               description: item["description"],
@@ -231,6 +232,6 @@ class _SellerPageState extends State<SellerPage> {
   }
 }
 
-bool isMobile(BuildContext context) => MediaQuery.of(context).size.width < 450;
+bool isMobile(BuildContext context) => MediaQuery.of(context).size.width < 800;
 bool isDesktop(BuildContext context) => MediaQuery.of(context).size.width > 800;
 
