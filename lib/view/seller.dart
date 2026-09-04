@@ -153,6 +153,7 @@ class _SellerPageState extends State<SellerPage> {
 
                                             return SellerItemWidget(
                                               productName: item["productName"],
+                                              productCode:item["productCode"],
                                               price: item["price"],
                                               rating: item["rating"],
                                               description: item["description"],
@@ -231,6 +232,6 @@ class _SellerPageState extends State<SellerPage> {
   }
 }
 
-bool isMobile(BuildContext context) => MediaQuery.of(context).size.width < 450;
+bool isMobile(BuildContext context) => MediaQuery.of(context).size.width < 800;
 bool isDesktop(BuildContext context) => MediaQuery.of(context).size.width > 800;
 
