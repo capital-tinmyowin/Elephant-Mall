@@ -236,7 +236,7 @@ class _SellerPageState extends State<NewSellerPage> {
 }
 
 bool isMobile(BuildContext context) {
-  return MediaQuery.of(context).size.width < 450;
+  return MediaQuery.of(context).size.width < 800;
 }
 
 bool isDesktop(BuildContext context) {
