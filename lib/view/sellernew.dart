@@ -76,7 +76,7 @@ class _SellerPageState extends State<NewSellerPage> {
 
         child: Column(
           children: [
-            const CommonHeader(),
+            const CommonHeader(showMobileHeader: true,),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(16),
