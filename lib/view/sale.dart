@@ -146,7 +146,7 @@ class _SalePageState extends State<SalePage> {
       body: Column(
         children: [
           // HEADER
-          const CommonHeader(),
+          const CommonHeader(showMobileHeader: true),
 
           // CONTENT
           Expanded(
