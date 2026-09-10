@@ -620,7 +620,7 @@ class _NewInPageState extends State<NewInPage> {
             child: Text(
               "${product.price.toStringAsFixed(2)} MMK",
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
               ),
@@ -632,26 +632,27 @@ class _NewInPageState extends State<NewInPage> {
           // RATING
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 7),
-            child: Row(
-              children: [
-                ...List.generate(5, (index) {
-                  return Icon(
-                    index < product.rating.round()
-                        ? Icons.star
-                        : Icons.star_border,
-                    size: 14,
-                    color: Colors.orange,
-                  );
-                }),
+            // child: Row(
+            //   children: [
+            //     ...List.generate(5, (index) {
+            //       return Icon(
+            //         index < product.rating.round()
+            //             ? Icons.star
+            //             : Icons.star_border,
+            //         size: 14,
+            //         color: Colors.orange,
+            //       );
+            //     }),
 
-                const SizedBox(width: 3),
+            //     const SizedBox(width: 3),
 
-                Text(
-                  "(${product.reviewCount})",
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ],
-            ),
+            //     Text(
+            //       "(${product.reviewCount})",
+            //       style: const TextStyle(fontSize: 12, color: Colors.grey),
+            //     ),
+            //   ],
+            // ),
+         
           ),
 
           const Spacer(),

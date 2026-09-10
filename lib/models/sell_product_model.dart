@@ -9,6 +9,7 @@ class SellProductModel {
   final String sku;
   final String quantity;
 
+  final String location;
   final String phoneNumber;
   final String messengerLink;
   final String telegram;
@@ -24,6 +25,7 @@ class SellProductModel {
     required this.price,
     required this.sku,
     required this.quantity,
+    required this.location,
     required this.phoneNumber,
     required this.messengerLink,
     required this.telegram,

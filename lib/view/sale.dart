@@ -645,7 +645,7 @@ class _SalePageState extends State<SalePage> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                fontSize: 11,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
@@ -662,7 +662,7 @@ class _SalePageState extends State<SalePage> {
                 Text(
                   "\$${product.originalPrice.toStringAsFixed(2)}",
                   style: const TextStyle(
-                    fontSize: 10,
+                    fontSize: 13,
                     color: Colors.grey,
                     decoration: TextDecoration.lineThrough,
                   ),
@@ -673,7 +673,7 @@ class _SalePageState extends State<SalePage> {
                 Text(
                   "\$${product.salePrice.toStringAsFixed(2)}",
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
@@ -687,32 +687,33 @@ class _SalePageState extends State<SalePage> {
           // RATING
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 7),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Stars
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: List.generate(5, (index) {
-                    return Icon(
-                      index < product.rating.round()
-                          ? Icons.star
-                          : Icons.star_border,
-                      size: 13,
-                      color: Colors.orange,
-                    );
-                  }),
-                ),
+            // child: Row(
+            //   crossAxisAlignment: CrossAxisAlignment.center,
+            //   children: [
+            //     // Stars
+            //     Row(
+            //       mainAxisSize: MainAxisSize.min,
+            //       children: List.generate(5, (index) {
+            //         return Icon(
+            //           index < product.rating.round()
+            //               ? Icons.star
+            //               : Icons.star_border,
+            //           size: 13,
+            //           color: Colors.orange,
+            //         );
+            //       }),
+            //     ),
 
-                const SizedBox(width: 5),
+            //     const SizedBox(width: 5),
 
-                // Review count
-                Text(
-                  "(${product.reviewCount})",
-                  style: const TextStyle(fontSize: 10, color: Colors.grey),
-                ),
-              ],
-            ),
+            //     // Review count
+            //     Text(
+            //       "(${product.reviewCount})",
+            //       style: const TextStyle(fontSize: 10, color: Colors.grey),
+            //     ),
+            //   ],
+            // ),
+          
           ),
           
           const Spacer(),
