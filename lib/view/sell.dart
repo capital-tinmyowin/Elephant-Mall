@@ -30,11 +30,16 @@ class _SellPageState extends State<SellPage> {
   final priceController = TextEditingController();
   final skuController = TextEditingController();
   final qtyController = TextEditingController();
+  final variantqtyController = TextEditingController();
+  final variantpriceController = TextEditingController();
 
+  final locationController = TextEditingController();
   final phoneController = TextEditingController();
   final messengerController = TextEditingController();
   final telegramController = TextEditingController();
   final viberController = TextEditingController();
+
+  bool isSubmitting = false;
 
   bool telegramVisible = false;
   bool viberVisible = false;
@@ -96,6 +101,8 @@ class _SellPageState extends State<SellPage> {
     skuController.text = product.sku;
 
     qtyController.text = product.quantity;
+
+    locationController.text = product.location;
 
     phoneController.text = product.phoneNumber;
 
@@ -286,8 +293,8 @@ class _SellPageState extends State<SellPage> {
 
   Future<void> showAddVariantDialog() async {
     final variantController = TextEditingController();
-    final skuController = TextEditingController();
-    final priceController = TextEditingController();
+    final variantqtyController = TextEditingController();
+    final variantpriceController = TextEditingController();
 
     bool _variantSubmitted = false;
 
@@ -352,24 +359,7 @@ class _SellPageState extends State<SellPage> {
                   const SizedBox(height: 12),
 
                   TextFormField(
-                    controller: skuController,
-                    decoration: const InputDecoration(labelText: "SKU"),
-
-                    validator: (value) {
-                      if (!_variantSubmitted) return null;
-
-                      if (value == null || value.trim().isEmpty) {
-                        return "Please enter SKU";
-                      }
-
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  TextFormField(
-                    controller: priceController,
+                    controller: variantpriceController,
 
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
@@ -388,6 +378,34 @@ class _SellPageState extends State<SellPage> {
 
                       if (value == null || value.trim().isEmpty) {
                         return "Please enter Price";
+                      }
+
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  TextFormField(
+                    controller: variantqtyController,
+
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d*\.?\d{0,2}$'),
+                      ),
+                    ],
+
+                    decoration: const InputDecoration(labelText: "Quatity"),
+
+                    validator: (value) {
+                      if (!_variantSubmitted) return null;
+
+                      if (value == null || value.trim().isEmpty) {
+                        return "Please enter Quantity";
                       }
 
                       return null;
@@ -419,8 +437,8 @@ class _SellPageState extends State<SellPage> {
                   variants.add(
                     ProductVariant(
                       variantName: variantController.text.trim(),
-                      sku: skuController.text.trim(),
-                      variant_Price: double.parse(priceController.text),
+                      quantity: double.parse(variantqtyController.text),
+                      price: double.parse(variantpriceController.text),
                     ),
                   );
                 });
@@ -491,13 +509,13 @@ class _SellPageState extends State<SellPage> {
                     DataCell(
                       SizedBox(
                         width: 120,
-                        child: Text(item.sku, overflow: TextOverflow.ellipsis),
+                        child: Text(item.price.toStringAsFixed(0)),
                       ),
                     ),
                     DataCell(
                       SizedBox(
                         width: 100,
-                        child: Text(item.variant_Price.toStringAsFixed(0)),
+                        child: Text(item.quantity.toStringAsFixed(0)),
                       ),
                     ),
                     DataCell(
@@ -1210,6 +1228,7 @@ class _SellPageState extends State<SellPage> {
             Expanded(
               child: TextField(
                 controller: qtyController,
+                enabled: variants.isEmpty,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 onChanged: (value) {
@@ -1219,32 +1238,38 @@ class _SellPageState extends State<SellPage> {
                     });
                   }
                 },
-                decoration: _input("Qty", errorText: qtyError),
+                decoration: _input(
+                  variants.isNotEmpty ? "Qty is managed by variants" : "Qty",
+                  errorText: qtyError,
+                ),
               ),
             ),
 
             const SizedBox(width: 10),
 
             IconButton(
-              onPressed: () {
-                int qty = int.tryParse(qtyController.text) ?? 0;
+              onPressed: variants.isEmpty
+                  ? () {
+                      int qty = int.tryParse(qtyController.text) ?? 0;
 
-                if (qty > 0) {
-                  qty--;
-                  qtyController.text = qty.toString();
-                }
-              },
+                      if (qty > 0) {
+                        qty--;
+                        qtyController.text = qty.toString();
+                      }
+                    }
+                  : null,
               icon: const Icon(Icons.remove),
             ),
 
             IconButton(
-              onPressed: () {
-                int qty = int.tryParse(qtyController.text) ?? 0;
+              onPressed: variants.isEmpty
+                  ? () {
+                      int qty = int.tryParse(qtyController.text) ?? 0;
 
-                qty++;
-
-                qtyController.text = qty.toString();
-              },
+                      qty++;
+                      qtyController.text = qty.toString();
+                    }
+                  : null,
               icon: const Icon(Icons.add),
             ),
           ],
@@ -1262,6 +1287,26 @@ class _SellPageState extends State<SellPage> {
         ),
 
         const SizedBox(height: 10),
+
+        /// LOCATION
+        const Text(
+          "Location",
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
+        ),
+
+        const SizedBox(height: 6),
+
+        TextField(
+          controller: locationController,
+          maxLength: 200,
+          decoration: _input("Enter your location (e.g., Yangon, Mandalay)"),
+        ),
+
+        const SizedBox(height: 6),
 
         const Text(
           "Phone Number",
@@ -1521,162 +1566,316 @@ class _SellPageState extends State<SellPage> {
                 borderRadius: BorderRadius.circular(30),
               ),
             ),
-            onPressed: () async {
-              setState(() {
-                titleError = null;
-                descriptionError = null;
-                priceError = null;
-                skuError = null;
-                qtyError = null;
-                phoneError = null;
-                messengerError = null;
-                categoryError = null;
-              });
+            onPressed: isSubmitting
+                ? null
+                : () async {
+                    setState(() {
+                      titleError = null;
+                      descriptionError = null;
+                      priceError = null;
+                      skuError = null;
+                      qtyError = null;
+                      phoneError = null;
+                      messengerError = null;
+                      categoryError = null;
+                    });
 
-              if (titleController.text.trim().isEmpty) {
-                setState(() {
-                  titleError = "Item title is required.";
-                });
-                return;
-              }
-              if (titleController.text.characters.length > 200) {
-                setState(() {
-                  titleError = "Maximum 200 characters.";
-                });
-                return;
-              }
+                    if (titleController.text.trim().isEmpty) {
+                      setState(() {
+                        titleError = "Item title is required.";
+                      });
+                      return;
+                    }
+                    if (titleController.text.characters.length > 200) {
+                      setState(() {
+                        titleError = "Maximum 200 characters.";
+                      });
+                      return;
+                    }
 
-              if (selectedCategoryIds.isEmpty) {
-                setState(() {
-                  categoryError = "Please select at least one category.";
-                });
-                return;
-              }
+                    if (selectedCategoryIds.isEmpty) {
+                      setState(() {
+                        categoryError = "Please select at least one category.";
+                      });
+                      return;
+                    }
 
-              if (descriptionController.text.trim().isEmpty) {
-                setState(() {
-                  descriptionError = "Description is required.";
-                });
-                return;
-              }
+                    if (descriptionController.text.trim().isEmpty) {
+                      setState(() {
+                        descriptionError = "Description is required.";
+                      });
+                      return;
+                    }
 
-              if (descriptionController.text.characters.length > 500) {
-                setState(() {
-                  descriptionError = "Maximum 500 characters.";
-                });
-                return;
-              }
+                    if (descriptionController.text.characters.length > 500) {
+                      setState(() {
+                        descriptionError = "Maximum 500 characters.";
+                      });
+                      return;
+                    }
 
-              if (priceController.text.trim().isEmpty) {
-                setState(() {
-                  priceError = "Price is required.";
-                });
-                return;
-              }
+                    if (priceController.text.trim().isEmpty) {
+                      setState(() {
+                        priceError = "Price is required.";
+                      });
+                      return;
+                    }
 
-              if (qtyController.text.trim().isEmpty ||
-                  (int.tryParse(qtyController.text) ?? 0) <= 0) {
-                setState(() {
-                  qtyError = "Quantity is required.";
-                });
-                return;
-              }
+                    // Validate inventory quantity
+                    if (variants.isEmpty) {
+                      // No variants → normal inventory quantity is required
+                      if (qtyController.text.trim().isEmpty ||
+                          (int.tryParse(qtyController.text) ?? 0) <= 0) {
+                        setState(() {
+                          qtyError = "Quantity is required.";
+                        });
+                        return;
+                      }
+                    } else {
+                      // Variants exist → main inventory quantity is not required.
+                      // Validate each variant quantity instead.
+                      final hasInvalidVariantQuantity = variants.any(
+                        (variant) => variant.quantity <= 0,
+                      );
 
-              if (skuController.text.characters.length > 500) {
-                setState(() {
-                  skuError = "Maximum 500 characters.";
-                });
-                return;
-              }
+                      if (hasInvalidVariantQuantity) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              "Each variant must have a quantity greater than 0.",
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+                    }
 
-              if (phoneController.text.trim().isEmpty) {
-                setState(() {
-                  phoneError = "Phone number is required.";
-                });
-                return;
-              }
+                    if (skuController.text.characters.length > 500) {
+                      setState(() {
+                        skuError = "Maximum 500 characters.";
+                      });
+                      return;
+                    }
 
-              if (messengerController.text.characters.length > 300) {
-                setState(() {
-                  messengerError = "Maximum 300 characters.";
-                });
-                return;
-              }
+                    if (locationController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Location is required.')),
+                      );
+                      return;
+                    }
 
-              bool success = await productService.createProduct(
-                title: titleController.text,
-                description: descriptionController.text,
-                price: priceController.text,
-                sku: skuController.text,
-                quantity: qtyController.text,
-                phoneNumber: phoneController.text,
-                messengerLink: messengerController.text,
-                telegram: telegramController.text,
-                viber: viberController.text,
-                images: images,
-                variants: variants,
-              );
+                    if (phoneController.text.trim().isEmpty) {
+                      setState(() {
+                        phoneError = "Phone number is required.";
+                      });
+                      return;
+                    }
 
-              if (!mounted) return;
+                    if (messengerController.text.characters.length > 300) {
+                      setState(() {
+                        messengerError = "Maximum 300 characters.";
+                      });
+                      return;
+                    }
 
-              if (success) {
-                await showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (context) => AlertDialog(
-                    title: const Row(
-                      children: [
-                        Icon(Icons.check_circle, color: Colors.green, size: 30),
-                        SizedBox(width: 10),
-                        Text("Success"),
-                      ],
-                    ),
-                    content: const Text("Product created successfully."),
-                    actions: [
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        child: const Text("OK"),
-                      ),
-                    ],
-                  ),
-                );
+                    setState(() {
+                      isSubmitting = true;
+                    });
 
-                titleController.clear();
-                descriptionController.clear();
-                priceController.clear();
-                skuController.clear();
-                qtyController.clear();
-                phoneController.clear();
-                messengerController.clear();
-                telegramController.clear();
-                viberController.clear();
+                    ProductApiResponse? apiResponse;
+                    bool success = false;
+                    try {
+                      if (widget.productCode != null) {
+                        success = await productService.updateProduct(
+                          productCode: widget.productCode!,
+                          productName: titleController.text.trim(),
+                          description: descriptionController.text.trim(),
+                          location: locationController.text.trim(),
+                          price:
+                              double.tryParse(priceController.text.trim()) ?? 0,
+                          quantity:
+                              int.tryParse(qtyController.text.trim()) ?? 0,
+                          condition: 'New',
+                          status: 'Active',
+                          businessContactGroupId: 1,
+                          categoryIds: selectedCategoryIds,
+                          variants: variants,
+                          images: [],
+                          businessContacts: [
+                            if (telegramVisible &&
+                                telegramController.text.trim().isNotEmpty)
+                              {
+                                'type': 'Telegram',
+                                'value': telegramController.text.trim(),
+                                'isPrimary': true,
+                                'groupId': 2,
+                              },
 
-                setState(() {
-                  images = List.generate(10, (_) => null);
-                  selectedCategoryIds.clear();
-                });
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Failed to create product')),
-                );
-              }
-            },
+                            if (viberVisible &&
+                                viberController.text.trim().isNotEmpty)
+                              {
+                                'type': 'Viber',
+                                'value': viberController.text.trim(),
+                                'isPrimary': false,
+                                'groupId': 2,
+                              },
 
-            child: const Column(
+                            if (phoneController.text.trim().isNotEmpty)
+                              {
+                                'type': 'Phone',
+                                'value': phoneController.text.trim(),
+                                'isPrimary': false,
+                                'groupId': 2,
+                              },
+
+                            if (messengerController.text.trim().isNotEmpty)
+                              {
+                                'type': 'Messenger',
+                                'value': messengerController.text.trim(),
+                                'isPrimary': false,
+                                'groupId': 2,
+                              },
+                          ],
+                        );
+                      } else {
+                        apiResponse = await productService.createProduct(
+                          productCode:
+                              'ELE-${DateTime.now().millisecondsSinceEpoch}',
+                          productName: titleController.text.trim(),
+                          description: descriptionController.text.trim(),
+                          location: locationController.text.trim(),
+                          price:
+                              double.tryParse(priceController.text.trim()) ?? 0,
+                          quantity:
+                              int.tryParse(qtyController.text.trim()) ?? 0,
+                          condition: 'New',
+                          status: 'Active',
+                          businessContactGroupId: 1,
+                          categoryIds: selectedCategoryIds,
+                          variants: variants,
+                          images: [],
+
+                          // Contacts
+                          businessContacts: [
+                            if (telegramVisible &&
+                                telegramController.text.trim().isNotEmpty)
+                              {
+                                'type': 'Telegram',
+                                'value': telegramController.text.trim(),
+                                'isPrimary': true,
+                                'groupId': 2,
+                              },
+
+                            if (viberVisible &&
+                                viberController.text.trim().isNotEmpty)
+                              {
+                                'type': 'Viber',
+                                'value': viberController.text.trim(),
+                                'isPrimary': false,
+                                'groupId': 2,
+                              },
+
+                            if (phoneController.text.trim().isNotEmpty)
+                              {
+                                'type': 'Phone',
+                                'value': phoneController.text.trim(),
+                                'isPrimary': false,
+                                'groupId': 2,
+                              },
+
+                            if (messengerController.text.trim().isNotEmpty)
+                              {
+                                'type': 'Messenger',
+                                'value': messengerController.text.trim(),
+                                'isPrimary': false,
+                                'groupId': 2,
+                              },
+                          ],
+                        );
+                      }
+                    } catch (e) {
+                      debugPrint("Submit error: $e");
+
+                      apiResponse = ProductApiResponse(
+                        success: false,
+                        message: e.toString(),
+                      );
+                    }
+                    if (!mounted) return;
+
+                    setState(() {
+                      isSubmitting = false;
+                    });
+
+                    if (apiResponse?.success == true) {
+                      await showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) => AlertDialog(
+                          title: const Row(
+                            children: [
+                              Icon(
+                                Icons.check_circle,
+                                color: Colors.green,
+                                size: 30,
+                              ),
+                              SizedBox(width: 10),
+                              Text("Success"),
+                            ],
+                          ),
+                          content: Text(
+                            widget.productCode != null
+                                ? "Product updated successfully."
+                                : "Product created successfully.",
+                          ),
+                          actions: [
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                              child: const Text("OK"),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      titleController.clear();
+                      descriptionController.clear();
+                      priceController.clear();
+                      skuController.clear();
+                      qtyController.clear();
+                      phoneController.clear();
+                      messengerController.clear();
+                      telegramController.clear();
+                      viberController.clear();
+                      locationController.clear();
+
+                      setState(() {
+                        images = List.generate(10, (_) => null);
+                        selectedCategoryIds.clear();
+                        variants.clear();
+                      });
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Failed to create product'),
+                        ),
+                      );
+                    }
+                  },
+
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  "POST YOUR LISTING",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                  widget.productCode != null
+                      ? "UPDATE YOUR LISTING"
+                      : "POST YOUR LISTING",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, color: Colors.white),
                 ),
-                SizedBox(height: 1),
-                Text(
+                const SizedBox(height: 1),
+                const Text(
                   "သင့်ပစ္စည်းကိုတင်ပါ။",
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 13, color: Colors.white),

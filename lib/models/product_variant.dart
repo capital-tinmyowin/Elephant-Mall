@@ -1,14 +1,14 @@
 class ProductVariant {
 
   String variantName;
-  String sku;
-  double variant_Price;
+  double price;
+  double quantity;
 
 
   ProductVariant({
     required this.variantName,
-    required this.sku,
-    required this.variant_Price,
+    required this.price,
+    required this.quantity
   });
 
 }

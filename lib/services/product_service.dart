@@ -1,11 +1,37 @@
 import 'dart:convert';
 import 'dart:typed_data';
-
+import 'package:flutter/foundation.dart' hide Category;
 import 'package:http/http.dart' as http;
 
 import '../models/Category.dart';
 import '../models/product_variant.dart';
 import '../models/sell_product_model.dart';
+
+class ProductApiResponse {
+  final bool success;
+  final String message;
+  final String? id;
+  final String? savedAt;
+  final String? updatedAt;
+
+  ProductApiResponse({
+    required this.success,
+    required this.message,
+    this.id,
+    this.savedAt,
+    this.updatedAt,
+  });
+
+  factory ProductApiResponse.fromJson(Map<String, dynamic> json) {
+    return ProductApiResponse(
+      success: json['success'] == true,
+      message: json['message']?.toString() ?? '',
+      id: json['id']?.toString(),
+      savedAt: json['savedAt']?.toString(),
+      updatedAt: json['updatedAt']?.toString(),
+    );
+  }
+}
 
 class ProductService {
   // ============================================================
@@ -27,6 +53,8 @@ class ProductService {
 
       quantity: '10',
 
+      location: 'Mandalay',
+
       phoneNumber: '09123456789',
 
       messengerLink: 'https://m.me/example',
@@ -38,16 +66,8 @@ class ProductService {
       categoryIds: [9, 10],
 
       variants: [
-        ProductVariant(
-          variantName: 'Red',
-          sku: 'LNG-1001-RED',
-          variant_Price: 35000,
-        ),
-        ProductVariant(
-          variantName: 'Blue',
-          sku: 'LNG-1001-BLUE',
-          variant_Price: 36000,
-        ),
+        ProductVariant(variantName: 'Red', price: 290, quantity: 20),
+        ProductVariant(variantName: 'Blue', price: 290, quantity: 20),
       ],
     ),
 
@@ -65,6 +85,8 @@ class ProductService {
 
       quantity: '5',
 
+      location: 'Yangon',
+
       phoneNumber: '09876543210',
 
       messengerLink: 'https://m.me/example2',
@@ -76,16 +98,8 @@ class ProductService {
       categoryIds: [2],
 
       variants: [
-        ProductVariant(
-          variantName: 'Small',
-          sku: 'BOWL-1002-S',
-          variant_Price: 25000,
-        ),
-        ProductVariant(
-          variantName: 'Large',
-          sku: 'BOWL-1002-L',
-          variant_Price: 35000,
-        ),
+        ProductVariant(variantName: 'Small', price: 290, quantity: 20),
+        ProductVariant(variantName: 'Large', price: 290, quantity: 20),
       ],
     ),
   ];
@@ -108,65 +122,301 @@ class ProductService {
   // CREATE PRODUCT
   // ============================================================
 
-  Future<bool> createProduct({
-    required String title,
+  Future<ProductApiResponse> createProduct({
+    required String productCode,
+    required String productName,
     required String description,
-    required String price,
-    required String sku,
-    required String quantity,
-    required String phoneNumber,
-    required String messengerLink,
-    required String telegram,
-    required String viber,
-    required List<Uint8List?> images,
+    required String location,
+    required double price,
+    required int quantity,
+    required String condition,
+    required String status,
+    required int businessContactGroupId,
+    required List<int> categoryIds,
     required List<ProductVariant> variants,
+    required List<Map<String, dynamic>> images,
+    required List<Map<String, dynamic>> businessContacts,
   }) async {
-    var request = http.MultipartRequest(
-      'POST',
-      Uri.parse('http://localhost:7138/api/Products/Create'),
+    final url = Uri.parse(
+      'https://www.capital-sys.net/CKMMallAPI/api/saleitem/SaveSaleItem',
     );
 
-    request.fields['Title'] = title;
-    request.fields['Description'] = description;
-    request.fields['Price'] = price;
-    request.fields['SKU'] = sku;
-    request.fields['Quantity'] = quantity;
-    request.fields['PhoneNumber'] = phoneNumber;
-    request.fields['MessengerLink'] = messengerLink;
-    request.fields['Telegram'] = telegram;
-    request.fields['Viber'] = viber;
+    // Categories
+    final pCategoryList = categoryIds.map((categoryId) {
+      return {'id': 0, 'productId': 0, 'categoryId': categoryId.toString()};
+    }).toList();
 
-    // Product Variants
-    for (int i = 0; i < variants.length; i++) {
-      request.fields['Variants[$i].Variant_Name'] = variants[i].variantName;
+    // Variants
+    final pVariantList = variants.map((variant) {
+      return {
+        'id': 0,
+        'productId': 0,
+        'variantID': '',
+        'quantity': variant.quantity.toString(),
+        'price': variant.price,
+        'variantName': variant.variantName,
+      };
+    }).toList();
 
-      request.fields['Variants[$i].SKU'] = variants[i].sku;
+    // Images
+    final pImageList = images.map((image) {
+      return {
+        'id': 0,
+        'productId': 0,
+        'imageUrl': image['imageUrl'] ?? '',
+        'sortOrder': image['sortOrder'] ?? 1,
+      };
+    }).toList();
 
-      request.fields['Variants[$i].Price'] = variants[i].variant_Price
-          .toString();
-    }
+    // Complete request body
+    final body = {
+      'productId': 0,
+      'productCode': productCode,
+      'userId': 1,
+      'productName': productName,
+      'description': description,
+      'location': location,
+      'price': price,
+      'condition': condition,
+      'status': status,
+      'businessContactGroupId': businessContactGroupId,
+      'pCategoryList': pCategoryList,
+      'pImageList': pImageList,
+      'pVariantList': pVariantList,
+      'businesscontact': businessContacts,
+    };
 
-    // Product Images
-    int index = 0;
+    final jsonBody = jsonEncode(body);
 
-    for (final image in images) {
-      if (image != null) {
-        request.files.add(
-          http.MultipartFile.fromBytes(
-            'Images',
-            image,
-            filename: 'image_$index.jpg',
-          ),
+    debugPrint('========== API REQUEST ==========');
+    debugPrint(jsonBody);
+    debugPrint('=================================');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonBody,
+      );
+
+      // debugPrint('========== API RESPONSE ==========');
+      // debugPrint('Status Code: ${response.statusCode}');
+      // debugPrint('Response Body: ${response.body}');
+      // debugPrint('==================================');
+
+      if (response.body.isEmpty) {
+        return ProductApiResponse(
+          success: response.statusCode >= 200 && response.statusCode < 300,
+          message: response.statusCode >= 200 && response.statusCode < 300
+              ? 'Product saved successfully.'
+              : 'Failed to save product.',
         );
-
-        index++;
       }
+
+      final responseData = jsonDecode(response.body);
+
+      final apiResponse = ProductApiResponse.fromJson(responseData);
+
+      debugPrint('API Success: ${apiResponse.success}');
+      debugPrint('API Message: ${apiResponse.message}');
+      debugPrint('Saved Product ID: ${apiResponse.id}');
+      debugPrint('Saved At: ${apiResponse.savedAt}');
+
+      return apiResponse;
+    } catch (e, stackTrace) {
+      debugPrint('========== API ERROR ==========');
+      debugPrint(e.toString());
+      debugPrint(stackTrace.toString());
+      debugPrint('================================');
+
+      return ProductApiResponse(success: false, message: e.toString());
     }
-
-    final response = await request.send();
-
-    return response.statusCode == 200;
   }
+
+  // ============================================================
+  // UPDATE PRODUCT
+  // ============================================================
+
+  Future<bool> updateProduct({
+    required int productCode,
+    required String productName,
+    required String description,
+    required String location,
+    required double price,
+    required int quantity,
+    required String condition,
+    required String status,
+    required int businessContactGroupId,
+    required List<int> categoryIds,
+    required List<ProductVariant> variants,
+    required List<Map<String, dynamic>> images,
+    required List<Map<String, dynamic>> businessContacts,
+  }) async {
+    final url = Uri.parse(
+      'https://www.capital-sys.net/CKMMallAPI/api/saleitem/UpdateSaleItem',
+    );
+
+    // Categories
+    final pCategoryList = categoryIds.map((categoryId) {
+      return {
+        'id': 0,
+        'productId': productCode,
+        'categoryId': categoryId.toString(),
+      };
+    }).toList();
+
+    // Variants
+    final pVariantList = variants.map((variant) {
+      return {
+        'id': 0,
+        'productId': productCode,
+        'variantID': '',
+        'quantity': variant.quantity.toString(),
+        'price': variant.price,
+        'variantName': variant.variantName,
+      };
+    }).toList();
+
+    // Images
+    final pImageList = images.map((image) {
+      return {
+        'id': image['id'] ?? 0,
+        'productId': productCode,
+        'imageUrl': image['imageUrl'] ?? '',
+        'sortOrder': image['sortOrder'] ?? 1,
+      };
+    }).toList();
+
+    // Complete request body
+    final body = {
+      'productId': productCode,
+      'productCode': productCode,
+      'userId': 1,
+      'productName': productName,
+      'description': description,
+      'location': location,
+      'price': price,
+      'condition': condition,
+      'status': status,
+      'businessContactGroupId': businessContactGroupId,
+      'pCategoryList': pCategoryList,
+      'pImageList': pImageList,
+      'pVariantList': pVariantList,
+      'businesscontact': businessContacts,
+    };
+
+    final jsonBody = jsonEncode(body);
+
+    debugPrint('========== UPDATE API REQUEST ==========');
+    debugPrint(jsonBody);
+    debugPrint('========================================');
+
+    try {
+      final response = await http.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonBody,
+      );
+
+      debugPrint('========== UPDATE API RESPONSE ==========');
+      debugPrint('Status Code: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+      debugPrint('=========================================');
+
+      if (response.body.isEmpty) {
+        return response.statusCode >= 200 && response.statusCode < 300;
+      }
+
+      final responseData = jsonDecode(response.body);
+
+      final bool success = responseData['success'] == true;
+
+      final String message =
+          responseData['message']?.toString() ?? 'Unknown response';
+
+      debugPrint('Update Success: $success');
+      debugPrint('Update Message: $message');
+
+      if (success) {
+        debugPrint('Updated Product ID: ${responseData['id']}');
+        debugPrint('Updated At: ${responseData['savedAt']}');
+      }
+
+      return success;
+    } catch (e, stackTrace) {
+      debugPrint('========== UPDATE API ERROR ==========');
+      debugPrint(e.toString());
+      debugPrint(stackTrace.toString());
+      debugPrint('======================================');
+
+      return false;
+    }
+  }
+  // Future<bool> createProduct({
+  //   required String title,
+  //   required String description,
+  //   required String price,
+  //   required String sku,
+  //   required String quantity,
+  //   required String phoneNumber,
+  //   required String messengerLink,
+  //   required String telegram,
+  //   required String viber,
+  //   required List<Uint8List?> images,
+  //   required List<ProductVariant> variants,
+  // }) async {
+  //   var request = http.MultipartRequest(
+  //     'POST',
+  //     Uri.parse('https://www.capital-sys.net/CKMMallAPI/api/saleitem/SaveSaleItem'),
+  //   );
+
+  //   request.fields['Title'] = title;
+  //   request.fields['Description'] = description;
+  //   request.fields['Price'] = price;
+  //   request.fields['SKU'] = sku;
+  //   request.fields['Quantity'] = quantity;
+  //   request.fields['PhoneNumber'] = phoneNumber;
+  //   request.fields['MessengerLink'] = messengerLink;
+  //   request.fields['Telegram'] = telegram;
+  //   request.fields['Viber'] = viber;
+
+  //   // Product Variants
+  //   for (int i = 0; i < variants.length; i++) {
+  //     request.fields['Variants[$i].Variant_Name'] = variants[i].variantName;
+
+  //     request.fields['Variants[$i].SKU'] = variants[i].sku;
+
+  //     request.fields['Variants[$i].Price'] = variants[i].variant_Price
+  //         .toString();
+  //   }
+
+  //   // Product Images
+  //   int index = 0;
+
+  //   for (final image in images) {
+  //     if (image != null) {
+  //       request.files.add(
+  //         http.MultipartFile.fromBytes(
+  //           'Images',
+  //           image,
+  //           filename: 'image_$index.jpg',
+  //         ),
+  //       );
+
+  //       index++;
+  //     }
+  //   }
+
+  //   final response = await request.send();
+
+  //   return response.statusCode == 200;
+  // }
 
   // ============================================================
   // GET CATEGORIES
