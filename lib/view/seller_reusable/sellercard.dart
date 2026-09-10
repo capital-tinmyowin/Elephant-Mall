@@ -59,10 +59,10 @@ class SellerItemWidget extends StatelessWidget {
                               ),
                             ),
                           ),
-                          Text(
-                            "⭐ $rating",
-                            style: TextStyle(fontSize: isSmall ? 10 : 12),
-                          ),
+                          // Text(
+                          //   "⭐ $rating",
+                          //   style: TextStyle(fontSize: isSmall ? 10 : 12),
+                          // ),
                         ],
                       ),
                       const SizedBox(height: 4),

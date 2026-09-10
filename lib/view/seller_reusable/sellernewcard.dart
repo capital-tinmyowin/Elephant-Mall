@@ -90,10 +90,10 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
                                 ),
                               ),
 
-                              Text(
-                                "⭐ $currentRating",
-                                style: TextStyle(fontSize: isSmall ? 10 : 12),
-                              ),
+                              // Text(
+                              //   "⭐ $currentRating",
+                              //   style: TextStyle(fontSize: isSmall ? 10 : 12),
+                              // ),
                             ],
                           ),
 
