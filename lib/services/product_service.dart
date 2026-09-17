@@ -33,7 +33,105 @@ class ProductApiResponse {
   }
 }
 
+class BuyerContactMethod {
+  final int methodId;
+  final String methodName;
+  final int userId;
+
+  BuyerContactMethod({
+    required this.methodId,
+    required this.methodName,
+    required this.userId,
+  });
+
+  factory BuyerContactMethod.fromJson(Map<String, dynamic> json) {
+    return BuyerContactMethod(
+      methodId: int.tryParse(json['methodId'].toString()) ?? 0,
+      methodName: json['methodName']?.toString() ?? '',
+      userId: int.tryParse(json['userId'].toString()) ?? 0,
+    );
+  }
+}
+
+class BuyerContactDetail {
+  final String phoneNumber;
+  final String telegram;
+  final String viber;
+  final String messenger;
+  final String location;
+
+  BuyerContactDetail({
+    required this.phoneNumber,
+    required this.telegram,
+    required this.viber,
+    required this.messenger,
+    required this.location,
+  });
+
+  factory BuyerContactDetail.fromJson(Map<String, dynamic> json) {
+    return BuyerContactDetail(
+      phoneNumber: json['phoneNumber']?.toString() ?? '',
+      telegram: json['telegram']?.toString() ?? '',
+      viber: json['viber']?.toString() ?? '',
+      messenger: json['messenger']?.toString() ?? '',
+      location: json['location']?.toString() ?? '',
+    );
+  }
+}
+
 class ProductService {
+  // ============================================================
+  // SAMPLE BUYER CONTACT METHODS
+  // ============================================================
+
+  final List<BuyerContactMethod> _buyerContactMethods = [
+    BuyerContactMethod(
+      methodId: 1,
+      methodName: 'Contact 1',
+      userId: 1,
+    ),
+    BuyerContactMethod(
+      methodId: 2,
+      methodName: 'Contact 2',
+      userId: 1,
+    ),
+    BuyerContactMethod(
+      methodId: 3,
+      methodName: 'Contact 3',
+      userId: 2,
+    ),
+  ];
+
+  // ============================================================
+  // SAMPLE BUYER CONTACT DETAILS
+  // ============================================================
+
+  final Map<int, BuyerContactDetail> _buyerContactDetails = {
+    1: BuyerContactDetail(
+      phoneNumber: '09123456789',
+      telegram: '@mainbuyer',
+      viber: '09123456789',
+      messenger: 'https://m.me/mainbuyer',
+      location: 'Yangon',
+    ),
+
+    2: BuyerContactDetail(
+      phoneNumber: '09222222222',
+      telegram: '@yangonbuyer',
+      viber: '09222222222',
+      messenger: 'https://m.me/yangonbuyer',
+      location: 'Yangon',
+    ),
+
+    3: BuyerContactDetail(
+      phoneNumber: '09333333333',
+      telegram: '@mandalaybuyer',
+      viber: '09333333333',
+      messenger: 'https://m.me/mandalaybuyer',
+      location: 'Mandalay',
+    ),
+  };
+
   // ============================================================
   // HARD-CODED SELL PRODUCTS
   // ============================================================
@@ -103,6 +201,93 @@ class ProductService {
       ],
     ),
   ];
+
+  // ============================================================
+  // GET BUYER CONTACT METHODS
+  // ============================================================
+
+  Future<List<BuyerContactMethod>> getBuyerContactMethods() async {
+    // ============================================================
+    // GET BUYER CONTACT DETAIL BY METHOD ID
+    // ============================================================
+    // ----------------------------------------------------------
+    // SAMPLE DATA
+    // ----------------------------------------------------------
+
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    return _buyerContactMethods;
+
+    /*
+    // REAL API EXAMPLE
+
+    final url = Uri.parse(
+      'https://www.capital-sys.net/CKMMallAPI/api/buyer/contact-methods',
+    );
+
+    final response = await http.get(
+      url,
+      headers: {
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Failed to load buyer contact methods: ${response.statusCode}',
+      );
+    }
+
+    final List<dynamic> jsonData = jsonDecode(response.body);
+
+    return jsonData
+        .map<BuyerContactMethod>(
+          (json) => BuyerContactMethod.fromJson(json),
+        )
+        .toList();
+    */
+  }
+
+  Future<BuyerContactDetail> getBuyerContactDetail(int methodId) async {
+    // ----------------------------------------------------------
+    // SAMPLE DATA
+    // ----------------------------------------------------------
+
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    final detail = _buyerContactDetails[methodId];
+
+    if (detail == null) {
+      throw Exception('Buyer contact method not found.');
+    }
+
+    return detail;
+
+    /*
+    // REAL API EXAMPLE
+
+    final url = Uri.parse(
+      'https://www.capital-sys.net/CKMMallAPI/api/buyer/contact-method/$methodId',
+    );
+
+    final response = await http.get(
+      url,
+      headers: {
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Failed to load buyer contact detail: ${response.statusCode}',
+      );
+    }
+
+    final Map<String, dynamic> jsonData = jsonDecode(response.body);
+
+    return BuyerContactDetail.fromJson(jsonData);
+    */
+  }
 
   // ============================================================
   // FIND SELL PRODUCT BY PRODUCT CODE
