@@ -67,7 +67,7 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
       return Favorite(
         id: index + 1,
         userId: 0,
-        productId: product.productCode,
+        productId: product.productId,
         addedDate: DateTime.now().subtract(Duration(days: index * 5)),
         product: product,
       );
@@ -78,14 +78,15 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
   List<Product> _getMockProducts() {
     return [
       Product(
-        productCode: 2,
+        productId: 2,
+        productCode: "PRD2000001",
         productName: "OverSize T-Shirt",
         price: 19.99,
         category: "T-Shirts",
         image:
             "https://i.pinimg.com/1200x/7b/9b/64/7b9b64157c65859e958063af2284b620.jpg",
-        rating: 4.8,
-        ratingCount: 189,
+        // rating: 4.8,
+        // ratingCount: 189,
         seller: Seller(
           id: 1,
           name: "Sarah J.",
@@ -102,14 +103,15 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
         colors: ['white', 'black', 'brown'],
       ),
       Product(
-        productCode: 4,
+        productId: 4,
+        productCode: "PRD4000001",
         productName: "White Blouse",
         price: 39.99,
         category: "Blouses",
         image:
             "https://i.pinimg.com/1200x/bd/6c/f9/bd6cf9e39bb3ea86086bb1f89c789ee6.jpg",
-        rating: 4.9,
-        ratingCount: 234,
+        // rating: 4.9,
+        // ratingCount: 234,
         seller: Seller(
           id: 1,
           name: "Sarah J.",
@@ -125,25 +127,27 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
         colors: ['white', 'flower'],
       ),
       Product(
-        productCode: 6,
+        productId: 6,
+        productCode: "PRD6000001",
         productName: 'White Shoulder Bag',
         price: 34.99,
         description:
             'Handwoven straw tote, roomy interior. Ideal for beach or market',
         image: 'images/categories/bags/LeatherBag/white.jpg',
         category: 'Bags',
-        rating: 4.7,
-        ratingCount: 234,
+        // rating: 4.7,
+        // ratingCount: 234,
       ),
       Product(
-        productCode: 8,
+        productId: 8,
+        productCode: "PRD8000001",
         productName: "Wool Fedora Hat",
         price: 24.99,
         category: "Hats",
         image:
             "https://i.pinimg.com/736x/4e/81/11/4e8111d7aea3eeb01500a1f6ad88cdae.jpg",
-        rating: 4.7,
-        ratingCount: 123,
+        // rating: 4.7,
+        // ratingCount: 123,
         seller: Seller(
           id: 2,
           name: "Sunny Days",
@@ -158,14 +162,15 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
         colors: ['gray', 'black'],
       ),
       Product(
-        productCode: 10,
+        productId: 10,
+        productCode: "PRD1000001",
         productName: "Running Shoes",
         price: 49.99,
         category: "Shoes",
         image:
             "https://i.pinimg.com/736x/71/4f/a1/714fa1434d9f007388ddf0da7be76873.jpg",
-        rating: 4.8,
-        ratingCount: 567,
+        // rating: 4.8,
+        // ratingCount: 567,
         seller: Seller(
           id: 2,
           name: "Sunny Days",
@@ -182,24 +187,26 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
         colors: ['white', 'black', 'blue', 'gray'],
       ),
       Product(
-        productCode: 11,
+        productId: 11,
+        productCode: "PRD1100001",
         productName: 'Wedding Heel',
         price: 79.99,
         description: 'Breathable mesh, cushioned sole for running',
         image: 'images/categories/shoes/WeddingHeel/w1.jpg',
         category: 'Shoes',
-        rating: 4.9,
-        ratingCount: 345,
+        // rating: 4.9,
+        // ratingCount: 345,
       ),
       Product(
-        productCode: 12,
+        productId: 12,
+        productCode: "PRD1200001",
         productName: "Sneaker Shoe",
         price: 49.99,
         category: "Shoes",
         image:
             "https://i.pinimg.com/1200x/57/62/a6/5762a6c77d9ac297e2cdce5de6287875.jpg",
-        rating: 4.7,
-        ratingCount: 234,
+        // rating: 4.7,
+        // ratingCount: 234,
         seller: Seller(
           id: 3,
           name: "John Doe",
@@ -212,14 +219,15 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
         colors: ['brown'],
       ),
       Product(
-        productCode: 16,
+        productId: 16,
+        productCode: "PRD1600001",
         productName: "Neck Accessories",
         price: 29.99,
         category: "Accessories",
         image:
             "https://i.pinimg.com/1200x/60/d6/8a/60d68a58460c418cffd3f90d682348cc.jpg",
-        rating: 4.3,
-        ratingCount: 123,
+        // rating: 4.3,
+        // ratingCount: 123,
         seller: Seller(
           id: 4,
           name: "Emma Style",
@@ -237,24 +245,26 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
         colors: ['N1', 'N2', 'N3', 'N4', 'N5'],
       ),
       Product(
-        productCode: 18,
+        productId: 18,
+        productCode: "PRD1800001",
         productName: 'Press On Nail',
         price: 29.99,
         description: 'Gold-plated statement pieces.',
         image: 'images/categories/accessories/Nail/N1.jpg',
         category: 'Accessories',
-        rating: 4.7,
-        ratingCount: 234,
+        // rating: 4.7,
+        // ratingCount: 234,
       ),
       Product(
-        productCode: 19,
+        productId: 19,
+        productCode: "PRD1900001",
         productName: "Ipad 10th Gen",
         price: 89.99,
         category: "Electronics",
         image:
             "https://i5.walmartimages.com/seo/2022-Apple-10-9-inch-iPad-Wi-Fi-64GB-Pink-10th-Generation_4fdae443-4f60-4a3e-9efe-12758bf5f128.f4d7333626b4e6b27e8be25d1f698373.jpeg",
-        rating: 4.7,
-        ratingCount: 892,
+        // rating: 4.7,
+        // ratingCount: 892,
         seller: Seller(
           id: 4,
           name: "Emma Style",
@@ -271,14 +281,15 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
         colors: ['I1', 'I2', 'I3', 'I4'],
       ),
       Product(
-        productCode: 20,
+        productId: 20,
+        productCode: "PRD2000001",
         productName: "Earphone",
         price: 29.99,
         category: "Headphones",
         image:
             "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTndMcJW71HLgi9ntgoterJiJJjLxbtOVVpyA&s",
-        rating: 4.4,
-        ratingCount: 234,
+        // rating: 4.4,
+        // ratingCount: 234,
         seller: Seller(
           id: 4,
           name: "Emma Style",
@@ -296,14 +307,15 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
         colors: ['Eph1', 'Eph2', 'Eph3', 'Eph4', 'Eph5'],
       ),
       Product(
-        productCode: 21,
+        productId: 21,
+        productCode: "PRD2100001",
         productName: "Powerbank",
         price: 39.99,
         category: "Power Banks",
         image:
             "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSnwF3fpDIATeZ_9o5h3vNu_X8KUHSq5O739g&s",
-        rating: 4.5,
-        ratingCount: 342,
+        // rating: 4.5,
+        // ratingCount: 342,
         seller: Seller(
           id: 2,
           name: "Sunny Days",
@@ -320,14 +332,15 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
         colors: ['pb1', 'pb2', 'pb3', 'pb4'],
       ),
       Product(
-        productCode: 23,
+        productId: 23,
+        productCode: "PRD2300001",
         productName: "Home Decor",
         price: 29.99,
         category: "Home Decor",
         image:
             "https://i.pinimg.com/736x/4e/6d/4e/4e6d4eb03c6518de8b527b4bd30eab55.jpg",
-        rating: 4.3,
-        ratingCount: 123,
+        // rating: 4.3,
+        // ratingCount: 123,
         seller: Seller(
           id: 2,
           name: "Sunny Days",
@@ -345,14 +358,15 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
         colors: ['H1', 'H2', 'H3', 'H4', 'H5'],
       ),
       Product(
-        productCode: 24,
+        productId: 24,
+        productCode: "PRD2400001",
         productName: "Appliance",
         price: 29.99,
         category: "Appliances",
         image:
             "https://i.pinimg.com/736x/73/39/1c/73391c325a95b74a077bbac31a260da4.jpg",
-        rating: 4.1,
-        ratingCount: 78,
+        // rating: 4.1,
+        // ratingCount: 78,
         seller: Seller(
           id: 3,
           name: "John Doe",
@@ -1014,7 +1028,7 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductDetailPage(productId: product.productCode),
+            builder: (context) => ProductDetailPage(productId: product.productId),
           ),
         );
       },
@@ -1170,7 +1184,7 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => ProductDetailPage(
-                                      productId: product.productCode,
+                                      productId: product.productId,
                                     ),
                                   ),
                                 );
@@ -1203,36 +1217,39 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
                     : SizedBox(width: 1),
                     SizedBox(height: 2),
                 // View Detail Button
-                SizedBox(
-                  width: double.infinity,
-                  height: isMobile ? 24 : 32,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: const Color(0xFFC77C2E)),
-                    ),
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: isMobile ? 24 : 32,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFC77C2E)),
                       ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                ProductDetailPage(productId: product.productCode),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
                           ),
-                        );
-                      },
-                      child: Text(
-                        "View Details",
-                        style: TextStyle(
-                          color: const Color(0xFFC77C2E),
-                          fontSize: isMobile ? 8 : 12,
-                          fontWeight: FontWeight.w600,
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ProductDetailPage(productId: product.productId),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          "View Details",
+                          style: TextStyle(
+                            color: const Color(0xFFC77C2E),
+                            fontSize: isMobile ? 8 : 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
@@ -1256,7 +1273,7 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductDetailPage(productId: product.productCode),
+            builder: (context) => ProductDetailPage(productId: product.productId),
           ),
         );
       },
@@ -1352,7 +1369,7 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
                           context,
                           MaterialPageRoute(
                             builder: (context) =>
-                                ProductDetailPage(productId: product.productCode),
+                                ProductDetailPage(productId: product.productId),
                           ),
                         );
                       },

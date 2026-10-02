@@ -353,25 +353,11 @@ class ProductService {
       };
     }).toList();
 
-    // Complete request body
-    final body = {
-      'productId': 0,
-      'productCode': productCode,
-      'userId': 1,
-      'productName': productName,
-      'description': description,
-      'location': location,
-      'price': price,
-      'condition': condition,
-      'status': status,
-      'businessContactGroupId': businessContactGroupId,
-      'pCategoryList': pCategoryList,
-      'pImageList': pImageList,
-      'pVariantList': pVariantList,
-      'businesscontact': businessContacts,
-    };
+      // request.fields['Variants[$i].SKU'] =
+      //     variants[i].sku;
 
-    final jsonBody = jsonEncode(body);
+      // request.fields['Variants[$i].Price'] =
+      //     variants[i].variant_Price.toString();
 
     debugPrint('========== API REQUEST ==========');
     debugPrint(jsonBody);

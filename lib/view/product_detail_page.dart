@@ -2,10 +2,8 @@ import 'package:elephant_mall/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../models/product.dart';
 import '../services/Category_service.dart';
-import '../services/mock_api_service.dart';
 import 'common/footer.dart';
 import 'common/header.dart';
 
@@ -32,9 +30,17 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   void initState() {
     super.initState();
     _apiService = ApiService();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _apiService.loadProductDetail(widget.productId);
-    });
+    
+     WidgetsBinding.instance.addPostFrameCallback((_) async {
+    // 🔥 Load list AND detail together
+    await Future.wait([
+      _apiService.loadProducts(),
+      _apiService.loadProductDetail(widget.productId),
+    ]);
+
+    if (!mounted) return;
+    setState(() {}); // force rebuild so _getSellerProducts sees the populated list
+  });
   }
 
   @override
@@ -61,11 +67,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               return const Column(
                 children: [
                   CommonHeader(),
-                  Expanded(child: Center(child: Text('Product not found'))),
+                  // Expanded(child: Center(child: Text('Product not found'))),
                 ],
               );
             }
-            _sellerProducts = _getSellerProducts(product);
+            _sellerProducts = _getSellerProducts(product,productController);
+            print(product.productId);
             return Column(
               children: [
                 const CommonHeader(),
@@ -134,26 +141,33 @@ Widget _buildImage(String imageUrl, double height, double width) {
             right: isVerySmallScreen ? 100 : 250,
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 flex: 1,
-                child: Center(
-                  child: _buildProductGallery(product),
-                ),
-              ),
-              const SizedBox(width: 24),
-              Expanded(
-                flex: 1,
-                child: Column(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildProductInfo(product),
-                    const SizedBox(height: 16),
-                    _buildActionButtons(product),
-                    const SizedBox(height: 16),
-                    _buildDescription(product),
-                    _buildSellerInfo(product),
+                    Expanded(
+                      flex: 1,
+                      child: Center(
+                        child: _buildProductGallery(product),
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      flex: 1,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildProductInfo(product),
+                          const SizedBox(height: 16),
+                          _buildActionButtons(product),
+                          const SizedBox(height: 16),
+                          _buildDescription(product),
+                          _buildSellerInfo(product),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -192,8 +206,10 @@ Widget _buildProductGallery(Product product) {
   final bool isMobile = MediaQuery.of(context).size.width < 800;
   final bool isSmallScreen = MediaQuery.of(context).size.width < 1000;
 
-  final images = product.proxiedAllImages;
-  
+  List<String> images = product.proxiedAllImages(product.image);
+  // product.proxiedAllImages;
+  print('🖼️ Gallery images: ${product.proxiedAllImages}');
+print('🖼️ selectedIndex: $_selectedImageIndex');
   // Ensure selected index is valid
   if (_selectedImageIndex >= images.length) {
     _selectedImageIndex = 0;
@@ -358,7 +374,10 @@ Widget _buildProductGallery(Product product) {
     final String sku =
         'EL-${category.substring(0, category.length > 3 ? 3 : category.length).toUpperCase()}-${product.productCode}';
     final String qty = '22';
-
+    final String location =  product.location ;
+    final String condition =  product.condition ;
+    print(location);
+    print(condition);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -393,19 +412,109 @@ Widget _buildProductGallery(Product product) {
           ),
           child: Column(
             children: [
-              _buildMetaRow('Category', category, 'Condition', 'New'),
+              _buildMetaRow('Category', category, 'Condition', condition),
               SizedBox(
                 height: 0.9,
                 width: double.infinity,
                 child: Container(color: Colors.grey),
               ),
-              _buildMetaRow('SKU', sku, 'Quantity', qty),
+              _buildMetaRow('SKU', sku, 'Location', location),
             ],
           ),
         ),
+         const SizedBox(height: 16),
+      _buildVariantTable(product),
       ],
     );
   }
+  Widget _buildVariantTable(Product product) {
+  final variants = product.variants;
+
+  // Hide if no variants or only one
+  if (variants == null || variants.length <= 1) {
+    return const SizedBox.shrink();
+  }
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text(
+        'Available Variants',
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF2C3E2B),
+        ),
+      ),
+      const SizedBox(height: 8),
+      Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey[300]!),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          children: [
+            // Header
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+              ),
+              child: Row(
+                children: [
+                  _variantCell('Variant', flex: 3, isHeader: true),
+                  _variantCell('SKU', flex: 3, isHeader: true),
+                  _variantCell('Price', flex: 2, isHeader: true),
+                  _variantCell('Qty', flex: 1, isHeader: true),
+                ],
+              ),
+            ),
+            // Rows
+            ...variants.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final v = entry.value;
+              final isLast = idx == variants.length - 1;
+              return Container(
+                decoration: BoxDecoration(
+                  border: isLast
+                      ? null
+                      : Border(bottom: BorderSide(color: Colors.grey[200]!)),
+                ),
+                child: Row(
+                  children: [
+                    _variantCell(v.variantName, flex: 3),
+                    _variantCell(v.variantId, flex: 3),
+                    _variantCell('\$${v.price.toStringAsFixed(2)}', flex: 2),
+                    _variantCell('${v.quantity}', flex: 1),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+Widget _variantCell(String text, {required int flex, bool isHeader = false}) {
+  return Expanded(
+    flex: flex,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: isHeader ? FontWeight.w600 : FontWeight.normal,
+          color: Colors.black87,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    ),
+  );
+}
 
   Widget _buildMetaRow(
     String label1,
@@ -473,11 +582,11 @@ Widget _buildProductGallery(Product product) {
         Expanded(
           child: Consumer<ApiService>(
             builder: (context, cartController, child) {
-              final inCart = cartController.isInCart(product.productCode);
+              final inCart = cartController.isInCart(product.productId);
               return ElevatedButton(
                 onPressed: () {
                   if (inCart) {
-                    cartController.removeItem(product.productCode);
+                    cartController.removeItem(product.productId);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Removed from favourites'),
@@ -541,7 +650,7 @@ Widget _buildProductGallery(Product product) {
   Widget _buildSellerInfo(Product product) {
     final seller = product.seller;
     final String sellerName = seller?.name ?? 'Sarah J.';
-    final double rating = seller?.rating ?? product.rating;
+    // final double rating = seller?.rating ?? product.rating;
     final String avatarText = sellerName.substring(0, 1).toUpperCase();
 
     //  Check if screen is smaller than 1100px
@@ -608,13 +717,13 @@ Widget _buildProductGallery(Product product) {
                                 '★★★★★',
                                 style: TextStyle(color: Color(0xFFF5B042)),
                               ),
-                              Text(
-                                rating.toStringAsFixed(1),
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
+                              // Text(
+                              //   rating.toStringAsFixed(1),
+                              //   style: const TextStyle(
+                              //     fontSize: 12,
+                              //     fontWeight: FontWeight.w800,
+                              //   ),
+                              // ),
                             ],
                           ),
                         ],
@@ -701,13 +810,13 @@ Widget _buildProductGallery(Product product) {
                             '★★★★★',
                             style: TextStyle(color: Color(0xFFF5B042)),
                           ),
-                          Text(
-                            rating.toStringAsFixed(1),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                          // Text(
+                          //   rating.toStringAsFixed(1),
+                          //   style: const TextStyle(
+                          //     fontSize: 12,
+                          //     fontWeight: FontWeight.w800,
+                          //   ),
+                          // ),
                         ],
                       ),
                     ],
@@ -764,110 +873,182 @@ Widget _buildProductGallery(Product product) {
     );
   }
 
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        'More from $sellerName\'s Store',
-        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-      ),
-      const SizedBox(height: 10),
-      GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: _isMobile ? 4 : 12,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 5,
-          childAspectRatio: 0.50,
+  return Padding(
+    padding: const EdgeInsets.only(left: 100,right: 100),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'More from $sellerName\'s Store',
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
         ),
-        itemCount: _sellerProducts.length,
-        itemBuilder: (context, index) {
-          final sellerProduct = _sellerProducts[index];
-          return GestureDetector(
-            onTap: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      ProductDetailPage(productId: sellerProduct.productCode),
+        const SizedBox(height: 10),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: _isMobile ? 4 : 12,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 5,
+            childAspectRatio: 0.50,
+          ),
+          itemCount: _sellerProducts.length,
+          itemBuilder: (context, index) {
+            final sellerProduct = _sellerProducts[index];
+            return GestureDetector(
+              onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        ProductDetailPage(productId: sellerProduct.productId),
+                  ),
+                );
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                  ],
                 ),
-              );
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 4,
-                    spreadRadius: 1,
-                  ),
-                ],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.all(Radius.circular(16)),
+                        child: _buildImage(
+                          sellerProduct.proxiedImageUrl,
+                          double.infinity,
+                          double.infinity,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6.0,
+                        vertical: 6.0,
+                      ),
+                      child: Text(
+                        sellerProduct.productName.length > 18
+                            ? '${sellerProduct.productName.substring(0, 15)}...'
+                            : sellerProduct.productName,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Text(
+                        '\$${sellerProduct.price.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFD68247),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.all(Radius.circular(16)),
-                      child: _buildImage(
-                        sellerProduct.proxiedImageUrl,
-                        double.infinity,
-                        double.infinity,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6.0,
-                      vertical: 6.0,
-                    ),
-                    child: Text(
-                      sellerProduct.productName.length > 18
-                          ? '${sellerProduct.productName.substring(0, 15)}...'
-                          : sellerProduct.productName,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: Text(
-                      '\$${sellerProduct.price.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFD68247),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    ],
+            );
+          },
+        ),
+      ],
+    ),
   );
 }
   //  Get products from same seller
-  List<Product> _getSellerProducts(Product currentProduct) {
-    if (currentProduct.seller == null) return [];
+  // List<Product> _getSellerProducts(Product currentProduct, ApiService productController) {
+  //   if (currentProduct.seller == null) return [];
 
-    final allProducts = MockApiService.getMockProducts();
-    return allProducts
-        .where(
-          (p) =>
-              p.seller?.name == currentProduct.seller?.name &&
-              p.productCode != currentProduct.productCode,
-        )
-        .take(8)
-        .toList();
+  //   try {
+  //     List<Product> allProducts = [];
+      
+  //     //  Check if we're using mock data or real API
+  //     print('useMockDataStatic: ${ApiService.useMockDataStatic}');
+  //     if (ApiService.useMockDataStatic) {
+  //       // Use mock data
+  //       print(' Using mock data for seller products');
+  //       allProducts = MockApiService.getMockProducts();
+  //     } else {
+  //       // Use real data from API
+  //       print(' Using real API data for seller products');
+  //       allProducts = productController.allProducts;
+        
+  //       // If allProducts is empty, wait and retry
+  //       if (allProducts.isEmpty) {
+  //        print(' No products loaded, trying to load from backend...');
+  //       // Try to load products if not loaded
+  //       productController.loadProducts();
+  //       allProducts = productController.allProducts;
+        
+  //       // If still empty, use mock as fallback
+  //       if (allProducts.isEmpty) {
+  //         allProducts = MockApiService.getMockProducts();
+  //       }
+  //     }
+  //     }
+      
+  //     // Filter products by same seller (excluding current product)
+  //     final filtered = allProducts
+  //         .where(
+  //           (p) =>
+  //               p.seller?.name == currentProduct.seller?.name &&
+  //               p.productId != currentProduct.productId,
+  //         )
+  //         .take(8)
+  //         .toList();
+      
+  //     print('Found ${filtered.length} products from seller: ${currentProduct.seller?.name}');
+  //     return filtered;
+          
+  //   } catch (e) {
+  //     // Fallback to mock data if anything fails
+  //     print('Error getting seller products: $e');
+  //     final allProducts = MockApiService.getMockProducts();
+  //     return allProducts
+  //         .where(
+  //           (p) =>
+  //               p.seller?.name == currentProduct.seller?.name &&
+  //               p.productId != currentProduct.productId,
+  //         )
+  //         .take(8)
+  //         .toList();
+  //   }
+  // }
+  List<Product> _getSellerProducts(Product currentProduct, ApiService productController) {
+  if (currentProduct.seller == null) {
+     print('❌ currentProduct.seller is null');
+    return [];
+    }
+  
+  final allProducts = productController.allProducts;
+  print('📋 allProducts count: ${allProducts.length}');
+  print('👤 current seller: id=${currentProduct.seller!.id}, name=${currentProduct.seller!.name}');
+   print('🔍 current productId: ${currentProduct.productId}');
+  
+  for (var p in allProducts.take(5)) {
+    print('  → product "${p.productName}" seller=${p.seller?.name} (id=${p.seller?.id}) productId=${p.productId}');
   }
+  final filtered = allProducts
+      .where((p) =>
+          p.seller?.name == currentProduct.seller?.name &&
+          p.productId != currentProduct.productId)
+      .take(8)
+      .toList();
+
+  print('Found ${filtered.length} products from seller');
+  return filtered;
+}
 }
