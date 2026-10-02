@@ -12,7 +12,9 @@ import '../sellernew.dart';
 import '../sale.dart';
 
 class CommonHeader extends StatefulWidget {
-  const CommonHeader({super.key});
+  final bool showMobileHeader;
+
+  const CommonHeader({super.key, this.showMobileHeader = false});
 
   @override
   State<CommonHeader> createState() => _CommonHeaderState();
@@ -27,7 +29,11 @@ class _CommonHeaderState extends State<CommonHeader> {
     final authService = Provider.of<AuthService>(context);
     final isLoggedIn = authService.isLoggedIn;
     if (isMobile) {
-      return const SizedBox.shrink(); // hide desktop header
+      if (!widget.showMobileHeader) {
+        return const SizedBox.shrink();
+      }
+
+      return _buildMobileHeader();
     }
 
     return Container(
@@ -152,7 +158,7 @@ class _CommonHeaderState extends State<CommonHeader> {
 
                     const SizedBox(width: 10),
 
-                    // 🔥 PROFILE BUTTON - Shows Login/Logout based on state
+                    // PROFILE BUTTON - Shows Login/Logout based on state
                     _buildProfileButton(context, isLoggedIn),
 
                     const SizedBox(width: 10),
@@ -251,11 +257,11 @@ class _CommonHeaderState extends State<CommonHeader> {
       case "/category":
         return menuName == "CATEGORIES";
 
+      case "/sale":
+        return menuName == "SALE";
+
       case "/new-in":
         return menuName == "NEW IN";
-
-      case "/sell":
-        return menuName == "SALE";
 
       case "/favorite":
         return menuName == "MY FAVORITE";
@@ -268,51 +274,112 @@ class _CommonHeaderState extends State<CommonHeader> {
     }
   }
 
+  Widget _buildMobileHeader() {
+    return Container(
+      width: double.infinity,
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+      child: Column(
+        children: [
+          // ELEPHANT MALL LOGO
+          SizedBox(
+            height: 45,
+            child: Image.asset(
+              "images/logo.png",
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                return const Text(
+                  "Elephant Mall",
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 5),
+
+          // SEARCH INPUT
+          SizedBox(
+            height: 38,
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: "Search in Elephant Mall",
+                hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
+                prefixIcon: const Icon(
+                  Icons.search,
+                  size: 20,
+                  color: Colors.grey,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 0,
+                  horizontal: 10,
+                ),
+                isDense: true,
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide(color: Colors.grey.shade400),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide(color: Colors.grey.shade400),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: const BorderSide(color: Color(0xFFC77C2E)),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ============= PROFILE BUTTON =============
   Widget _buildProfileButton(BuildContext context, bool isLoggedIn) {
-    return GestureDetector(
-      onTap: () {
-        if (isLoggedIn) {
-          // Show logout dialog
-          _showLogoutDialog(context);
-        } else {
-          // Navigate to login page
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () {
           Navigator.push(
             context,
             PageRouteBuilder(
               pageBuilder: (context, animation, secondaryAnimation) =>
-                  LoginPage(),
+                  NewSellerPage(),
               transitionDuration: Duration.zero,
               reverseTransitionDuration: Duration.zero,
             ),
           );
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: isLoggedIn
-              ? const Color(0xFF2B6E3B).withOpacity(0.1)
-              : Colors.transparent,
-        ),
-        child: Stack(
-          children: [
-            const Icon(Icons.person_outline, size: 28),
-            if (isLoggedIn)
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
-                    shape: BoxShape.circle,
+        },
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isLoggedIn
+                ? const Color(0xFF2B6E3B).withOpacity(0.1)
+                : Colors.transparent,
+          ),
+          child: Stack(
+            children: [
+              const Icon(Icons.person_outline, size: 28),
+
+              if (isLoggedIn)
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -476,7 +543,6 @@ class _CommonHeaderState extends State<CommonHeader> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-
       child: InkWell(
         onTap: () {
           if (_isMenuOpen) {
@@ -498,12 +564,12 @@ class _CommonHeaderState extends State<CommonHeader> {
               routeName = "/category";
               break;
 
-            case "NEW IN":
-              routeName = "/new-in";
+            case "SALE":
+              routeName = "/sale";
               break;
 
-            case "SALE":
-              routeName = "/sell";
+            case "NEW IN":
+              routeName = "/new-in";
               break;
 
             case "MY FAVORITE":
@@ -518,16 +584,13 @@ class _CommonHeaderState extends State<CommonHeader> {
               routeName = "/";
           }
 
-          Navigator.pushReplacement(
+          // CHANGE pushReplacement TO push
+          Navigator.push(
             context,
-
             PageRouteBuilder(
               settings: RouteSettings(name: routeName),
-
               pageBuilder: (context, animation, secondaryAnimation) => page,
-
               transitionDuration: Duration.zero,
-
               reverseTransitionDuration: Duration.zero,
             ),
           );
@@ -535,23 +598,16 @@ class _CommonHeaderState extends State<CommonHeader> {
 
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-
           decoration: BoxDecoration(
             color: isActive ? const Color(0xFFC77C2E) : Colors.transparent,
-
             borderRadius: BorderRadius.circular(6),
           ),
-
           child: Text(
             text,
-
             style: TextStyle(
               fontSize: 14,
-
               fontWeight: FontWeight.bold,
-
               color: isActive ? Colors.white : Colors.black,
             ),
           ),
@@ -581,7 +637,6 @@ class CommonBottomBar extends StatelessWidget {
         break;
 
       case 1:
-        page = const CategoryPage();
         page = const CategoryPage();
         break;
 
