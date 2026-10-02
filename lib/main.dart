@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // 🔥 ADD THIS - AuthService at root level
+        //  ADD THIS - AuthService at root level
         ChangeNotifierProvider(create: (_) => AuthService()),
 
         // Keep existing providers

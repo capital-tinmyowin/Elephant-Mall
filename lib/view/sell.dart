@@ -356,13 +356,13 @@ class _SellPageState extends State<SellPage> {
                 }
 
                 setState(() {
-                  variants.add(
-                    ProductVariant(
-                      variantName: variantController.text.trim(),
-                      sku: skuController.text.trim(),
-                      variant_Price: double.parse(priceController.text),
-                    ),
-                  );
+                  // variants.add(
+                  //   ProductVariant(
+                  //     variantName: variantController.text.trim(),
+                  //     sku: skuController.text.trim(),
+                  //     variant_Price: double.parse(priceController.text),
+                  //   ),
+                  // );
                 });
                 _variantSubmitted = false;
 
@@ -428,18 +428,18 @@ class _SellPageState extends State<SellPage> {
                         ),
                       ),
                     ),
-                    DataCell(
-                      SizedBox(
-                        width: 120,
-                        child: Text(item.sku, overflow: TextOverflow.ellipsis),
-                      ),
-                    ),
-                    DataCell(
-                      SizedBox(
-                        width: 100,
-                        child: Text(item.variant_Price.toStringAsFixed(0)),
-                      ),
-                    ),
+                    // DataCell(
+                    //   SizedBox(
+                    //     width: 120,
+                    //     child: Text(item.sku, overflow: TextOverflow.ellipsis),
+                    //   ),
+                    // ),
+                    // DataCell(
+                    //   SizedBox(
+                    //     width: 100,
+                    //     child: Text(item.variant_Price.toStringAsFixed(0)),
+                    //   ),
+                    // ),
                     DataCell(
                       SizedBox(
                         width: 70,

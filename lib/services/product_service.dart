@@ -40,11 +40,11 @@ class ProductService {
       request.fields['Variants[$i].Variant_Name'] =
           variants[i].variantName;
 
-      request.fields['Variants[$i].SKU'] =
-          variants[i].sku;
+      // request.fields['Variants[$i].SKU'] =
+      //     variants[i].sku;
 
-      request.fields['Variants[$i].Price'] =
-          variants[i].variant_Price.toString();
+      // request.fields['Variants[$i].Price'] =
+      //     variants[i].variant_Price.toString();
 
     }
 
