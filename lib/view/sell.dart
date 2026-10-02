@@ -16,9 +16,9 @@ import 'common/header.dart';
 import 'common/footer.dart';
 
 class SellPage extends StatefulWidget {
-  final int? productCode;
+  final int? productId;
 
-  const SellPage({super.key, this.productCode});
+  const SellPage({super.key, this.productId});
 
   @override
   State<SellPage> createState() => _SellPageState();
@@ -40,6 +40,8 @@ class _VariantDialogState extends State<_VariantDialog> {
   late final TextEditingController variantController;
   late final TextEditingController variantqtyController;
   late final TextEditingController variantpriceController;
+  late final TextEditingController variantdiscountPriceController;
+  bool enableDiscountPrice = false;
 
   @override
   void initState() {
@@ -48,6 +50,7 @@ class _VariantDialogState extends State<_VariantDialog> {
     variantController = TextEditingController();
     variantqtyController = TextEditingController();
     variantpriceController = TextEditingController();
+    variantdiscountPriceController = TextEditingController();
 
     // If editing an existing variant, load its values.
     if (widget.existingVariant != null) {
@@ -56,6 +59,13 @@ class _VariantDialogState extends State<_VariantDialog> {
       variantController.text = item.variantName;
       variantqtyController.text = item.quantity.toStringAsFixed(0);
       variantpriceController.text = item.price.toStringAsFixed(0);
+
+      if (item.discountPrice != null) {
+        variantdiscountPriceController.text = item.discountPrice!
+            .toStringAsFixed(0);
+
+        enableDiscountPrice = true;
+      }
     }
   }
 
@@ -64,7 +74,7 @@ class _VariantDialogState extends State<_VariantDialog> {
     variantController.dispose();
     variantqtyController.dispose();
     variantpriceController.dispose();
-
+    variantdiscountPriceController.dispose();
     super.dispose();
   }
 
@@ -78,7 +88,17 @@ class _VariantDialogState extends State<_VariantDialog> {
 
     final quantity = double.tryParse(variantqtyController.text.trim());
 
+    final discountPriceText = variantdiscountPriceController.text.trim();
+
+    final discountPrice = discountPriceText.isEmpty
+        ? null
+        : double.tryParse(discountPriceText);
+
     if (price == null || quantity == null) {
+      return;
+    }
+
+    if (discountPriceText.isNotEmpty && discountPrice == null) {
       return;
     }
 
@@ -86,6 +106,7 @@ class _VariantDialogState extends State<_VariantDialog> {
       variantName: variantController.text.trim(),
       quantity: quantity,
       price: price,
+      discountPrice: discountPrice,
     );
 
     // Return the variant to SellPage.
@@ -168,41 +189,123 @@ class _VariantDialogState extends State<_VariantDialog> {
 
               const SizedBox(height: 12),
 
-              // PRICE
-              TextFormField(
-                controller: variantpriceController,
+              // PRICE + DISCOUNT PRICE
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // PRICE
+                  Expanded(
+                    child: TextFormField(
+                      controller: variantpriceController,
 
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
 
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}$')),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'^\d*\.?\d{0,2}$'),
+                        ),
+                      ],
+
+                      decoration: const InputDecoration(
+                        labelText: "Price",
+                        suffixText: "Ks",
+                        border: OutlineInputBorder(),
+                      ),
+
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return "Please enter Price";
+                        }
+
+                        final price = double.tryParse(value.trim());
+
+                        if (price == null) {
+                          return "Invalid price";
+                        }
+
+                        if (price <= 0) {
+                          return "Must be > 0";
+                        }
+
+                        return null;
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  Expanded(
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          controller: variantdiscountPriceController,
+
+                          enabled: enableDiscountPrice,
+
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d*\.?\d{0,2}$'),
+                            ),
+                          ],
+
+                          decoration: const InputDecoration(
+                            labelText: "Discount Price",
+                            suffixText: "Ks",
+                            border: OutlineInputBorder(),
+                          ),
+
+                          validator: (value) {
+                            if (!enableDiscountPrice) {
+                              return null;
+                            }
+
+                            if (value == null || value.trim().isEmpty) {
+                              return "Enter discount price";
+                            }
+
+                            final discountPrice = double.tryParse(value.trim());
+
+                            if (discountPrice == null) {
+                              return "Invalid price";
+                            }
+
+                            return null;
+                          },
+                        ),
+
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: enableDiscountPrice == true,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              onChanged: (value) {
+                                setState(() {
+                                  enableDiscountPrice = value == true;
+
+                                  if (!enableDiscountPrice) {
+                                    variantdiscountPriceController.clear();
+                                  }
+                                });
+                              },
+                            ),
+
+                            const Text(
+                              "Discount Item",
+                              style: TextStyle(fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
-
-                decoration: const InputDecoration(
-                  labelText: "Price",
-                  suffixText: "Ks",
-                  border: OutlineInputBorder(),
-                ),
-
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return "Please enter Price";
-                  }
-
-                  final price = double.tryParse(value.trim());
-
-                  if (price == null) {
-                    return "Please enter a valid price";
-                  }
-
-                  if (price <= 0) {
-                    return "Price must be greater than 0";
-                  }
-
-                  return null;
-                },
               ),
 
               const SizedBox(height: 12),
@@ -272,8 +375,11 @@ class _SellPageState extends State<SellPage> {
   final titleController = TextEditingController();
   final descriptionController = TextEditingController();
   final priceController = TextEditingController();
+  final discountPriceController = TextEditingController();
+  bool enableDiscountPrice = false;
   final skuController = TextEditingController();
   final qtyController = TextEditingController();
+
   // final variantqtyController = TextEditingController();
   // final variantpriceController = TextEditingController();
 
@@ -282,6 +388,7 @@ class _SellPageState extends State<SellPage> {
   final messengerController = TextEditingController();
   final telegramController = TextEditingController();
   final viberController = TextEditingController();
+  final conditionController = TextEditingController();
 
   List<BuyerContactMethod> buyerContactMethods = [];
 
@@ -304,6 +411,11 @@ class _SellPageState extends State<SellPage> {
   List<ProductVariant> variants = [];
   List<Uint8List?> images = List.generate(10, (_) => null);
   final ImagePicker picker = ImagePicker();
+  bool isActive = true;
+
+  String? _productCode;
+
+  int? _productId;
 
   String? titleError;
   String? descriptionError;
@@ -324,59 +436,59 @@ class _SellPageState extends State<SellPage> {
     loadBuyerContactMethods();
 
     // Only load product data when productCode is provided.
-    if (widget.productCode != null) {
-      loadProduct(widget.productCode!);
+    if (widget.productId != null) {
+      loadProduct(widget.productId!);
     }
   }
 
-  void loadProduct(int productCode) {
-    final SellProductModel? product = productService.getSellProductByCode(
-      productCode,
-    );
+  Future<void> loadProduct(int productId) async {
+    try {
+      debugPrint('Loading product ID: $productId');
 
-    // Product code was provided but product was not found.
-    if (product == null) {
-      debugPrint('Product not found for product code: $productCode');
-      return;
+      final SellProductModel? product = await productService
+          .getSellProductByCode(productId);
+
+      if (!mounted) return;
+
+      if (product == null) {
+        debugPrint('Product not found for product ID: $productId');
+        return;
+      }
+
+      debugPrint('Product found: ${product.productCode}');
+
+      // Save BOTH values.
+      _productId = product.productId;
+      _productCode = product.productCode;
+
+      titleController.text = product.title;
+      descriptionController.text = product.description;
+      conditionController.text = product.condition;
+      priceController.text = product.price.toString();
+      skuController.text = product.sku;
+      qtyController.text = product.quantity.toString();
+
+      locationController.text = product.location;
+      phoneController.text = product.phoneNumber;
+      messengerController.text = product.messengerLink;
+      telegramController.text = product.telegram;
+      viberController.text = product.viber;
+
+      setState(() {
+        selectedCategoryIds = List<int>.from(product.categoryIds);
+        variants = List<ProductVariant>.from(product.variants);
+
+        telegramVisible = product.telegram.trim().isNotEmpty;
+        viberVisible = product.viber.trim().isNotEmpty;
+      });
+
+      debugPrint('Product ID: $_productId');
+      debugPrint('Product Code: $_productCode');
+      debugPrint('Selected category IDs: $selectedCategoryIds');
+      debugPrint('Loaded variants: ${variants.length}');
+    } catch (e) {
+      debugPrint('Load product error: $e');
     }
-
-    debugPrint('Product found: ${product.productCode}');
-
-    // BIND TEXT FIELDS
-
-    titleController.text = product.title;
-
-    descriptionController.text = product.description;
-
-    priceController.text = product.price;
-
-    skuController.text = product.sku;
-
-    qtyController.text = product.quantity;
-
-    locationController.text = product.location;
-
-    phoneController.text = product.phoneNumber;
-
-    messengerController.text = product.messengerLink;
-
-    telegramController.text = product.telegram;
-
-    viberController.text = product.viber;
-
-    // BIND CATEGORIES + VARIANTS
-
-    setState(() {
-      selectedCategoryIds = List<int>.from(product.categoryIds);
-
-      variants = List<ProductVariant>.from(product.variants);
-
-      // Show Telegram if data exists.
-      telegramVisible = product.telegram.trim().isNotEmpty;
-
-      // Show Viber if data exists.
-      viberVisible = product.viber.trim().isNotEmpty;
-    });
   }
 
   void _removeImage(int index) {
@@ -679,7 +791,7 @@ class _SellPageState extends State<SellPage> {
                 // VARIANT HEADER
                 DataColumn(
                   label: SizedBox(
-                    width: 180,
+                    width: 160,
                     child: Center(child: Text("Variant")),
                   ),
                 ),
@@ -687,7 +799,7 @@ class _SellPageState extends State<SellPage> {
                 // QUANTITY HEADER
                 DataColumn(
                   label: SizedBox(
-                    width: 100,
+                    width: 90,
                     child: Center(child: Text("Quantity")),
                   ),
                 ),
@@ -696,8 +808,17 @@ class _SellPageState extends State<SellPage> {
                 DataColumn(
                   numeric: true,
                   label: SizedBox(
-                    width: 120,
+                    width: 110,
                     child: Center(child: Text("Price")),
+                  ),
+                ),
+
+                // DISCOUNT PRICE HEADER
+                DataColumn(
+                  numeric: true,
+                  label: SizedBox(
+                    width: 130,
+                    child: Center(child: Text("Discount Price")),
                   ),
                 ),
 
@@ -708,7 +829,7 @@ class _SellPageState extends State<SellPage> {
                     child: Center(
                       child: Text(
                         'Action',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -746,7 +867,28 @@ class _SellPageState extends State<SellPage> {
                         child: Align(
                           alignment: Alignment.centerRight,
                           child: Text(
-                            "${NumberFormat('#,##0').format(item.price)}",
+                            item.price == null
+                                ? "-"
+                                : NumberFormat(
+                                    '#,##0',
+                                  ).format(item.price),
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    DataCell(
+                      SizedBox(
+                        width: 120,
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            item.discountPrice == null
+                                ? "-"
+                                : NumberFormat(
+                                    '#,##0',
+                                  ).format(item.discountPrice),
                             textAlign: TextAlign.right,
                           ),
                         ),
@@ -817,12 +959,11 @@ class _SellPageState extends State<SellPage> {
                     child: Column(
                       children: [
                         /// TITLE
-                        /// TITLE
                         Center(
                           child: Column(
                             children: [
                               Text(
-                                widget.productCode != null
+                                widget.productId != null
                                     ? "Edit Your Listing"
                                     : "Create Your Listing",
                                 style: const TextStyle(
@@ -882,7 +1023,7 @@ class _SellPageState extends State<SellPage> {
     );
   }
 
-  // LEFT SIDE 
+  // LEFT SIDE
   Widget _leftSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1392,6 +1533,25 @@ class _SellPageState extends State<SellPage> {
 
             const SizedBox(height: 10),
 
+            /// CONDITION
+            const Text(
+              "Condition",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
+            ),
+
+            const SizedBox(height: 6),
+
+            TextField(
+              controller: conditionController,
+              decoration: _input("Enter condition (e.g., New, Used, Like New)"),
+            ),
+
+            const SizedBox(height: 10),
+
             /// LOCATION
             const Text(
               "Location",
@@ -1412,47 +1572,151 @@ class _SellPageState extends State<SellPage> {
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 4),
+
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Transform.translate(
+                  offset: const Offset(-8, 0),
+                  child: Checkbox(
+                    value: isActive,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: const VisualDensity(
+                      horizontal: -2,
+                      vertical: -4,
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        isActive = value ?? false;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 0),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      isActive = !isActive;
+                    });
+                  },
+                  child: const Text(
+                    "Active",
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ],
     );
   }
 
-  /// RIGHT SIDE 
+  /// RIGHT SIDE
   Widget _rightSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
+        // PRICE + DISCOUNT PRICE
+        Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Price",
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
+            // PRICE
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Price",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  TextField(
+                    controller: priceController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: _input(
+                      "Enter Price",
+                      errorText: priceError,
+                      suffixText: "Ks",
+                    ),
+                  ),
+                ],
               ),
             ),
 
-            const SizedBox(height: 6),
+            const SizedBox(width: 15),
 
-            TextField(
-              controller: priceController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: _input(
-                "Enter Price",
-                errorText: priceError,
-                suffixText: "Ks",
+            // DISCOUNT PRICE
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Discount Price",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  TextField(
+                    controller: discountPriceController,
+                    enabled: enableDiscountPrice,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: _input(
+                      "Enter Discount Price",
+                      suffixText: "Ks",
+                    ),
+                  ),
+
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: enableDiscountPrice == true,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        onChanged: (value) {
+                          setState(() {
+                            enableDiscountPrice = value == true;
+
+                            if (!enableDiscountPrice) {
+                              discountPriceController.clear();
+                            }
+                          });
+                        },
+                      ),
+
+                      const Text(
+                        "Discount Item",
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
         ),
 
         const SizedBox(height: 10),
-
         const Text(
           "SKU",
           style: TextStyle(
@@ -2053,26 +2317,35 @@ class _SellPageState extends State<SellPage> {
                       });
                       return;
                     }
+                    final double? discountPrice =
+                        enableDiscountPrice &&
+                            discountPriceController.text.trim().isNotEmpty
+                        ? double.tryParse(discountPriceController.text.trim())
+                        : null;
 
                     setState(() {
                       isSubmitting = true;
                     });
 
                     ProductApiResponse? apiResponse;
-                    bool success = false;
+                    bool requestSuccess = false;
+
                     try {
-                      if (widget.productCode != null) {
-                        success = await productService.updateProduct(
-                          productCode: widget.productCode!,
+                      if (widget.productId != null) {
+                        // UPDATE
+                        apiResponse = await productService.updateProduct(
+                          productId: _productId!,
+                          productCode: _productCode!,
                           productName: titleController.text.trim(),
                           description: descriptionController.text.trim(),
                           location: locationController.text.trim(),
                           price:
                               double.tryParse(priceController.text.trim()) ?? 0,
+                          discountPrice: discountPrice,
                           quantity:
                               int.tryParse(qtyController.text.trim()) ?? 0,
-                          condition: 'New',
-                          status: 'Active',
+                          condition: conditionController.text.trim(),
+                          status: isActive ? 'Active' : 'Inactive',
                           businessContactGroupId: 1,
                           categoryIds: selectedCategoryIds,
                           variants: variants,
@@ -2113,7 +2386,10 @@ class _SellPageState extends State<SellPage> {
                               },
                           ],
                         );
+
+                        requestSuccess = apiResponse.success;
                       } else {
+                        // CREATE
                         apiResponse = await productService.createProduct(
                           productCode:
                               'ELE-${DateTime.now().millisecondsSinceEpoch}',
@@ -2122,16 +2398,16 @@ class _SellPageState extends State<SellPage> {
                           location: locationController.text.trim(),
                           price:
                               double.tryParse(priceController.text.trim()) ?? 0,
+                          discountPrice: discountPrice,
                           quantity:
                               int.tryParse(qtyController.text.trim()) ?? 0,
-                          condition: 'New',
-                          status: 'Active',
+                          condition: conditionController.text.trim(),
+                          status: isActive ? 'Active' : 'Inactive',
                           businessContactGroupId: 1,
                           categoryIds: selectedCategoryIds,
                           variants: variants,
                           images: [],
-
-                          // Contacts
+                          imageBytes: images,
                           businessContacts: [
                             if (telegramVisible &&
                                 telegramController.text.trim().isNotEmpty)
@@ -2168,9 +2444,13 @@ class _SellPageState extends State<SellPage> {
                               },
                           ],
                         );
+
+                        requestSuccess = apiResponse?.success == true;
                       }
                     } catch (e) {
                       debugPrint("Submit error: $e");
+
+                      requestSuccess = false;
 
                       apiResponse = ProductApiResponse(
                         success: false,
@@ -2200,7 +2480,7 @@ class _SellPageState extends State<SellPage> {
                             ],
                           ),
                           content: Text(
-                            widget.productCode != null
+                            widget.productId != null
                                 ? "Product updated successfully."
                                 : "Product created successfully.",
                           ),
@@ -2217,6 +2497,7 @@ class _SellPageState extends State<SellPage> {
 
                       titleController.clear();
                       descriptionController.clear();
+                      conditionController.clear();
                       priceController.clear();
                       skuController.clear();
                       qtyController.clear();
@@ -2244,7 +2525,7 @@ class _SellPageState extends State<SellPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  widget.productCode != null
+                  widget.productId != null
                       ? "UPDATE YOUR LISTING"
                       : "POST YOUR LISTING",
                   textAlign: TextAlign.center,

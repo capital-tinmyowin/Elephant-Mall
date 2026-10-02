@@ -16,6 +16,7 @@ class _NewInPageState extends State<NewInPage> {
   String selectedCategory = "All Categories";
   String selectedPrice = "All Prices";
   String selectedSort = "Newest";
+  
 
   final NewInService _newInService = NewInService();
 
@@ -114,9 +115,10 @@ class _NewInPageState extends State<NewInPage> {
       result.sort((a, b) => a.price.compareTo(b.price));
     } else if (selectedSort == "Price: High to Low") {
       result.sort((a, b) => b.price.compareTo(a.price));
-    } else if (selectedSort == "Rating") {
-      result.sort((a, b) => b.rating.compareTo(a.rating));
-    }
+    } 
+    // else if (selectedSort == "Rating") {
+    //   result.sort((a, b) => b.rating.compareTo(a.rating));
+    // }
 
     return result;
   }
@@ -239,12 +241,12 @@ class _NewInPageState extends State<NewInPage> {
 
   Widget _buildHeroBanner(bool mobileView) {
     return Container(
-      height: mobileView ? 150 : 200,
+      height: mobileView ? 150 : 250,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         image: const DecorationImage(
-          image: AssetImage("assets/newarrbanner.jpg"),
+          image: AssetImage("assets/newarrival2.png"),
           fit: BoxFit.cover,
         ),
       ),
@@ -256,32 +258,32 @@ class _NewInPageState extends State<NewInPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              "NEW IN THIS WEEK",
-              style: TextStyle(
-                color: const Color(0xff3D2116),
-                fontSize: mobileView ? 24 : 32,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
+            // Text(
+            //   "NEW IN THIS WEEK",
+            //   style: TextStyle(
+            //     color: const Color(0xff3D2116),
+            //     fontSize: mobileView ? 24 : 32,
+            //     fontWeight: FontWeight.w800,
+            //   ),
+            // ),
 
             const SizedBox(height: 3),
 
-            Text(
-              "Fresh arrivals, handpicked for you.",
-              style: TextStyle(
-                color: const Color(0xff4A3328),
-                fontSize: mobileView ? 11 : 13,
-              ),
-            ),
+            // Text(
+            //   "Fresh arrivals, handpicked for you.",
+            //   style: TextStyle(
+            //     color: const Color(0xff4A3328),
+            //     fontSize: mobileView ? 11 : 13,
+            //   ),
+            // ),
 
-            Text(
-              "Stay ahead of the trends in Yangon.",
-              style: TextStyle(
-                color: const Color(0xff4A3328),
-                fontSize: mobileView ? 11 : 13,
-              ),
-            ),
+            // Text(
+            //   "Stay ahead of the trends in Yangon.",
+            //   style: TextStyle(
+            //     color: const Color(0xff4A3328),
+            //     fontSize: mobileView ? 11 : 13,
+            //   ),
+            // ),
 
             const SizedBox(height: 10),
 
@@ -485,17 +487,17 @@ class _NewInPageState extends State<NewInPage> {
   // PRODUCT GRID
 
   Widget _buildProductGrid(List<NewInModel> products, bool mobileView) {
-    if (products.isEmpty) {
-      return const SizedBox(
-        height: 200,
-        child: Center(
-          child: Text(
-            "No products found.",
-            style: TextStyle(color: Colors.grey),
-          ),
-        ),
-      );
-    }
+    // if (products.isEmpty) {
+    //   return const SizedBox(
+    //     height: 200,
+    //     child: Center(
+    //       child: Text(
+    //         "No products found.",
+    //         style: TextStyle(color: Colors.grey),
+    //       ),
+    //     ),
+    //   );
+    // }
 
     return GridView.builder(
       shrinkWrap: true,
@@ -535,8 +537,8 @@ class _NewInPageState extends State<NewInPage> {
                     padding: const EdgeInsets.all(8),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(5),
-                      child: Image.asset(
-                        product.imagePath,
+                      child: Image.network(
+                        product.imageUrl,
                         fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
@@ -556,29 +558,29 @@ class _NewInPageState extends State<NewInPage> {
                 ),
 
                 // NEW BADGE
-                if (product.isNew)
-                  Positioned(
-                    top: 5,
-                    left: 5,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xff087A24),
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                      child: const Text(
-                        "NEW",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
+                // if (product.isNew)
+                //   Positioned(
+                //     top: 5,
+                //     left: 5,
+                //     child: Container(
+                //       padding: const EdgeInsets.symmetric(
+                //         horizontal: 7,
+                //         vertical: 3,
+                //       ),
+                //       decoration: BoxDecoration(
+                //         color: const Color(0xff087A24),
+                //         borderRadius: BorderRadius.circular(5),
+                //       ),
+                //       child: const Text(
+                //         "NEW",
+                //         style: TextStyle(
+                //           color: Colors.white,
+                //           fontSize: 9,
+                //           fontWeight: FontWeight.bold,
+                //         ),
+                //       ),
+                //     ),
+                //   ),
 
                 // FAVORITE
                 Positioned(
@@ -632,6 +634,7 @@ class _NewInPageState extends State<NewInPage> {
           // RATING
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 7),
+
             // child: Row(
             //   children: [
             //     ...List.generate(5, (index) {
@@ -652,7 +655,6 @@ class _NewInPageState extends State<NewInPage> {
             //     ),
             //   ],
             // ),
-         
           ),
 
           const Spacer(),

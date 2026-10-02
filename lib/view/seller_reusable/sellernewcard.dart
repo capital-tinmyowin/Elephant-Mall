@@ -215,7 +215,7 @@ class _SellerItemWidgetState extends State<SellerItemWidget> {
                         context,
                         MaterialPageRoute(
                           builder: (context) =>
-                              SellPage(productCode: productCodetest),
+                              SellPage(productId: 68),
                         ),
                       );
                     },

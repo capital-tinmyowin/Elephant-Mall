@@ -1,34 +1,60 @@
 class NewInModel {
-  final int productCode;
+  final int productId;
   final String productName;
+
   final String category;
-  final double price;
   final double rating;
   final int reviewCount;
-  final String imagePath;
-  final bool isNew;
+
+  final double price;
+  final String imageUrl;
+  final int favourite;
 
   NewInModel({
-    required this.productCode,
+    required this.productId,
     required this.productName,
     required this.category,
     required this.price,
     required this.rating,
     required this.reviewCount,
-    required this.imagePath,
-    required this.isNew,
+    required this.imageUrl,
+    required this.favourite,
   });
 
   factory NewInModel.fromJson(Map<String, dynamic> json) {
     return NewInModel(
-      productCode: json['productCode'],
-      productName: json['productName'],
-      category: json['category'],
-      price: (json['price'] as num).toDouble(),
-      rating: (json['rating'] as num).toDouble(),
-      reviewCount: json['reviewCount'],
-      imagePath: json['imagePath'],
-      isNew: json['isNew'] ?? false,
+      productId: int.tryParse(
+            json['productId']?.toString() ?? '',
+          ) ??
+          0,
+
+      productName: json['productName']?.toString() ?? '',
+
+      category: json['category']?.toString() ?? '',
+
+      price: double.tryParse(
+            json['price']?.toString() ?? '',
+          ) ??
+          0.0,
+
+      rating: json['rating'] is num
+          ? (json['rating'] as num).toDouble()
+          : double.tryParse(
+                json['rating']?.toString() ?? '',
+              ) ??
+              0.0,
+
+      reviewCount: int.tryParse(
+            json['reviewCount']?.toString() ?? '',
+          ) ??
+          0,
+
+      imageUrl: json['imageUrl']?.toString() ?? '',
+
+      favourite: int.tryParse(
+            json['favourite']?.toString() ?? '',
+          ) ??
+          0,
     );
   }
 }

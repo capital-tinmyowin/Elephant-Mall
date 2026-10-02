@@ -96,6 +96,7 @@ flutter:
     - assets/images/categories/tshirts/ClassicShirt/
     - assets/images/categories/tshirts/ColumnShirt/
     - assets/images/categories/tshirts/OverSize/
+    - assets/images/elephant.png
     - lib/uploads/
     - images/
     - lib/uploads/login.png
