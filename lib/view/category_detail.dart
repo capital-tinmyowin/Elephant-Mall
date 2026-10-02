@@ -1,6 +1,5 @@
 import 'package:elephant_mall/widgets/app_image.dart';
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
@@ -10,9 +9,13 @@ import 'common/header.dart';
 import 'product_detail_page.dart';
 
 class CategoryDetailPage extends StatefulWidget {
+  final int categoryId;
   final String categoryName;
-
-  const CategoryDetailPage({super.key, required this.categoryName});
+  const CategoryDetailPage({
+    super.key,
+    required this.categoryId,
+    required this.categoryName,
+  });
 
   @override
   State<CategoryDetailPage> createState() => _CategoryDetailPageState();
@@ -56,7 +59,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
     super.initState();
     _apiService = ApiService();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _apiService.loadProductsByCategory(widget.categoryName);
+      _apiService.loadProductsByCategory(widget.categoryId);
     });
   }
 
@@ -98,158 +101,158 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
 
   // ============= CATEGORY HEADER =============
   Widget _buildCategoryHeader(bool isMobile) {
-  return Consumer<ApiService>(
-    builder: (context, productController, child) {
-      final expandedProducts = productController
-          .getProductsWithColorVariations(productController.products);
-      final productCount = expandedProducts.length;
+    return Consumer<ApiService>(
+      builder: (context, productController, child) {
+        final expandedProducts = productController
+            .getProductsWithColorVariations(productController.products);
+        final productCount = expandedProducts.length;
 
-      return Container(
-        width: double.infinity,
-        margin: EdgeInsets.symmetric(
-          horizontal: isMobile
-              ? 16
-              : MediaQuery.of(context).size.width * 0.07,
-          vertical: 16,
-        ),
-        padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 16 : 4,
-          vertical: isMobile ? 12 : 2,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          border: Border(
-            bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+        return Container(
+          width: double.infinity,
+          margin: EdgeInsets.symmetric(
+            horizontal: isMobile
+                ? 16
+                : MediaQuery.of(context).size.width * 0.07,
+            vertical: 16,
           ),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: isMobile
-            ? Row(
-                children: [
-                  // Category Info (left side)
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.categoryName,
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                          maxLines: 1,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${productCount} items',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  //  Filter & Sort Button (right side)
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _isFilterOpen = !_isFilterOpen;
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.grey[300]!),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+          padding: EdgeInsets.symmetric(
+            horizontal: isMobile ? 16 : 4,
+            vertical: isMobile ? 12 : 2,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            border: Border(
+              bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+            ),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: isMobile
+              ? Row(
+                  children: [
+                    // Category Info (left side)
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.filter_list,
-                            size: 18,
-                            color: Colors.grey[700],
+                          Text(
+                            widget.categoryName,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                            maxLines: 1,
                           ),
-                          const SizedBox(width: 6),
-                          const Text(
-                            'Filter & Sort',
+                          const SizedBox(height: 2),
+                          Text(
+                            '${productCount} items',
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black87,
+                              color: Colors.grey[600],
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                ],
-              )
-            : Row(
-                children: [
-                  // Category Icon
-                  Container(
-                    width: 70,
-                    height: 70,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2B6E3B).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(35),
-                    ),
-                    child: Center(
-                      child: _getCategoryIconWidget(
-                        widget.categoryName,
-                        size: 36,
+                    //  Filter & Sort Button (right side)
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isFilterOpen = !_isFilterOpen;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.filter_list,
+                              size: 18,
+                              color: Colors.grey[700],
+                            ),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'Filter & Sort',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  // Category Info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
+                  ],
+                )
+              : Row(
+                  children: [
+                    // Category Icon
+                    Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2B6E3B).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(35),
+                      ),
+                      child: Center(
+                        child: _getCategoryIconWidget(
                           widget.categoryName,
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF2B6E3B),
-                          ),
-                          maxLines: 1,
+                          size: 36,
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _getCategoryDescription(widget.categoryName),
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[700],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Category Info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.categoryName,
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF2B6E3B),
+                            ),
+                            maxLines: 1,
                           ),
-                          maxLines: 2,
-                        ),
-                      ],
+                          const SizedBox(height: 2),
+                          Text(
+                            _getCategoryDescription(widget.categoryName),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[700],
+                            ),
+                            maxLines: 2,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Image.asset(
-                      'assets/images/heroslider/category_detail_header.png',
-                      height: 130,
-                      width: 500,
-                      fit: BoxFit.cover,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.asset(
+                        'assets/images/heroslider/category_detail_header.png',
+                        height: 130,
+                        width: 500,
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-      );
-    },
-  );
-}
+                  ],
+                ),
+        );
+      },
+    );
+  }
 
   Widget _getCategoryIconWidget(
     String category, {
@@ -342,34 +345,36 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
             children: [
               // Category chips list
               ...[
-                'T-Shirts',
-                'Blouses',
-                'Bags',
-                'Hats',
-                'Shoes',
-                'Jeans',
-                'Accessories',
-                'Electronics',
-                'Headphones',
-                'Power Banks',
-                'Clearance',
-                'Home Decor',
-                'Appliances',
-              ].map((category) {
-                final isSelected = widget.categoryName == category;
+                {'id': 1, 'name': 'T-Shirts'},
+                {'id': 2, 'name': 'Blouses'},
+                {'id': 3, 'name': 'Bags'},
+                {'id': 4, 'name': 'Hats'},
+                {'id': 5, 'name': 'Shoes'},
+                {'id': 6, 'name': 'Jeans'},
+                {'id': 7, 'name': 'Accessories'},
+                {'id': 8, 'name': 'Electronics'},
+                {'id': 9, 'name': 'Headphones'},
+                {'id': 10, 'name': 'Power Banks'},
+                {'id': 11, 'name': 'Clearance'},
+                {'id': 12, 'name': 'Home Decor'},
+                {'id': 13, 'name': 'Appliances'},
+              ].map((cat) {
+                final isSelected = widget.categoryId == cat['id'];
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
                     // avatarBorder: CircleBorder(eccentricity: 0.9),
-                    label: Text(category),
+                    label: Text(cat['name'] as String),
                     selected: isSelected,
                     onSelected: (selected) {
                       if (selected) {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) =>
-                                CategoryDetailPage(categoryName: category),
+                            builder: (context) => CategoryDetailPage(
+                              categoryId: cat['id'] as int,
+                              categoryName: cat['name'] as String,
+                            ),
                           ),
                         );
                       }
@@ -434,19 +439,19 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          _buildCategoryItem('T-Shirts', 12),
-          _buildCategoryItem('Blouses', 4),
-          _buildCategoryItem('Bags', 6),
-          _buildCategoryItem('Hats', 6),
-          _buildCategoryItem('Shoes', 8),
-          _buildCategoryItem('Jeans', 12),
-          _buildCategoryItem('Accessories', 15),
-          _buildCategoryItem('Electronics', 4),
-          _buildCategoryItem('Headphones', 5),
-          _buildCategoryItem('Power Banks', 4),
-          _buildCategoryItem('Clearance', 2),
-          _buildCategoryItem('Home Decor', 5),
-          _buildCategoryItem('Appliances', 5),
+          _buildCategoryItem(1, 'T-Shirts', 12),
+          _buildCategoryItem(2, 'Blouses', 4),
+          _buildCategoryItem(3, 'Bags', 6),
+          _buildCategoryItem(4, 'Hats', 6),
+          _buildCategoryItem(5, 'Shoes', 8),
+          _buildCategoryItem(6, 'Jeans', 12),
+          _buildCategoryItem(7, 'Accessories', 15),
+          _buildCategoryItem(8, 'Electronics', 4),
+          _buildCategoryItem(9, 'Headphones', 5),
+          _buildCategoryItem(10, 'Power Banks', 4),
+          _buildCategoryItem(11, 'Clearance', 2),
+          _buildCategoryItem(12, 'Home Decor', 5),
+          _buildCategoryItem(13, 'Appliances', 5),
 
           const Divider(height: 24),
 
@@ -694,6 +699,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
       ],
     );
   }
+
   //  Helper method to get size count (mock data)
   int _getSizeCount(String size) {
     // Mock counts for each size
@@ -734,7 +740,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
     }
   }
 
-  Widget _buildCategoryItem(String name, int count) {
+  Widget _buildCategoryItem(int categoryId, String name, int count) {
     final isSelected = widget.categoryName == name;
     return GestureDetector(
       onTap: () {
@@ -742,7 +748,10 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => CategoryDetailPage(categoryName: name),
+              builder: (context) => CategoryDetailPage(
+                categoryId: categoryId,
+                categoryName: name,
+              ),
             ),
           );
         }
@@ -772,171 +781,171 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
 
   // ============= MOBILE FILTERS =============
   Widget _buildMobileFilters() {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const SizedBox(height: 16),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
 
-      // Mobile Size Filter - Checkbox style
-      const Text(
-        'Size',
-        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-      ),
-      const SizedBox(height: 8),
-      ..._sizeOptions.map((size) {
-        final isSelected = _selectedSize == size;
-        return GestureDetector(
-          onTap: () {
-            setState(() {
-              _selectedSize = isSelected ? 'All' : size;
-            });
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              children: [
-                Container(
-                  width: 18,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.rectangle,
-                    borderRadius: BorderRadius.circular(3),
-                    border: Border.all(
-                      color: isSelected
-                          ? const Color(0xFF2B6E3B)
-                          : Colors.grey[400]!,
-                      width: 2,
-                    ),
-                    color: isSelected
-                        ? const Color(0xFF2B6E3B)
-                        : Colors.transparent,
-                  ),
-                  child: isSelected
-                      ? const Icon(Icons.check, size: 14, color: Colors.white)
-                      : null,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    size,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: isSelected
-                          ? const Color(0xFF2B6E3B)
-                          : Colors.black87,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                    ),
-                  ),
-                ),
-                if (size != 'All')
-                  Text(
-                    '(${_getSizeCount(size)})',
-                    style: TextStyle(fontSize: 13, color: Colors.grey[500]),
-                  ),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
-
-      const SizedBox(height: 16),
-
-      // Mobile Color Filter - Color circles (like desktop)
-      const Text(
-        'Color',
-        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-      ),
-      const SizedBox(height: 8),
-      Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: _colorOptions.map((color) {
-          final isSelected = _selectedColor == color;
+        // Mobile Size Filter - Checkbox style
+        const Text(
+          'Size',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        ..._sizeOptions.map((size) {
+          final isSelected = _selectedSize == size;
           return GestureDetector(
             onTap: () {
               setState(() {
-                _selectedColor = color;
+                _selectedSize = isSelected ? 'All' : size;
               });
             },
-            child: Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _getColorValue(color),
-                border: Border.all(
-                  color: isSelected
-                      ? const Color(0xFF2B6E3B)
-                      : Colors.grey[300]!,
-                  width: isSelected ? 3 : 1,
-                ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: const Color(0xFF2B6E3B).withOpacity(0.3),
-                          blurRadius: 4,
-                        ),
-                      ]
-                    : null,
-              ),
-              child: color == 'All'
-                  ? Center(
-                      child: Text(
-                        'A',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey[600],
-                        ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Container(
+                    width: 18,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.rectangle,
+                      borderRadius: BorderRadius.circular(3),
+                      border: Border.all(
+                        color: isSelected
+                            ? const Color(0xFF2B6E3B)
+                            : Colors.grey[400]!,
+                        width: 2,
                       ),
-                    )
-                  : null,
+                      color: isSelected
+                          ? const Color(0xFF2B6E3B)
+                          : Colors.transparent,
+                    ),
+                    child: isSelected
+                        ? const Icon(Icons.check, size: 14, color: Colors.white)
+                        : null,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      size,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isSelected
+                            ? const Color(0xFF2B6E3B)
+                            : Colors.black87,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                  if (size != 'All')
+                    Text(
+                      '(${_getSizeCount(size)})',
+                      style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                    ),
+                ],
+              ),
             ),
           );
         }).toList(),
-      ),
-      const SizedBox(height: 16),
 
-      // Price Range
-      const Text(
-        'Price Range',
-        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-      ),
-      RangeSlider(
-        values: _priceRange,
-        min: 10,
-        max: 200,
-        divisions: 20,
-        activeColor: const Color(0xFF2B6E3B),
-        inactiveColor: Colors.grey[300],
-        labels: RangeLabels(
-          '\$${_priceRange.start.toStringAsFixed(0)}',
-          '\$${_priceRange.end.toStringAsFixed(0)}',
+        const SizedBox(height: 16),
+
+        // Mobile Color Filter - Color circles (like desktop)
+        const Text(
+          'Color',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
-        onChanged: (values) {
-          setState(() {
-            _priceRange = values;
-          });
-        },
-      ),
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _colorOptions.map((color) {
+            final isSelected = _selectedColor == color;
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedColor = color;
+                });
+              },
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _getColorValue(color),
+                  border: Border.all(
+                    color: isSelected
+                        ? const Color(0xFF2B6E3B)
+                        : Colors.grey[300]!,
+                    width: isSelected ? 3 : 1,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFF2B6E3B).withOpacity(0.3),
+                            blurRadius: 4,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: color == 'All'
+                    ? Center(
+                        child: Text(
+                          'A',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      )
+                    : null,
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 16),
+
+        // Price Range
+        const Text(
+          'Price Range',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+        RangeSlider(
+          values: _priceRange,
+          min: 10,
+          max: 200,
+          divisions: 20,
+          activeColor: const Color(0xFF2B6E3B),
+          inactiveColor: Colors.grey[300],
+          labels: RangeLabels(
             '\$${_priceRange.start.toStringAsFixed(0)}',
-            style: TextStyle(color: Colors.grey[600]),
-          ),
-          Text(
             '\$${_priceRange.end.toStringAsFixed(0)}',
-            style: TextStyle(color: Colors.grey[600]),
           ),
-        ],
-      ),
-    ],
-  );
-}
+          onChanged: (values) {
+            setState(() {
+              _priceRange = values;
+            });
+          },
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '\$${_priceRange.start.toStringAsFixed(0)}',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            Text(
+              '\$${_priceRange.end.toStringAsFixed(0)}',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
   // ============= SORT BAR =============
   Widget _buildSortBar() {
@@ -1039,6 +1048,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
       ),
     );
   }
+
   // ============= PRODUCT GRID =============
   Widget _buildProductGrid() {
     return Consumer<ApiService>(
@@ -1051,6 +1061,10 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
             ),
           );
         }
+
+        // final allProducts = productController.loadProductsByCategory(
+        //   productController.products,
+        // );
 
         final allProducts = productController.getProductsWithColorVariations(
           productController.products,
@@ -1124,7 +1138,8 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductDetailPage(productId: product.productCode),
+            builder: (context) =>
+                ProductDetailPage(productId: product.productId),
           ),
         );
       },
@@ -1171,7 +1186,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                     ),
                   ),
                   // Discount Badge
-                  if (product.productCode % 2 == 0)
+                  if (product.productId % 2 == 0)
                     Positioned(
                       top: 8,
                       left: 8,
@@ -1185,7 +1200,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          '${((product.productCode % 3) + 1) * 5}% OFF',
+                          '${((product.productId % 3) + 1) * 5}% OFF',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
@@ -1226,7 +1241,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        if (product.productCode % 2 == 0)
+                        if (product.productId % 2 == 0)
                           Text(
                             '\$${(product.price * 1.15).toStringAsFixed(2)}',
                             style: TextStyle(
@@ -1237,56 +1252,21 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                           ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.star,
-                          color: const Color(0xFFFFD700),
-                          size: isMobile ? 14 : 16,
-                        ),
-                        Icon(
-                          Icons.star,
-                          color: const Color(0xFFFFD700),
-                          size: isMobile ? 14 : 16,
-                        ),
-                        Icon(
-                          Icons.star,
-                          color: const Color(0xFFFFD700),
-                          size: isMobile ? 14 : 16,
-                        ),
-                        Icon(
-                          Icons.star,
-                          color: const Color(0xFFFFD700),
-                          size: isMobile ? 14 : 16,
-                        ),
-                        Icon(
-                          Icons.star,
-                          color: const Color(0xFFFFD700),
-                          size: isMobile ? 14 : 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '(${product.ratingCount})',
-                          style: TextStyle(
-                            fontSize: isMobile ? 11 : 12,
-                            color: Colors.grey[500],
-                          ),
-                        ),
-                      ],
-                    ),
                     const SizedBox(height: 8),
                     SizedBox(
                       width: isMobile ? 100 : 120,
                       child: ElevatedButton(
                         onPressed: () {
+                          print("Clicked Detail");
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  ProductDetailPage(productId: product.productCode),
+                              builder: (context) => ProductDetailPage(
+                                productId: product.productId,
+                              ),
                             ),
                           );
+                          print(product.productId);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.grey[100],
@@ -1321,6 +1301,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
       ),
     );
   }
+
   // ============= PRODUCT CARD =============
   Widget _buildProductCard(Product product, bool isMobile) {
     return GestureDetector(
@@ -1328,7 +1309,8 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductDetailPage(productId: product.productCode),
+            builder: (context) =>
+                ProductDetailPage(productId: product.productId),
           ),
         );
       },
@@ -1365,7 +1347,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                     ),
                   ),
                   // Discount Badge
-                  if (product.productCode % 2 == 0)
+                  if (product.productId % 2 == 0)
                     Positioned(
                       top: 8,
                       left: 8,
@@ -1379,7 +1361,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          '${((product.productCode % 3) + 1) * 5}% OFF',
+                          '${((product.productId % 3) + 1) * 5}% OFF',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
@@ -1441,7 +1423,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      if (product.productCode % 2 == 0)
+                      if (product.productId % 2 == 0)
                         Text(
                           '\$${(product.price * 1.15).toStringAsFixed(2)}',
                           style: TextStyle(
@@ -1452,66 +1434,23 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.star,
-                        color: const Color(0xFFFFD700),
-                        size: isMobile ? 12 : 14,
-                      ),
-                      Icon(
-                        Icons.star,
-                        color: const Color(0xFFFFD700),
-                        size: isMobile ? 12 : 14,
-                      ),
-                      Icon(
-                        Icons.star,
-                        color: const Color(0xFFFFD700),
-                        size: isMobile ? 12 : 14,
-                      ),
-                      Icon(
-                        Icons.star,
-                        color: const Color(0xFFFFD700),
-                        size: isMobile ? 12 : 14,
-                      ),
-                      Icon(
-                        Icons.star,
-                        color: const Color(0xFFFFD700),
-                        size: isMobile ? 12 : 14,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '(${product.ratingCount})',
-                        style: TextStyle(
-                          fontSize: isMobile ? 10 : 11,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ],
-                  ),
+
                   const SizedBox(height: 6),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        // ScaffoldMessenger.of(context).showSnackBar(
-                        //   SnackBar(
-                        //     content: Text('${product.name} added to cart!'),
-                        //     duration: const Duration(seconds: 1),
-                        //   ),
-                        // );
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) =>
-                                ProductDetailPage(productId: product.productCode),
+                                ProductDetailPage(productId: product.productId),
                           ),
                         );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey[100],
-                    foregroundColor: const Color(0xFF2B6E3B),
+                        foregroundColor: const Color(0xFF2B6E3B),
                         padding: EdgeInsets.symmetric(
                           vertical: isMobile ? 10 : 15,
                         ),

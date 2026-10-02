@@ -23,10 +23,10 @@ class AppImage extends StatelessWidget {
       return _buildErrorWidget();
     }
 
-    // 🔥 For Pinterest images, force proxy
+    // For Pinterest images, force proxy
      bool isAlreadyProxied = imageUrl.contains('/image/proxy');
     
-    // 🔥 If it's a Pinterest image and NOT already proxied, add proxy
+    // If it's a Pinterest image and NOT already proxied, add proxy
     String finalUrl = imageUrl;
     if (!isAlreadyProxied && 
         (imageUrl.contains('pinimg.com') || imageUrl.contains('pinterest'))) {
@@ -34,7 +34,6 @@ class AppImage extends StatelessWidget {
       finalUrl = imageUrl;
     }
 
-    print('🖼️ AppImage loading: $finalUrl');
 
     if (finalUrl.startsWith('http://') || finalUrl.startsWith('https://')) {
       return _buildNetworkImage(finalUrl);
@@ -71,7 +70,6 @@ class AppImage extends StatelessWidget {
         fit: fit ?? BoxFit.cover,
         placeholder: (context, url) => _buildPlaceholder(),
         errorWidget: (context, url, error) {
-          print('❌ Image error for URL: $url');
           return _buildErrorWidget();
         },
         httpHeaders: {

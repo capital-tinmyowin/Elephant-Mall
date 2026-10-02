@@ -1,4 +1,5 @@
 
+import 'package:elephant_mall/models/product_variant.dart';
 import 'package:elephant_mall/services/Category_service.dart';
 
 import '../models/Category.dart';
@@ -179,13 +180,14 @@ class MockApiService {
   static List<Product> getMockProducts() {
     return [
       Product(
-      productCode: 1,
+      productId: 1,
+      productCode: "PRD1000001",
       productName: "Classic T-Shirt",
       price: 19.99,
       category: "T-Shirts",
       image: "https://i.pinimg.com/736x/ff/55/b5/ff55b572cdc9e5c7bcb9e1e46aca153b.jpg",
-      rating: 4.7,
-      ratingCount: 234,
+      // rating: 4.7,
+      // ratingCount: 234,
       seller: Seller(
           id: 1,
           name: "Sarah J.",
@@ -199,16 +201,55 @@ class MockApiService {
         "https://i.pinimg.com/736x/bd/a0/ca/bda0ca23a55ffd326145a2dbb8e139f4.jpg",
         "https://i.pinimg.com/1200x/51/6e/ab/516eab223c22a36d1051ba9bc46f5695.jpg",
       ],
+      variants: [
+        ProductVariant(
+          variantId: "abc-1111-001",
+          variantName: "Black",
+          price: 19.99,
+          quantity: 10,
+        ),
+        ProductVariant(
+          variantId: "abc-1111-002",
+          variantName: "White",
+          price: 19.99,
+          quantity: 15,
+        ),
+        ProductVariant(
+          variantId: "abc-1111-003",
+          variantName: "Cream",
+          price: 19.99,
+          quantity: 8,
+        ),
+        ProductVariant(
+          variantId: "abc-1111-004",
+          variantName: "Blue",
+          price: 19.99,
+          quantity: 12,
+        ),
+        ProductVariant(
+          variantId: "abc-1111-005",
+          variantName: "Pink",
+          price: 19.99,
+          quantity: 5,
+        ),
+        ProductVariant(
+          variantId: "abc-1111-006",
+          variantName: "Sky Blue",
+          price: 19.99,
+          quantity: 7,
+        ),
+      ],
       colors: ['black', 'white', 'cream', 'blue', 'pink','skyblue'],
     ),
     Product(
-      productCode: 2,
+      productId: 2,
+      productCode: "PRD2000001",
       productName: "OverSize T-Shirt",
       price: 19.99,
       category: "T-Shirts",
       image: "https://i.pinimg.com/1200x/7b/9b/64/7b9b64157c65859e958063af2284b620.jpg",
-      rating: 4.8,
-      ratingCount: 189,
+      // rating: 4.8,
+      // ratingCount: 189,
       seller: Seller(
           id: 1,
           name: "Sarah J.",
@@ -225,13 +266,14 @@ class MockApiService {
       colors: ['white', 'black', 'brown'],
     ),
     Product(
-      productCode: 3,
+      productId: 3,
+      productCode: "PRD3000001",
       productName: "Column T-Shirt",
       price: 19.99,
       category: "T-Shirts",
       image: "https://i.pinimg.com/1200x/2d/7b/21/2d7b21a072cd538589f63358fbd35520.jpg",
-      rating: 4.6,
-      ratingCount: 145,
+      // rating: 4.6,
+      // ratingCount: 145,
       seller: Seller(
           id: 1,
           name: "Sarah J.",
@@ -248,13 +290,14 @@ class MockApiService {
       colors: ['white','black','blue'],
     ),
     Product(
-      productCode: 4,
+      productId: 4,
+      productCode: "PRD4000001",
       productName: "White Blouse",
       price: 39.99,
       category: "Blouses",
       image: "https://i.pinimg.com/1200x/bd/6c/f9/bd6cf9e39bb3ea86086bb1f89c789ee6.jpg",
-      rating: 4.9,
-      ratingCount: 234,
+      // rating: 4.9,
+      // ratingCount: 234,
       seller: Seller(
           id: 1,
           name: "Sarah J.",
@@ -270,13 +313,14 @@ class MockApiService {
       colors: ['white','flower']
     ),
     Product(
-      productCode: 5,
+      productId: 5,
+      productCode: "PRD5000001",
       productName: "Color Blouse",
       price: 39.99,
       category: "Blouses",
       image: "https://i.pinimg.com/736x/14/3f/4a/143f4ab55d79b2b53a9c6a342153bbbf.jpg",
-      rating: 4.9,
-      ratingCount: 178,
+      // rating: 4.9,
+      // ratingCount: 178,
       seller: Seller(
           id: 1,
           name: "Sarah J.",
@@ -292,13 +336,14 @@ class MockApiService {
       colors: ['pink','red']
     ),
     Product(
-      productCode: 6,
+      productId: 6,
+      productCode: "PRD6000001",
       productName: "Leather Bag",
       price: 34.99,
       category: "Bags",
       image: "https://i.pinimg.com/1200x/f2/df/79/f2df7979c3e9fd8bfdf6b51aa9aca09e.jpg",
-      rating: 4.9,
-      ratingCount: 456,
+      // rating: 4.9,
+      // ratingCount: 456,
       seller: Seller(
           id: 1,
           name: "Sarah J.",
@@ -315,13 +360,14 @@ class MockApiService {
       colors: ['black', 'white', 'green', 'pink'],
     ),
     Product(
-      productCode: 7,
+      productId: 7,
+      productCode: "PRD7000001",
       productName: "Chain Shoulder Bag",
       price: 34.99,
       category: "Bags",
       image: "https://i.pinimg.com/1200x/2b/a4/3c/2ba43c436ea17b8eef0082b9be1bacf1.jpg",
-      rating: 4.8,
-      ratingCount: 78,
+      // rating: 4.8,
+      // ratingCount: 78,
       seller: Seller(
           id: 2,
           name: "Sunny Days",
@@ -336,13 +382,14 @@ class MockApiService {
       colors: ['black','size'],
     ),
     Product(
-      productCode: 8,
+      productId: 8,
+      productCode: "PRD8000001",
       productName: "Wool Fedora Hat",
       price: 24.99,
       category: "Hats",
       image: "https://i.pinimg.com/736x/4e/81/11/4e8111d7aea3eeb01500a1f6ad88cdae.jpg",
-      rating: 4.7,
-      ratingCount: 123,
+      // rating: 4.7,
+      // ratingCount: 123,
       seller: Seller(
           id: 2,
           name: "Sunny Days",
@@ -357,13 +404,14 @@ class MockApiService {
       colors: ['gray','black']
     ),
     Product(
-      productCode: 9,
+      productId: 9,
+      productCode: "PRD9000001",
       productName: "Uniset Hat",
       price: 18.99,
       category: "Hats",
       image: "https://i.pinimg.com/1200x/c1/a4/59/c1a4597079ec099708a6548cde6dd4c3.jpg",
-      rating: 4.6,
-      ratingCount: 89,
+      // rating: 4.6,
+      // ratingCount: 89,
       seller: Seller(
           id: 2,
           name: "Sunny Days",
@@ -380,13 +428,14 @@ class MockApiService {
       colors: ['white','black','pink','red'],
     ),
     Product(
-      productCode: 10,
+      productId: 10,
+      productCode: "PRD1000001",
       productName: "Running Shoes",
       price: 49.99,
       category: "Shoes",
       image: "https://i.pinimg.com/736x/71/4f/a1/714fa1434d9f007388ddf0da7be76873.jpg",
-      rating: 4.8,
-      ratingCount: 567,
+      // rating: 4.8,
+      // ratingCount: 567,
       seller: Seller(
           id: 2,
           name: "Sunny Days",
@@ -403,13 +452,14 @@ class MockApiService {
       colors: ['white','black','blue','gray'],
     ),
     Product(
-      productCode: 11,
+      productId: 11,
+      productCode: "PRD1100001",
       productName: "Wedding Heel",
       price: 79.99,
       category: "Shoes",
       image: "https://i.pinimg.com/1200x/ee/bf/89/eebf8909f870ef5d7170a5289f43489d.jpg",
-      rating: 4.9,
-      ratingCount: 345,
+      // rating: 4.9,
+      // ratingCount: 345,
       seller: Seller(
           id: 3,
           name: "John Doe",
@@ -425,13 +475,14 @@ class MockApiService {
       colors: ['w1','w2','w3'],
     ),
     Product(
-      productCode: 12,
+      productId: 12,
+      productCode: "PRD1200001",
       productName: "Sneaker Shoe",
       price: 49.99,
       category: "Shoes",
       image: "https://i.pinimg.com/1200x/57/62/a6/5762a6c77d9ac297e2cdce5de6287875.jpg",
-      rating: 4.7,
-      ratingCount: 234,
+      // rating: 4.7,
+      // ratingCount: 234,
       seller: Seller(
           id: 3,
           name: "John Doe",
@@ -444,13 +495,14 @@ class MockApiService {
       colors: ['brown'],
     ),
     Product(
-      productCode: 13,
+      productId: 13,
+      productCode: "PRD1300001",
       productName: "Long Jeans",
       price: 59.99,
       category: "Jeans",
       image: "https://i.pinimg.com/1200x/fa/7d/b7/fa7db741cf6848f1c657e56af9bd17e2.jpg",
-      rating: 4.5,
-      ratingCount: 189,
+      // rating: 4.5,
+      // ratingCount: 189,
       seller: Seller(
           id: 3,
           name: "John Doe",
@@ -467,13 +519,14 @@ class MockApiService {
       colors: ['L1','L2','L3','L4'],
     ),
     Product(
-      productCode: 14,
+      productId: 14,
+      productCode: "PRD1400001",
       productName: "Jean Short Skirt",
       price: 64.99,
       category: "Jeans",
       image: "https://i.pinimg.com/736x/df/07/36/df0736a899239fb28bc263b5e8501057.jpg",
-      rating: 4.6,
-      ratingCount: 156,
+      // rating: 4.6,
+      // ratingCount: 156,
       seller: Seller(
           id: 4,
           name: "Emma Style",
@@ -490,13 +543,14 @@ class MockApiService {
       colors: ['S1','S2','S3','S4']
     ),
     Product(
-      productCode: 15,
+      productId: 15,
+      productCode: "PRD1500001",
       productName: "Short Jean",
       price: 64.99,
       category: "Jeans",
       image: "https://i.pinimg.com/736x/ae/bf/3c/aebf3cf06bbf805f760b5584c03afab3.jpg",
-      rating: 4.5,
-      ratingCount: 234,
+      // rating: 4.5,
+      // ratingCount: 234,
       seller: Seller(
           id: 4,
           name: "Emma Style",
@@ -513,13 +567,14 @@ class MockApiService {
       colors: ['stblack','stblue','stbrown','stwhite'],
     ),
       Product(
-        productCode: 16,
+        productId: 16,
+        productCode: "PRD1600001",
         productName: "Neck Accessories",
         price: 29.99,
         category: "Accessories",
         image: "https://i.pinimg.com/1200x/60/d6/8a/60d68a58460c418cffd3f90d682348cc.jpg",
-        rating: 4.3,
-        ratingCount: 123,
+        // rating: 4.3,
+        // ratingCount: 123,
         seller: Seller(
           id: 4,
           name: "Emma Style",
@@ -537,13 +592,14 @@ class MockApiService {
           colors: ['N1','N2','N3','N4','N5'],
       ),
       Product(
-        productCode: 17,
+        productId: 17,
+        productCode: "PRD1700001",
         productName: "Earring Set",
         price: 29.99,
         category: "Accessories",
         image: "https://i.pinimg.com/1200x/a7/ea/42/a7ea4264c4902eeddd377d1aff6a66f1.jpg",
-        rating: 4.5,
-        ratingCount: 234,
+        // rating: 4.5,
+        // ratingCount: 234,
         seller: Seller(
           id: 4,
           name: "Emma Style",
@@ -561,13 +617,14 @@ class MockApiService {
           colors: ['E1','E2','E3','E4','E5'],
       ),
       Product(
-        productCode: 18,
+        productId: 18,
+        productCode: "PRD1800001",
         productName: "Press On Nail",
         price: 29.99,
         category: "Accessories",
         image: "https://i.pinimg.com/1200x/47/8b/93/478b93513e17080d67216f973316acb4.jpg",
-        rating: 4.6,
-        ratingCount: 89,
+        // rating: 4.6,
+        // ratingCount: 89,
         seller: Seller(
           id: 4,
           name: "Emma Style",
@@ -585,13 +642,14 @@ class MockApiService {
           colors: ['N1','N2','N3','N4','N5']
       ),
       Product(
-        productCode: 19,
+        productId: 19,
+        productCode: "PRD1900001",
         productName: "Ipad 10th Gen",
         price: 89.99,
         category: "Electronics",
         image: "https://i5.walmartimages.com/seo/2022-Apple-10-9-inch-iPad-Wi-Fi-64GB-Pink-10th-Generation_4fdae443-4f60-4a3e-9efe-12758bf5f128.f4d7333626b4e6b27e8be25d1f698373.jpeg",
-        rating: 4.7,
-        ratingCount: 892,
+        // rating: 4.7,
+        // ratingCount: 892,
         seller: Seller(
           id: 4,
           name: "Emma Style",
@@ -608,13 +666,14 @@ class MockApiService {
           colors: ['I1','I2','I3','I4']
       ),
       Product(
-        productCode: 20,
+        productId: 20,
+      productCode: "PRD2000001",
         productName: "Earphone",
         price: 29.99,
         category: "Headphones",
         image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTndMcJW71HLgi9ntgoterJiJJjLxbtOVVpyA&s",
-        rating: 4.4,
-        ratingCount: 234,
+        // rating: 4.4,
+        // ratingCount: 234,
         seller: Seller(
           id: 4,
           name: "Emma Style",
@@ -632,13 +691,14 @@ class MockApiService {
           colors: ['Eph1','Eph2','Eph3','Eph4','Eph5']
       ),
       Product(
-        productCode: 21,
+        productId: 21,
+        productCode: "PRD2100001",
         productName: "Powerbank",
         price: 39.99,
         category: "Power Banks",
         image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSnwF3fpDIATeZ_9o5h3vNu_X8KUHSq5O739g&s",
-        rating: 4.5,
-        ratingCount: 342,
+        // rating: 4.5,
+        // ratingCount: 342,
         seller: Seller(
           id: 2,
           name: "Sunny Days",
@@ -655,13 +715,14 @@ class MockApiService {
           colors: ['pb1','pb2','pb3','pb4']
       ),
       Product(
-        productCode: 22,
+        productId: 22,
+        productCode: "PRD2200001",
         productName: "Clearance Item",
         price: 29.99,
         category: "Clearance",
         image: "https://i.pinimg.com/736x/11/ed/ea/11edead26397e78cd63030dda2d4ee10.jpg",
-        rating: 4.0,
-        ratingCount: 56,
+        // rating: 4.0,
+        // ratingCount: 56,
         seller: Seller(
           id: 2,
           name: "Sunny Days",
@@ -673,13 +734,14 @@ class MockApiService {
         colors: ['C1']
       ),
       Product(
-        productCode: 25,
+        productId: 25,
+        productCode: "PRD2500001",
         productName: "Clearance Note Book",
         price: 29.99,
         category: "Clearance",
         image:"https://down-ph.img.susercontent.com/file/4231c5fe7c003aa574a9153de9ea6116",
-        rating: 4.0,
-        ratingCount: 56,
+        // rating: 4.0,
+        // ratingCount: 56,
         seller: Seller(
           id: 2,
           name: "Sunny Days",
@@ -691,13 +753,14 @@ class MockApiService {
         colors: ['C2']
       ),
       Product(
-        productCode: 23,
+        productId: 23,
+        productCode: "PRD2300001",
         productName: "Home Decor",
         price: 29.99,
         category: "Home Decor",
         image: "https://i.pinimg.com/736x/4e/6d/4e/4e6d4eb03c6518de8b527b4bd30eab55.jpg",
-        rating: 4.3,
-        ratingCount: 123,
+        // rating: 4.3,
+        // ratingCount: 123,
         seller: Seller(
           id: 2,
           name: "Sunny Days",
@@ -715,13 +778,14 @@ class MockApiService {
         colors: ['H1','H2','H3','H4','H5']
       ),
       Product(
-        productCode: 24,
+        productId: 24,
+        productCode: "PRD2400001",
         productName: "Appliance",
         price: 29.99,
         category: "Appliances",
         image: "https://i.pinimg.com/736x/73/39/1c/73391c325a95b74a077bbac31a260da4.jpg",
-        rating: 4.1,
-        ratingCount: 78,
+        // rating: 4.1,
+        // ratingCount: 78,
         seller: Seller(
           id: 3,
           name: "John Doe",
@@ -742,11 +806,11 @@ class MockApiService {
   }
 
   static List<Product> getMockProductsByCategory(String category) {
-    if (category == "All" || category == "All Items") {
-      return getMockProducts();
-    }
-    return getMockProducts().where((p) => p.category == category).toList();
-  }
+  final allProducts = getMockProducts();
+  return allProducts
+      .where((p) => p.category == category)
+      .toList();
+}
 
   static Product getMockProductById(int id) {
     return getMockProducts().firstWhere((p) => p.productCode == id);
@@ -774,13 +838,14 @@ class MockApiService {
   static List<Product> getMockTrendingProducts() {
     return [
       Product(
-      productCode: 1,
+      productId: 1,
+      productCode: "PRD1000001",
       productName: "Classic T-Shirt",
       price: 19.99,
       category: "T-Shirts",
       image: "https://i.pinimg.com/736x/ff/55/b5/ff55b572cdc9e5c7bcb9e1e46aca153b.jpg",
-      rating: 4.7,
-      ratingCount: 234,
+      // rating: 4.7,
+      // ratingCount: 234,
       seller: Seller(
           id: 1,
           name: "Sarah J.",
@@ -797,13 +862,14 @@ class MockApiService {
       colors: ['black', 'white', 'cream', 'blue', 'pink','skyblue'],
     ),
       Product(
-      productCode: 4,
+      productId: 4,
+      productCode: "PRD4000001",
       productName: "White Blouse",
       price: 39.99,
       category: "Blouses",
       image: "https://i.pinimg.com/1200x/bd/6c/f9/bd6cf9e39bb3ea86086bb1f89c789ee6.jpg",
-      rating: 4.9,
-      ratingCount: 234,
+      // rating: 4.9,
+      // ratingCount: 234,
       seller: Seller(
           id: 1,
           name: "Sarah J.",
@@ -819,13 +885,14 @@ class MockApiService {
       colors: ['white','flower']
     ),
       Product(
-      productCode: 6,
+      productId: 6,
+      productCode: "PRD6000001",
       productName: "Leather Bag",
       price: 34.99,
       category: "Bags",
       image: "https://i.pinimg.com/1200x/f2/df/79/f2df7979c3e9fd8bfdf6b51aa9aca09e.jpg",
-      rating: 4.9,
-      ratingCount: 456,
+      // rating: 4.9,
+      // ratingCount: 456,
       seller: Seller(
           id: 1,
           name: "Sarah J.",
@@ -842,13 +909,14 @@ class MockApiService {
       colors: ['black', 'white', 'green', 'pink'],
     ),
      Product(
-      productCode: 10,
+      productId: 10,
+      productCode: "PRD1000001",
       productName: "Running Shoes",
       price: 49.99,
       category: "Shoes",
       image: "https://i.pinimg.com/736x/71/4f/a1/714fa1434d9f007388ddf0da7be76873.jpg",
-      rating: 4.8,
-      ratingCount: 567,
+      // rating: 4.8,
+      // ratingCount: 567,
       seller: Seller(
           id: 2,
           name: "Sunny Days",
@@ -865,13 +933,14 @@ class MockApiService {
       colors: ['white','black','blue','gray'],
     ),
       Product(
-      productCode: 13,
+      productId: 13,
+      productCode: "PRD1300001",
       productName: "Long Jeans",
       price: 59.99,
       category: "Jeans",
       image: "https://i.pinimg.com/1200x/fa/7d/b7/fa7db741cf6848f1c657e56af9bd17e2.jpg",
-      rating: 4.5,
-      ratingCount: 189,
+      // rating: 4.5,
+      // ratingCount: 189,
       seller: Seller(
           id: 3,
           name: "John Doe",
@@ -888,13 +957,14 @@ class MockApiService {
       colors: ['L1','L2','L3','L4'],
     ),
       Product(
-        productCode: 19,
+        productId: 19,
+        productCode: "PRD1900001",
         productName: "Ipad 10th Gen",
         price: 89.99,
         category: "Electronics",
         image: "https://i5.walmartimages.com/seo/2022-Apple-10-9-inch-iPad-Wi-Fi-64GB-Pink-10th-Generation_4fdae443-4f60-4a3e-9efe-12758bf5f128.f4d7333626b4e6b27e8be25d1f698373.jpeg",
-        rating: 4.7,
-        ratingCount: 892,
+        // rating: 4.7,
+        // ratingCount: 892,
         seller: Seller(
           id: 4,
           name: "Emma Style",
@@ -911,13 +981,14 @@ class MockApiService {
           colors: ['I1','I2','I3','I4']
       ),
       Product(
-        productCode: 20,
+        productId: 20,
+        productCode: "PRD2000001",
         productName: "Earphone",
         price: 29.99,
         category: "Headphones",
         image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTndMcJW71HLgi9ntgoterJiJJjLxbtOVVpyA&s",
-        rating: 4.4,
-        ratingCount: 234,
+        // rating: 4.4,
+        // ratingCount: 234,
         seller: Seller(
           id: 4,
           name: "Emma Style",
@@ -935,13 +1006,14 @@ class MockApiService {
           colors: ['Eph1','Eph2','Eph3','Eph4','Eph5']
       ),
       Product(
-        productCode: 21,
+        productId: 21,
+        productCode: "PRD2100001",
         productName: "Powerbank",
         price: 39.99,
         category: "Power Banks",
         image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSnwF3fpDIATeZ_9o5h3vNu_X8KUHSq5O739g&s",
-        rating: 4.5,
-        ratingCount: 342,
+        // rating: 4.5,
+        // ratingCount: 342,
         seller: Seller(
           id: 2,
           name: "Sunny Days",
