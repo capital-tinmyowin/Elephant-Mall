@@ -15,6 +15,8 @@ import 'package:intl/intl.dart';
 import 'common/header.dart';
 import 'common/footer.dart';
 
+import 'login.dart';
+
 class SellPage extends StatefulWidget {
   final int? productId;
 
@@ -79,14 +81,12 @@ class _VariantDialogState extends State<_VariantDialog> {
   }
 
   void saveVariant() {
-    // Validate form.
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     final price = double.tryParse(variantpriceController.text.trim());
-
-    final quantity = double.tryParse(variantqtyController.text.trim());
+    final quantity = int.tryParse(variantqtyController.text.trim());
 
     final discountPriceText = variantdiscountPriceController.text.trim();
 
@@ -103,13 +103,16 @@ class _VariantDialogState extends State<_VariantDialog> {
     }
 
     final variant = ProductVariant(
+      // Keep existing ID when editing.
+      // Use empty string for a new variant.
+      variantId: widget.existingVariant?.variantId ?? '',
+
       variantName: variantController.text.trim(),
       quantity: quantity,
       price: price,
       discountPrice: discountPrice,
     );
 
-    // Return the variant to SellPage.
     Navigator.pop(context, variant);
   }
 
@@ -441,6 +444,56 @@ class _SellPageState extends State<SellPage> {
     }
   }
 
+  Future<void> _showLoginRequiredDialog() async {
+    if (!mounted) return;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xfffdfaf4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.lock_outline, color: Color(0xFFC77C2E), size: 28),
+              SizedBox(width: 10),
+              Text(
+                "Login Required",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: const Text(
+            "Please login or sign up first to continue.",
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFC77C2E),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+    );
+  }
+
   Future<void> loadProduct(int productId) async {
     try {
       debugPrint('Loading product ID: $productId');
@@ -725,170 +778,34 @@ class _SellPageState extends State<SellPage> {
   bool isSmallPhotoLayout(BuildContext context) =>
       MediaQuery.of(context).size.width < 650;
   Future<void> showAddVariantDialog({int? editIndex}) async {
-    final ProductVariant? updatedVariant = await showDialog<ProductVariant>(
+    final ProductVariant? result = await showDialog<ProductVariant>(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xfffdfaf4),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          titlePadding: EdgeInsets.zero,
-          title: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: const BoxDecoration(
-              color: Color(0xFFC77C2E), 
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(18),
-                topRight: Radius.circular(18),
-              ),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.inventory_2_outlined, color: Colors.white, size: 28),
-                SizedBox(width: 12),
-                Text(
-                  "Add Product Variant",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          content: SizedBox(
-            width: 400,
-            child: Form(
-              key: _variantFormKey,
-              autovalidateMode: AutovalidateMode.disabled,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: variantController,
-                    decoration: const InputDecoration(
-                      labelText: "Variant Name",
-                    ),
+        final existingVariant = editIndex != null ? variants[editIndex] : null;
 
-                    validator: (value) {
-                      if (!_variantSubmitted) return null;
-
-                      if (value == null || value.trim().isEmpty) {
-                        return "Please enter variant name";
-                      }
-
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  TextFormField(
-                    controller: skuController,
-                    decoration: const InputDecoration(labelText: "SKU"),
-
-                    validator: (value) {
-                      if (!_variantSubmitted) return null;
-
-                      if (value == null || value.trim().isEmpty) {
-                        return "Please enter SKU";
-                      }
-
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  TextFormField(
-                    controller: priceController,
-
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(
-                        RegExp(r'^\d*\.?\d{0,2}$'),
-                      ),
-                    ],
-
-                    decoration: const InputDecoration(labelText: "Price"),
-
-                    validator: (value) {
-                      if (!_variantSubmitted) return null;
-
-                      if (value == null || value.trim().isEmpty) {
-                        return "Please enter Price";
-                      }
-
-                      return null;
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text("Cancel"),
-            ),
-
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _variantSubmitted = true;
-                });
-
-                if (!_variantFormKey.currentState!.validate()) {
-                  return;
-                }
-
-                setState(() {
-                  // variants.add(
-                  //   ProductVariant(
-                  //     variantName: variantController.text.trim(),
-                  //     sku: skuController.text.trim(),
-                  //     variant_Price: double.parse(priceController.text),
-                  //   ),
-                  // );
-                });
-                _variantSubmitted = false;
-
-                variantController.clear();
-                skuController.clear();
-                priceController.clear();
-
-                Navigator.pop(context);
-              },
-              child: const Text("Save"),
-            ),
-          ],
+        return _VariantDialog(
+          existingVariant: existingVariant,
+          isEdit: editIndex != null,
         );
       },
     );
 
     // User pressed Cancel or closed the dialog.
-    if (updatedVariant == null) {
+    if (result == null) {
       return;
     }
 
-    // Make sure SellPage is still mounted.
     if (!mounted) {
       return;
     }
 
-    // Update the parent list AFTER the dialog has closed.
     setState(() {
       if (editIndex == null) {
-        variants.add(updatedVariant);
+        // Add new variant
+        variants.add(result);
       } else {
-        variants[editIndex] = updatedVariant;
+        // Update existing variant
+        variants[editIndex] = result;
       }
     });
   }
@@ -1007,9 +924,7 @@ class _SellPageState extends State<SellPage> {
                           child: Text(
                             item.price == null
                                 ? "-"
-                                : NumberFormat(
-                                    '#,##0',
-                                  ).format(item.price),
+                                : NumberFormat('#,##0').format(item.price),
                             textAlign: TextAlign.right,
                           ),
                         ),
@@ -2590,9 +2505,24 @@ class _SellPageState extends State<SellPage> {
 
                       requestSuccess = false;
 
+                      final errorMessage = e.toString();
+
+                      // HTTP 401 Unauthorized
+                      if (errorMessage.contains('401') ||
+                          errorMessage.toLowerCase().contains('unauthorized')) {
+                        if (!mounted) return;
+
+                        setState(() {
+                          isSubmitting = false;
+                        });
+
+                        await _showLoginRequiredDialog();
+                        return;
+                      }
+
                       apiResponse = ProductApiResponse(
                         success: false,
-                        message: e.toString(),
+                        message: errorMessage,
                       );
                     }
                     if (!mounted) return;

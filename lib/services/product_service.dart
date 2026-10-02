@@ -13,6 +13,7 @@ class ProductApiResponse {
   final String? id;
   final String? savedAt;
   final String? updatedAt;
+  final int? statusCode;
 
   ProductApiResponse({
     required this.success,
@@ -20,15 +21,20 @@ class ProductApiResponse {
     this.id,
     this.savedAt,
     this.updatedAt,
+    this.statusCode,
   });
 
-  factory ProductApiResponse.fromJson(Map<String, dynamic> json) {
+  factory ProductApiResponse.fromJson(
+    Map<String, dynamic> json, {
+    int? statusCode,
+  }) {
     return ProductApiResponse(
       success: json['success'] == true,
       message: json['message']?.toString() ?? '',
       id: json['id']?.toString(),
       savedAt: json['savedAt']?.toString(),
       updatedAt: json['updatedAt']?.toString(),
+      statusCode: statusCode,
     );
   }
 }
@@ -232,7 +238,7 @@ class ProductService {
     required String description,
     required String location,
     required double price,
-     required double? discountPrice,
+    required double? discountPrice,
     required int quantity,
     required String condition,
     required String status,
@@ -255,9 +261,10 @@ class ProductService {
       return {
         'id': 0,
         'productId': 0,
-        'variantID': 'string',
+        'variantID': '',
         'quantity': variant.quantity,
         'price': variant.price,
+        'discountPrice': variant.discountPrice,
         'variantName': variant.variantName,
       };
     }).toList();
@@ -270,6 +277,7 @@ class ProductService {
       'description': description,
       'location': location,
       'price': price,
+      'discountPrice': discountPrice,
       'condition': condition,
       'status': status,
       'businessContactGroupId': businessContactGroupId,
@@ -337,6 +345,15 @@ class ProductService {
       debugPrint('Response Headers: ${response.headers}');
       debugPrint('==================================');
 
+      // 401 Unauthorized
+      if (response.statusCode == 401) {
+        return ProductApiResponse(
+          success: false,
+          message: 'Please login or sign up first.',
+          statusCode: 401,
+        );
+      }
+
       if (response.body.isEmpty) {
         return ProductApiResponse(
           success: response.statusCode >= 200 && response.statusCode < 300,
@@ -348,8 +365,10 @@ class ProductService {
 
       final responseData = jsonDecode(response.body);
 
-      final apiResponse = ProductApiResponse.fromJson(responseData);
-
+      final apiResponse = ProductApiResponse.fromJson(
+        responseData,
+        statusCode: response.statusCode,
+      );
       debugPrint('========== PARSED API RESPONSE ==========');
       debugPrint('Success: ${apiResponse.success}');
       debugPrint('Message: ${apiResponse.message}');
@@ -434,6 +453,7 @@ class ProductService {
       'description': description,
       'location': location,
       'price': price,
+      'discountPrice': discountPrice,
       'condition': condition,
       'status': status,
       'businessContactGroupId': businessContactGroupId,
@@ -474,6 +494,15 @@ class ProductService {
       debugPrint('Response Body: ${response.body}');
       debugPrint('=========================================');
 
+      // 401 Unauthorized
+      if (response.statusCode == 401) {
+        return ProductApiResponse(
+          success: false,
+          message: 'Please login or sign up first.',
+          statusCode: 401,
+        );
+      }
+
       if (response.body.isEmpty) {
         return ProductApiResponse(
           success: response.statusCode >= 200 && response.statusCode < 300,
@@ -485,8 +514,10 @@ class ProductService {
 
       final responseData = jsonDecode(response.body);
 
-      final apiResponse = ProductApiResponse.fromJson(responseData);
-
+      final apiResponse = ProductApiResponse.fromJson(
+        responseData,
+        statusCode: response.statusCode,
+      );
       debugPrint('Update Success: ${apiResponse.success}');
       debugPrint('Update Message: ${apiResponse.message}');
       debugPrint('Updated Product ID: ${apiResponse.id}');

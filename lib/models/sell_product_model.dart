@@ -96,10 +96,13 @@ class SellProductModel {
         if (item is Map<String, dynamic>) {
           variants.add(
             ProductVariant(
+              variantId:
+                  item['variantId']?.toString() ??
+                  item['variantID']?.toString() ??
+                  '',
               variantName: item['variantName']?.toString() ?? '',
               price: double.tryParse(item['price']?.toString() ?? '0') ?? 0,
-              quantity:
-                  double.tryParse(item['quantity']?.toString() ?? '0') ?? 0,
+              quantity: int.tryParse(item['quantity']?.toString() ?? '0') ?? 0,
               discountPrice:
                   item['discountPrice'] == null ||
                       item['discountPrice'].toString().isEmpty
@@ -180,7 +183,6 @@ class SellProductModel {
     String sku = '';
     String quantity = '0';
 
-  
     // to use variantName as the SKU.
     if (variants.length == 1) {
       sku = variants.first.variantName;
