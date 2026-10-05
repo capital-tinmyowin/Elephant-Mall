@@ -223,7 +223,7 @@ class _RegisterPageState extends State<RegisterPage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Image.asset(
-              'login.png',
+              'lib/uploads/login.png',
               width: isMobile ? 220 : 300,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) {
