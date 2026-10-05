@@ -178,7 +178,7 @@ class _LoginPageState extends State<LoginPage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Image.asset(
-              'login.png',
+              'lib/uploads/login.png',
               width: isMobile ? 220 : 300,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) {

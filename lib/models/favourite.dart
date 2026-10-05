@@ -8,7 +8,7 @@ class Favorite {
   final DateTime addedDate;
   final String? note;
   final Product? product;
-  final User? user;
+  // final User? user;
 
   Favorite({
     required this.id,
@@ -17,7 +17,7 @@ class Favorite {
     required this.addedDate,
     this.note,
     this.product,
-    this.user,
+    // this.user,
   });
 
   factory Favorite.fromJson(Map<String, dynamic> json) {
@@ -32,9 +32,9 @@ class Favorite {
       product: json['product'] != null
           ? Product.fromJson(json['product'])
           : null,
-      user: json['user'] != null
-          ? User.fromJson(json['user'])
-          : null,
+      // user: json['user'] != null
+      //     ? User.fromJson(json['user'])
+      //     : null,
     );
   }
   Map<String, dynamic> toJson() {
@@ -45,7 +45,7 @@ class Favorite {
       'addedDate': addedDate.toIso8601String(),
       'note': note,
       'product': product?.toJson(),
-      'user': user?.toJson(),
+      // 'user': user?.toJson(),
     };
   }
 

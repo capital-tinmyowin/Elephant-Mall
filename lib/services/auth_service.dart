@@ -1,17 +1,34 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/browser_client.dart' show BrowserClient;
 import '../models/user.dart';
-import '../services/Category_service.dart';
+import '../models/product.dart';
 
 class AuthService extends ChangeNotifier {
-  final ApiService _apiService = ApiService();
+  static const String _baseUrl = 'https://www.capital-sys.net/CKMMallAPI/api';
+
+  //  Platform-aware HTTP client
+  // Web: BrowserClient with cookies enabled
+  // Mobile: standard http.Client (cookies handled manually if needed)
+  final http.Client _client = kIsWeb
+      ? (BrowserClient()..withCredentials = true)
+      : http.Client();
+
+  //  Cookie storage (mobile fallback — on web, browser handles it)
+  String? _authCookie;
+  String? get authCookie => _authCookie;
+
+  // JWT from signup
+  String? _token;
+  String? get token => _token;
 
   User? _currentUser;
-  String? _token;
   bool _isLoading = false;
   String? _errorMessage;
 
   User? get currentUser => _currentUser;
-  String? get token => _token;
   bool get isLoggedIn => _currentUser != null;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -30,36 +47,48 @@ class AuthService extends ChangeNotifier {
     try {
       final generatedUsername = username ?? email.split('@').first;
 
-      final response = await _apiService.register(
-        generatedUsername,
-        email,
-        password,
-        fullName: fullName,
-      );
+      final response = await _client
+          .post(
+            Uri.parse('$_baseUrl/auth/SignUp/'),
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: {
+              'username': generatedUsername,
+              'email': email,
+              'password': password,
+              'fullName': fullName,
+            },
+          )
+          .timeout(const Duration(seconds: 15));
 
-      print('🔍 Register response: $response');
+      print('Register status: ${response.statusCode}');
+      print('Register body: ${response.body}');
 
-      // 🔥 Backend returns: { message, userId, token, email, userName }
-      final hasUserId = response['userId'] != null;
-      final message = response['message']?.toString() ?? '';
-      final isSuccess = hasUserId && message.toLowerCase().contains('success');
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        final userId = data['userId'];
+        final message = data['message']?.toString() ?? '';
+        final isSuccess =
+            userId != null && message.toLowerCase().contains('success');
 
-      if (isSuccess) {
-        _token = response['token'];
-        _currentUser = User(
-          id: response['userId'] is int
-              ? response['userId']
-              : int.tryParse(response['userId'].toString()) ?? 0,
-          username: response['userName'] ?? generatedUsername,
-          email: response['email'] ?? email,
-          fullName: fullName,
-        );
-        _isLoading = false;
-        notifyListeners();
-        return true;
+        if (isSuccess) {
+          _token = data['token'];
+          _currentUser = User(
+            id: userId is int ? userId : int.tryParse(userId.toString()) ?? 0,
+            username: data['userName'] ?? generatedUsername,
+            email: data['email'] ?? email,
+            fullName: fullName,
+          );
+          _isLoading = false;
+          notifyListeners();
+          return true;
+        } else {
+          _errorMessage = message.isNotEmpty ? message : 'Registration failed';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
       } else {
-        // Email already exists etc.
-        _errorMessage = message.isNotEmpty ? message : 'Registration failed';
+        _errorMessage = 'Registration failed: ${response.statusCode}';
         _isLoading = false;
         notifyListeners();
         return false;
@@ -79,34 +108,59 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // 🔥 Pass the token from signup (or empty string if new session)
-      final response = await _apiService.login(
-        email,
-        password,
-        token: _token,
-      );
+      final response = await _client
+          .post(
+            Uri.parse('$_baseUrl/auth/login-web'),
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: {'Email': email, 'Password': password, 'token': _token ?? ''},
+          )
+          .timeout(const Duration(seconds: 15));
 
-      print('🔍 Login response: $response');
+      print('Login status: ${response.statusCode}');
+      print('Login headers: ${response.headers}');
+      print('Login body: ${response.body}');
 
-      // 🔥 Backend returns: { message: "Login success (cookie issued).", loginID: 13 }
-      final loginId = response['loginID'];
-      final message = response['message']?.toString() ?? '';
-      final isSuccess = loginId != null && message.toLowerCase().contains('success');
+      if (response.statusCode == 200) {
+        //  On mobile (not web), capture Set-Cookie manually
+        if (!kIsWeb) {
+          final setCookie = response.headers['set-cookie'];
+          if (setCookie != null && setCookie.isNotEmpty) {
+            _authCookie = setCookie.split(';').first.trim();
+            print(' Captured cookie: $_authCookie');
+          }
+        }
 
-      if (isSuccess) {
-        _currentUser = User(
-          id: loginId is int ? loginId : int.tryParse(loginId.toString()) ?? 0,
-          username: email.split('@').first,
-          email: email,
-          fullName: '',
-        );
+        final data = json.decode(response.body);
+        final loginId = data['loginID'];
+        final message = data['message']?.toString() ?? '';
+        final isSuccess =
+            loginId != null && message.toLowerCase().contains('success');
+
+        if (isSuccess) {
+          _currentUser = User(
+            id: loginId is int
+                ? loginId
+                : int.tryParse(loginId.toString()) ?? 0,
+            username: email.split('@').first,
+            email: email,
+            fullName: '',
+          );
+          _isLoading = false;
+          notifyListeners();
+          return true;
+        } else {
+          _errorMessage = 'Login failed';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+      } else if (response.statusCode == 401) {
+        _errorMessage = 'Invalid email or password';
         _isLoading = false;
         notifyListeners();
-        return true;
+        return false;
       } else {
-        _errorMessage = message.isNotEmpty
-            ? message
-            : (response['message'] ?? 'Login failed');
+        _errorMessage = 'Login failed: ${response.statusCode}';
         _isLoading = false;
         notifyListeners();
         return false;
@@ -119,15 +173,69 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  // ============= LOGOUT =============
   void logout() {
     _currentUser = null;
     _token = null;
+    _authCookie = null;
     notifyListeners();
   }
 
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  // ============= FAVORITES =============
+  Future<List<Product>> getUserFavorites() async {
+    if (_currentUser == null) return [];
+
+    try {
+      final response = await _client
+          .get(
+            Uri.parse('$_baseUrl/productshowcase/GetFavouriteProductList'),
+            headers: {'Content-Type': 'application/json'},
+          )
+          .timeout(const Duration(seconds: 15));
+
+      print('=== FAVORITES DEBUG ===');
+      print('Status: ${response.statusCode}');
+      print('Body: ${response.body}');
+      print('kIsWeb: $kIsWeb');
+      print('======================');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List items = (data['data'] ?? data['favorites'] ?? []) as List;
+        return items.map((json) => Product.fromJson(json)).toList();
+      }
+
+      //  Show exact backend message + status code inline
+      String backendMsg = '';
+      try {
+        final body = json.decode(response.body);
+        if (body is Map<String, dynamic>) {
+          backendMsg =
+              (body['message'] ??
+                      body['title'] ??
+                      body['error'] ??
+                      body['detail'] ??
+                      '')
+                  .toString();
+        }
+      } catch (_) {}
+
+      _errorMessage = backendMsg.isNotEmpty
+          ? '$backendMsg (${response.statusCode})'
+          : 'Request failed (${response.statusCode})';
+
+      notifyListeners();
+      return [];
+    } catch (e) {
+      _errorMessage = 'Network error: $e';
+      notifyListeners();
+      return [];
+    }
   }
 
   Future<bool> addFavorite(int productId) async {
@@ -138,15 +246,53 @@ class AuthService extends ChangeNotifier {
     }
 
     try {
-      final response = await _apiService.addFavorite(_currentUser!.id, productId);
-      if (response['success'] == true) {
-        return true;
-      } else {
-        _errorMessage = response['message'] ?? 'Failed to add favorite';
-        return false;
+      final headers = <String, String>{
+        'Content-Type': 'application/x-www-form-urlencoded',
+      };
+      if (!kIsWeb && _authCookie != null) {
+        headers['Cookie'] = _authCookie!;
       }
+
+      final response = await _client
+          .post(
+            Uri.parse(
+              '$_baseUrl/productshowcase/AddFavouriteProduct?productId=$productId',
+            ),
+            headers: headers,
+          )
+          .timeout(const Duration(seconds: 15));
+
+      print('Add favorite status: ${response.statusCode}');
+      print('Add favorite body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      }
+
+      //  Show exact backend message + status code inline
+      String backendMsg = '';
+      try {
+        final body = json.decode(response.body);
+        if (body is Map<String, dynamic>) {
+          backendMsg =
+              (body['message'] ??
+                      body['title'] ??
+                      body['error'] ??
+                      body['detail'] ??
+                      '')
+                  .toString();
+        }
+      } catch (_) {}
+
+      _errorMessage = backendMsg.isNotEmpty
+          ? 'Failed to add favorite : $backendMsg (${response.statusCode})'
+          : 'Failed to add favorite (${response.statusCode})';
+
+      notifyListeners();
+      return false;
     } catch (e) {
       _errorMessage = 'Network error: $e';
+      notifyListeners();
       return false;
     }
   }
