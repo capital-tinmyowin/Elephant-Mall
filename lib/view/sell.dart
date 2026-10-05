@@ -450,7 +450,7 @@ class _SellPageState extends State<SellPage> {
     await showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: const Color(0xfffdfaf4),
           shape: RoundedRectangleBorder(
@@ -467,7 +467,8 @@ class _SellPageState extends State<SellPage> {
             ],
           ),
           content: const Text(
-            "Please login or sign up first to continue.",
+            "Your session has expired or you are not logged in.\n\n"
+            "Please login to continue.",
             style: TextStyle(fontSize: 16),
           ),
           actions: [
@@ -475,23 +476,49 @@ class _SellPageState extends State<SellPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFC77C2E),
                 foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
               ),
               onPressed: () {
-                Navigator.pop(context);
+                // Close popup first
+                Navigator.pop(dialogContext);
+
+                // Then go to LoginPage
+                if (!mounted) return;
+
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
               },
-              child: const Text("OK"),
+              child: const Text(
+                "Login",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         );
       },
     );
+  }
+
+  bool _isUnauthorizedError(Object error) {
+    final message = error.toString().toLowerCase();
+
+    return message.contains('401') ||
+        message.contains('unauthorized') ||
+        message.contains('http 401');
+  }
+
+  Future<void> _handleApiError(Object error) async {
+    debugPrint('API Error: $error');
 
     if (!mounted) return;
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginPage()),
-    );
+    if (_isUnauthorizedError(error)) {
+      await _showLoginRequiredDialog();
+    }
   }
 
   Future<void> loadProduct(int productId) async {
@@ -541,6 +568,7 @@ class _SellPageState extends State<SellPage> {
       debugPrint('Loaded variants: ${variants.length}');
     } catch (e) {
       debugPrint('Load product error: $e');
+      await _handleApiError(e);
     }
   }
 
@@ -559,6 +587,7 @@ class _SellPageState extends State<SellPage> {
       });
     } catch (e) {
       debugPrint(e.toString());
+      await _handleApiError(e);
     }
   }
 
@@ -582,6 +611,11 @@ class _SellPageState extends State<SellPage> {
       setState(() {
         isLoadingBuyerMethods = false;
       });
+
+      if (_isUnauthorizedError(e)) {
+        await _showLoginRequiredDialog();
+        return;
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to load buyer contact methods: $e')),
@@ -625,6 +659,11 @@ class _SellPageState extends State<SellPage> {
       setState(() {
         isLoadingBuyerDetail = false;
       });
+
+      if (_isUnauthorizedError(e)) {
+        await _showLoginRequiredDialog();
+        return;
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to load buyer contact: $e')),
@@ -2508,8 +2547,7 @@ class _SellPageState extends State<SellPage> {
                       final errorMessage = e.toString();
 
                       // HTTP 401 Unauthorized
-                      if (errorMessage.contains('401') ||
-                          errorMessage.toLowerCase().contains('unauthorized')) {
+                      if (_isUnauthorizedError(e)) {
                         if (!mounted) return;
 
                         setState(() {
@@ -2581,9 +2619,23 @@ class _SellPageState extends State<SellPage> {
                         variants.clear();
                       });
                     } else {
+                      final message =
+                          apiResponse?.message?.toString().toLowerCase() ?? '';
+
+                      if (message.contains('401') ||
+                          message.contains('unauthorized') ||
+                          message.contains('http 401')) {
+                        await _showLoginRequiredDialog();
+                        return;
+                      }
+
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Failed to create product'),
+                        SnackBar(
+                          content: Text(
+                            apiResponse?.message?.isNotEmpty == true
+                                ? apiResponse!.message!
+                                : 'Failed to create product',
+                          ),
                         ),
                       );
                     }

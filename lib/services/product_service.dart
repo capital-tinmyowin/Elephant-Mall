@@ -345,6 +345,10 @@ class ProductService {
       debugPrint('Response Headers: ${response.headers}');
       debugPrint('==================================');
 
+      if (response.statusCode == 401) {
+        throw Exception('401 Unauthorized');
+      }
+
       // 401 Unauthorized
       if (response.statusCode == 401) {
         return ProductApiResponse(
