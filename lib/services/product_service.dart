@@ -13,6 +13,7 @@ class ProductApiResponse {
   final String? id;
   final String? savedAt;
   final String? updatedAt;
+  final int? statusCode;
 
   ProductApiResponse({
     required this.success,
@@ -20,15 +21,20 @@ class ProductApiResponse {
     this.id,
     this.savedAt,
     this.updatedAt,
+    this.statusCode,
   });
 
-  factory ProductApiResponse.fromJson(Map<String, dynamic> json) {
+  factory ProductApiResponse.fromJson(
+    Map<String, dynamic> json, {
+    int? statusCode,
+  }) {
     return ProductApiResponse(
       success: json['success'] == true,
       message: json['message']?.toString() ?? '',
       id: json['id']?.toString(),
       savedAt: json['savedAt']?.toString(),
       updatedAt: json['updatedAt']?.toString(),
+      statusCode: statusCode,
     );
   }
 }
@@ -80,31 +86,14 @@ class BuyerContactDetail {
 }
 
 class ProductService {
-  // ============================================================
   // SAMPLE BUYER CONTACT METHODS
-  // ============================================================
-
   final List<BuyerContactMethod> _buyerContactMethods = [
-    BuyerContactMethod(
-      methodId: 1,
-      methodName: 'Contact 1',
-      userId: 1,
-    ),
-    BuyerContactMethod(
-      methodId: 2,
-      methodName: 'Contact 2',
-      userId: 1,
-    ),
-    BuyerContactMethod(
-      methodId: 3,
-      methodName: 'Contact 3',
-      userId: 2,
-    ),
+    BuyerContactMethod(methodId: 1, methodName: 'Contact 1', userId: 1),
+    BuyerContactMethod(methodId: 2, methodName: 'Contact 2', userId: 1),
+    BuyerContactMethod(methodId: 3, methodName: 'Contact 3', userId: 2),
   ];
 
-  // ============================================================
   // SAMPLE BUYER CONTACT DETAILS
-  // ============================================================
 
   final Map<int, BuyerContactDetail> _buyerContactDetails = {
     1: BuyerContactDetail(
@@ -132,87 +121,11 @@ class ProductService {
     ),
   };
 
-  // ============================================================
-  // HARD-CODED SELL PRODUCTS
-  // ============================================================
-
-  final List<SellProductModel> _sellProducts = [
-    SellProductModel(
-      productCode: 1001,
-
-      title: 'Traditional Myanmar Longyi',
-
-      description:
-          'Beautiful traditional Myanmar longyi made with high-quality material.',
-
-      price: '35000',
-
-      sku: 'LNG-1001',
-
-      quantity: '10',
-
-      location: 'Mandalay',
-
-      phoneNumber: '09123456789',
-
-      messengerLink: 'https://m.me/example',
-
-      telegram: '@example',
-
-      viber: '09123456789',
-
-      categoryIds: [9, 10],
-
-      variants: [
-        ProductVariant(variantName: 'Red', price: 290, quantity: 20),
-        ProductVariant(variantName: 'Blue', price: 290, quantity: 20),
-      ],
-    ),
-
-    SellProductModel(
-      productCode: 1002,
-
-      title: 'Teak Wooden Bowl',
-
-      description:
-          'Handmade teak wooden bowl suitable for home decoration and daily use.',
-
-      price: '25000',
-
-      sku: 'BOWL-1002',
-
-      quantity: '5',
-
-      location: 'Yangon',
-
-      phoneNumber: '09876543210',
-
-      messengerLink: 'https://m.me/example2',
-
-      telegram: '@example2',
-
-      viber: '09876543210',
-
-      categoryIds: [2],
-
-      variants: [
-        ProductVariant(variantName: 'Small', price: 290, quantity: 20),
-        ProductVariant(variantName: 'Large', price: 290, quantity: 20),
-      ],
-    ),
-  ];
-
-  // ============================================================
   // GET BUYER CONTACT METHODS
-  // ============================================================
 
   Future<List<BuyerContactMethod>> getBuyerContactMethods() async {
-    // ============================================================
     // GET BUYER CONTACT DETAIL BY METHOD ID
-    // ============================================================
-    // ----------------------------------------------------------
     // SAMPLE DATA
-    // ----------------------------------------------------------
 
     await Future.delayed(const Duration(milliseconds: 300));
 
@@ -289,21 +202,33 @@ class ProductService {
     */
   }
 
-  // ============================================================
   // FIND SELL PRODUCT BY PRODUCT CODE
-  // ============================================================
 
-  SellProductModel? getSellProductByCode(int productCode) {
-    for (final product in _sellProducts) {
-      if (product.productCode == productCode) {
-        return product;
-      }
+  Future<SellProductModel?> getSellProductByCode(int productId) async {
+    final url = Uri.parse(
+      'https://www.capital-sys.net/CKMMallAPI/api/Product/GetProductDetailByProductId/$productId',
+    );
+
+    debugPrint('GET PRODUCT URL: $url');
+
+    final response = await http.get(
+      url,
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    debugPrint(
+      'Get product failed: ${response.statusCode} - ${response.body}',
+    ); // debugPrint('GET PRODUCT RESPONSE: ${response.body}');
+
+    if (response.statusCode == 200) {
+      return SellProductModel.fromJson(jsonDecode(response.body));
     }
+
+    debugPrint('Get product failed: ${response.statusCode} - ${response.body}');
 
     return null;
   }
 
-  // ============================================================
   // CREATE PRODUCT
   // ============================================================
 
@@ -313,6 +238,7 @@ class ProductService {
     required String description,
     required String location,
     required double price,
+    required double? discountPrice,
     required int quantity,
     required String condition,
     required String status,
@@ -321,62 +247,116 @@ class ProductService {
     required List<ProductVariant> variants,
     required List<Map<String, dynamic>> images,
     required List<Map<String, dynamic>> businessContacts,
+    required List<Uint8List?> imageBytes,
   }) async {
     final url = Uri.parse(
-      'https://www.capital-sys.net/CKMMallAPI/api/saleitem/SaveSaleItem',
+      'https://www.capital-sys.net/CKMMallAPI/api/Product/SaveProduct',
     );
 
-    // Categories
     final pCategoryList = categoryIds.map((categoryId) {
       return {'id': 0, 'productId': 0, 'categoryId': categoryId.toString()};
     }).toList();
 
-    // Variants
     final pVariantList = variants.map((variant) {
       return {
         'id': 0,
         'productId': 0,
         'variantID': '',
-        'quantity': variant.quantity.toString(),
+        'quantity': variant.quantity,
         'price': variant.price,
+        'discountPrice': variant.discountPrice,
         'variantName': variant.variantName,
       };
     }).toList();
 
+    final product = {
+      'productId': 0,
+      'productCode': productCode,
+      'userId': 1,
+      'productName': productName,
+      'description': description,
+      'location': location,
+      'price': price,
+      'discountPrice': discountPrice,
+      'condition': condition,
+      'status': status,
+      'businessContactGroupId': businessContactGroupId,
+      'pCategoryList': pCategoryList,
+      'pImageList': [],
+      'pVariantList': pVariantList,
+      'businesscontact': businessContacts,
+    };
+
+    final request = http.MultipartRequest('POST', url);
+
+    request.headers['Accept'] = 'application/json';
+
+    // Product JSON
+    request.fields['product'] = jsonEncode(product);
+
     // Images
-    final pImageList = images.map((image) {
-      return {
-        'id': 0,
-        'productId': 0,
-        'imageUrl': image['imageUrl'] ?? '',
-        'sortOrder': image['sortOrder'] ?? 1,
-      };
-    }).toList();
+    // int imageIndex = 0;
 
-      // request.fields['Variants[$i].SKU'] =
-      //     variants[i].sku;
+    // for (final image in imageBytes) {
+    //   if (image == null) {
+    //     continue;
+    //   }
 
-      // request.fields['Variants[$i].Price'] =
-      //     variants[i].variant_Price.toString();
+    //   request.files.add(
+    //     http.MultipartFile.fromBytes(
+    //       'image',
+    //       image,
+    //       filename: 'image_$imageIndex.jpg',
+    //     ),
+    //   );
 
-    debugPrint('========== API REQUEST ==========');
-    debugPrint(jsonBody);
-    debugPrint('=================================');
+    //   imageIndex++;
+    // }
+
+    debugPrint('========== MULTIPART API REQUEST ==========');
+    debugPrint('URL: $url');
+    debugPrint('Product: ${jsonEncode(product)}');
+    // debugPrint('Images: $imageIndex');
+    debugPrint('===========================================');
 
     try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonBody,
-      );
+      debugPrint('========== MULTIPART DETAILS ==========');
+      debugPrint('Method: ${request.method}');
+      debugPrint('URL: ${request.url}');
+      debugPrint('Headers: ${request.headers}');
+      debugPrint('Fields: ${request.fields}');
+      debugPrint('Files count: ${request.files.length}');
 
-      // debugPrint('========== API RESPONSE ==========');
-      // debugPrint('Status Code: ${response.statusCode}');
-      // debugPrint('Response Body: ${response.body}');
-      // debugPrint('==================================');
+      for (final file in request.files) {
+        debugPrint(
+          'File: field=${file.field}, filename=${file.filename}, length=${file.length}',
+        );
+      }
+
+      debugPrint('=======================================');
+
+      final streamedResponse = await request.send();
+
+      final response = await http.Response.fromStream(streamedResponse);
+
+      debugPrint('========== API RESPONSE ==========');
+      debugPrint('Status Code: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+      debugPrint('Response Headers: ${response.headers}');
+      debugPrint('==================================');
+
+      if (response.statusCode == 401) {
+        throw Exception('401 Unauthorized');
+      }
+
+      // 401 Unauthorized
+      if (response.statusCode == 401) {
+        return ProductApiResponse(
+          success: false,
+          message: 'Please login or sign up first.',
+          statusCode: 401,
+        );
+      }
 
       if (response.body.isEmpty) {
         return ProductApiResponse(
@@ -389,12 +369,17 @@ class ProductService {
 
       final responseData = jsonDecode(response.body);
 
-      final apiResponse = ProductApiResponse.fromJson(responseData);
-
-      debugPrint('API Success: ${apiResponse.success}');
-      debugPrint('API Message: ${apiResponse.message}');
-      debugPrint('Saved Product ID: ${apiResponse.id}');
+      final apiResponse = ProductApiResponse.fromJson(
+        responseData,
+        statusCode: response.statusCode,
+      );
+      debugPrint('========== PARSED API RESPONSE ==========');
+      debugPrint('Success: ${apiResponse.success}');
+      debugPrint('Message: ${apiResponse.message}');
+      debugPrint('ID: ${apiResponse.id}');
       debugPrint('Saved At: ${apiResponse.savedAt}');
+      debugPrint('Updated At: ${apiResponse.updatedAt}');
+      debugPrint('==========================================');
 
       return apiResponse;
     } catch (e, stackTrace) {
@@ -411,12 +396,14 @@ class ProductService {
   // UPDATE PRODUCT
   // ============================================================
 
-  Future<bool> updateProduct({
-    required int productCode,
+  Future<ProductApiResponse> updateProduct({
+    required int productId,
+    required String productCode,
     required String productName,
     required String description,
     required String location,
     required double price,
+    required double? discountPrice,
     required int quantity,
     required String condition,
     required String status,
@@ -434,7 +421,7 @@ class ProductService {
     final pCategoryList = categoryIds.map((categoryId) {
       return {
         'id': 0,
-        'productId': productCode,
+        'productId': productId,
         'categoryId': categoryId.toString(),
       };
     }).toList();
@@ -443,7 +430,7 @@ class ProductService {
     final pVariantList = variants.map((variant) {
       return {
         'id': 0,
-        'productId': productCode,
+        'productId': productId,
         'variantID': '',
         'quantity': variant.quantity.toString(),
         'price': variant.price,
@@ -463,19 +450,30 @@ class ProductService {
 
     // Complete request body
     final body = {
-      'productId': productCode,
+      'productId': productId,
       'productCode': productCode,
       'userId': 1,
       'productName': productName,
       'description': description,
       'location': location,
       'price': price,
+      'discountPrice': discountPrice,
       'condition': condition,
       'status': status,
       'businessContactGroupId': businessContactGroupId,
-      'pCategoryList': pCategoryList,
+
+      // Categories
+      'pCategoryList': categoryIds.map((categoryId) {
+        return {'id': 0, 'productId': 0, 'categoryId': categoryId.toString()};
+      }).toList(),
+
+      // Images
       'pImageList': pImageList,
+
+      // Variants
       'pVariantList': pVariantList,
+
+      // Contacts
       'businesscontact': businessContacts,
     };
 
@@ -500,33 +498,43 @@ class ProductService {
       debugPrint('Response Body: ${response.body}');
       debugPrint('=========================================');
 
+      // 401 Unauthorized
+      if (response.statusCode == 401) {
+        return ProductApiResponse(
+          success: false,
+          message: 'Please login or sign up first.',
+          statusCode: 401,
+        );
+      }
+
       if (response.body.isEmpty) {
-        return response.statusCode >= 200 && response.statusCode < 300;
+        return ProductApiResponse(
+          success: response.statusCode >= 200 && response.statusCode < 300,
+          message: response.statusCode >= 200 && response.statusCode < 300
+              ? 'Product updated successfully.'
+              : 'Failed to update product.',
+        );
       }
 
       final responseData = jsonDecode(response.body);
 
-      final bool success = responseData['success'] == true;
+      final apiResponse = ProductApiResponse.fromJson(
+        responseData,
+        statusCode: response.statusCode,
+      );
+      debugPrint('Update Success: ${apiResponse.success}');
+      debugPrint('Update Message: ${apiResponse.message}');
+      debugPrint('Updated Product ID: ${apiResponse.id}');
+      debugPrint('Updated At: ${apiResponse.updatedAt}');
 
-      final String message =
-          responseData['message']?.toString() ?? 'Unknown response';
-
-      debugPrint('Update Success: $success');
-      debugPrint('Update Message: $message');
-
-      if (success) {
-        debugPrint('Updated Product ID: ${responseData['id']}');
-        debugPrint('Updated At: ${responseData['savedAt']}');
-      }
-
-      return success;
+      return apiResponse;
     } catch (e, stackTrace) {
       debugPrint('========== UPDATE API ERROR ==========');
       debugPrint(e.toString());
       debugPrint(stackTrace.toString());
       debugPrint('======================================');
 
-      return false;
+      return ProductApiResponse(success: false, message: e.toString());
     }
   }
   // Future<bool> createProduct({

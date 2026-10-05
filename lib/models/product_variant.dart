@@ -1,14 +1,18 @@
 class ProductVariant {
-  final String variantId;
   final String variantName;
   final double price;
   final int quantity;
+
+  double? discountPrice;
+  final String variantId;
+ 
 
   ProductVariant({
     required this.variantId,
     required this.variantName,
     required this.price,
     required this.quantity,
+    this.discountPrice,
   });
 
   factory ProductVariant.fromJson(Map<String, dynamic> json) {

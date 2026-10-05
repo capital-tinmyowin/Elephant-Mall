@@ -1,5 +1,7 @@
-import 'package:carousel_slider/carousel_slider.dart';              
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import '../new_in.dart';
+import '../sale.dart';
 
 class ProductSection extends StatelessWidget {
   final String title;
@@ -40,7 +42,31 @@ class ProductSection extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  if (title == "Newest Arrivals") {
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        settings: const RouteSettings(name: "/new-in"),
+                        pageBuilder: (context, animation, secondaryAnimation) =>
+                            const NewInPage(),
+                        transitionDuration: Duration.zero,
+                        reverseTransitionDuration: Duration.zero,
+                      ),
+                    );
+                  } else if (title == "Sales") {
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        settings: const RouteSettings(name: "/sale"),
+                        pageBuilder: (context, animation, secondaryAnimation) =>
+                            const SalePage(),
+                        transitionDuration: Duration.zero,
+                        reverseTransitionDuration: Duration.zero,
+                      ),
+                    );
+                  }
+                },
                 child: Text(
                   "View All",
                   style: TextStyle(fontSize: mobile ? 10 : 18),
@@ -101,4 +127,3 @@ class ProductSection extends StatelessWidget {
     );
   }
 }
- 

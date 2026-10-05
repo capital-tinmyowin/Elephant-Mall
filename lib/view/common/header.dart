@@ -81,7 +81,7 @@ class _CommonHeaderState extends State<CommonHeader> {
                               _menuItem(
                                 context,
                                 "MY FAVORITE",
-                                const SellPage(),
+                                const MyFavouritePage(),
                               ),
                               _menuItem(
                                 context,

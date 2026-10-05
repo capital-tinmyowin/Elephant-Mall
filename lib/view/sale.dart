@@ -207,14 +207,14 @@ class _SalePageState extends State<SalePage> {
 
   Widget _buildHeroBanner(bool mobileView) {
     return Container(
-      height: mobileView ? 150 : 200,
+      height: mobileView ? 150 : 250,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         image: const DecorationImage(
-          image: const AssetImage("assets/salebanner.jpg"),
+          image: AssetImage('assets/sale1.png'),
           fit: BoxFit.cover,
-          alignment: const Alignment(0, -0.3),
+          alignment: Alignment(0, -0.3),
         ),
       ),
       child: Padding(
@@ -225,34 +225,34 @@ class _SalePageState extends State<SalePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              "MEGA SALE DEALS 🔥",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: mobileView ? 24 : 34,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
+            // Text(
+            //   "MEGA SALE DEALS 🔥",
+            //   style: TextStyle(
+            //     color: Colors.white,
+            //     fontSize: mobileView ? 24 : 34,
+            //     fontWeight: FontWeight.w800,
+            //   ),
+            // ),
 
-            const SizedBox(height: 2),
+            // const SizedBox(height: 2),
 
-            Text(
-              "Hot discounts on Yangon's trending fashion,",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: mobileView ? 11 : 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            // Text(
+            //   "Hot discounts on Yangon's trending fashion,",
+            //   style: TextStyle(
+            //     color: Colors.white,
+            //     fontSize: mobileView ? 11 : 14,
+            //     fontWeight: FontWeight.w500,
+            //   ),
+            // ),
 
-            Text(
-              "bags, shoes, and accessories.",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: mobileView ? 11 : 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            // Text(
+            //   "bags, shoes, and accessories.",
+            //   style: TextStyle(
+            //     color: Colors.white,
+            //     fontSize: mobileView ? 11 : 14,
+            //     fontWeight: FontWeight.w500,
+            //   ),
+            // ),
 
             const SizedBox(height: 10),
 
@@ -687,6 +687,7 @@ class _SalePageState extends State<SalePage> {
           // RATING
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 7),
+
             // child: Row(
             //   crossAxisAlignment: CrossAxisAlignment.center,
             //   children: [
@@ -713,9 +714,8 @@ class _SalePageState extends State<SalePage> {
             //     ),
             //   ],
             // ),
-          
           ),
-          
+
           const Spacer(),
 
           // VIEW DEAL BUTTON
