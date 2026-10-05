@@ -16,21 +16,21 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final PageController _bannerController = PageController();
-  Timer? _timer;
-  int currentBanner = 0;
+  // final PageController _bannerController = PageController();
+  // Timer? _timer;
+  // int currentBanner = 0;
   final HomeService _service = HomeService();
   List<BannerModel> banners = [];
   List<Category> categories = [];
   List<Product> products = [];
   List<Promo> promos = [];
   bool loading = true;
+  final Set<int> _favoriteProductIds = {};
 
   @override
   void initState() {
     super.initState();
     loadHome();
-    startAutoSlide();
   }
 
   Future<void> loadHome() async {
@@ -72,23 +72,21 @@ class _HomePageState extends State<HomePage> {
     return value;
   }
 
-  void startAutoSlide() {
-    _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (!mounted) return;
-      if (!_bannerController.hasClients) return;
-      currentBanner = (currentBanner + 1) % banners.length;
-      _bannerController.animateToPage(
-        currentBanner,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
-    });
-  }
+  // void startAutoSlide() {
+  //   _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
+  //     if (!mounted) return;
+  //     if (!_bannerController.hasClients) return;
+  //     currentBanner = (currentBanner + 1) % banners.length;
+  //     _bannerController.animateToPage(
+  //       currentBanner,
+  //       duration: const Duration(milliseconds: 500),
+  //       curve: Curves.easeInOut,
+  //     );
+  //   });
+  // }
 
   @override
   void dispose() {
-    _timer?.cancel();
-    _bannerController.dispose();
     _categoryController.dispose();
     super.dispose();
   }
@@ -140,136 +138,95 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget buildHero() {
-    if (banners.isEmpty) {
-      return const SizedBox(
-        height: 200,
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-    final width = MediaQuery.of(context).size.width;
-    final isMobile = width < 600;
-    return SizedBox(
-      height: isMobile ? 150 : 200,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          children: [
-            // BANNER SLIDER
-            PageView.builder(
-              controller: _bannerController,
-              itemCount: banners.length,
-              onPageChanged: (index) {
-                setState(() {
-                  currentBanner = index;
-                });
-              },
-              itemBuilder: (context, index) {
-                final item = banners[index];
+Widget buildHero() {
+  final width = MediaQuery.of(context).size.width;
+  final isMobile = width < 600;
 
-                return Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // IMAGE
-                    Image.asset(
-                      item.imagePath,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey.shade300,
-                          child: const Icon(
-                            Icons.image_not_supported,
-                            size: 40,
-                          ),
-                        );
-                      },
-                    ),
+  return SizedBox(
+    height: isMobile ? 150 : 250,
+    width: double.infinity,
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // SINGLE BANNER IMAGE
+          Image.asset(
+            'assets/sale1.png',
+            fit: BoxFit.cover,
+            alignment: const Alignment(0, -0.3),
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                color: Colors.grey.shade300,
+                child: const Icon(
+                  Icons.image_not_supported,
+                  size: 40,
+                ),
+              );
+            },
+          ),
 
-                    // OVERLAY
-                    Container(color: Colors.black.withValues(alpha: 0.25)),
+          // DARK OVERLAY
+          Container(
+            color: Colors.black.withValues(alpha: 0.25),
+          ),
 
-                    // TEXT
-                    Positioned(
-                      left: isMobile ? 15 : 40,
-                      top: isMobile ? 15 : 40,
-                      right: 10,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: isMobile ? 14 : 28,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+          // TEXT
+          Positioned(
+            left: isMobile ? 15 : 40,
+            top: isMobile ? 15 : 40,
+            right: 10,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'YANGON SUMMER HEATWAVE SAVINGS!',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: isMobile ? 14 : 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
 
-                          const SizedBox(height: 8),
+                const SizedBox(height: 8),
 
-                          Text(
-                            item.description,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: isMobile ? 11 : 16,
-                            ),
-                          ),
+                Text(
+                  'Cool styles for Yangon’s hottest days.',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: isMobile ? 11 : 16,
+                  ),
+                ),
 
-                          const SizedBox(height: 15),
+                const SizedBox(height: 15),
 
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                            ),
-                            onPressed: () {},
-                            child: const Text(
-                              "SHOP NOW",
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-
-            Positioned(
-              bottom: 12,
-              left: 0,
-              right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  banners.length,
-                  (i) => AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: currentBanner == i ? 18 : 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: currentBanner == i
-                          ? Colors.white
-                          : Colors.white.withValues(alpha: 0.5),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
+                  onPressed: () {},
+                  child: const Text(
+                    'SHOP NOW',
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget buildPromotions() {
     if (promos.isEmpty) return const SizedBox();
@@ -394,8 +351,17 @@ class _HomePageState extends State<HomePage> {
                             onTap: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(
-                                  builder: (context) =>  ProductDetailPage(productId: item.categoryId)
+                                PageRouteBuilder(
+                                  pageBuilder:
+                                      (
+                                        context,
+                                        animation,
+                                        secondaryAnimation,
+                                      ) => ProductDetailPage(
+                                        productId: item.categoryId,
+                                      ),
+                                  transitionDuration: Duration.zero,
+                                  reverseTransitionDuration: Duration.zero,
                                 ),
                               );
                             },
@@ -555,31 +521,72 @@ class _HomePageState extends State<HomePage> {
 
               Padding(
                 padding: const EdgeInsets.all(4),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 30,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      padding: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                child: Row(
+                  children: [
+                    // VIEW DETAILS BUTTON
+                    Expanded(
+                      child: SizedBox(
+                        height: 30,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              PageRouteBuilder(
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) =>
+                                        ProductDetailPage(
+                                          productId: p.productCode,
+                                        ),
+                                transitionDuration: Duration.zero,
+                                reverseTransitionDuration: Duration.zero,
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            "View Details",
+                            style: TextStyle(color: Colors.white, fontSize: 11),
+                          ),
+                        ),
                       ),
                     ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              ProductDetailPage(productId: p.productCode),
+
+                    const SizedBox(width: 4),
+
+                    // FAVORITE BUTTON
+                    SizedBox(
+                      width: 32,
+                      height: 30,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        splashRadius: 18,
+                        icon: Icon(
+                          _favoriteProductIds.contains(p.productCode)
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          size: 20,
+                          color: _favoriteProductIds.contains(p.productCode)
+                              ? Colors.red
+                              : Colors.grey.shade700,
                         ),
-                      );
-                    },
-                    child: const Text(
-                      "View Details",
-                      style: TextStyle(color: Colors.white, fontSize: 11),
+                        onPressed: () {
+                          setState(() {
+                            if (_favoriteProductIds.contains(p.productCode)) {
+                              _favoriteProductIds.remove(p.productCode);
+                            } else {
+                              _favoriteProductIds.add(p.productCode);
+                            }
+                          });
+                        },
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ],

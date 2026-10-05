@@ -123,9 +123,9 @@ class _SalePageState extends State<SalePage> {
   Widget build(BuildContext context) {
     final mobileView = isMobile(context);
 
-    if (isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+    // if (isLoading) {
+    //   return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    // }
 
     if (errorMessage != null) {
       return Scaffold(
@@ -146,7 +146,7 @@ class _SalePageState extends State<SalePage> {
       body: Column(
         children: [
           // HEADER
-          const CommonHeader(),
+          const CommonHeader(showMobileHeader: true),
 
           // CONTENT
           Expanded(
@@ -207,14 +207,14 @@ class _SalePageState extends State<SalePage> {
 
   Widget _buildHeroBanner(bool mobileView) {
     return Container(
-      height: mobileView ? 150 : 200,
+      height: mobileView ? 150 : 250,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         image: const DecorationImage(
-          image: const AssetImage("assets/salebanner.jpg"),
+          image: AssetImage('assets/sale1.png'),
           fit: BoxFit.cover,
-          alignment: const Alignment(0, -0.3),
+          alignment: Alignment(0, -0.3),
         ),
       ),
       child: Padding(
@@ -225,34 +225,34 @@ class _SalePageState extends State<SalePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              "MEGA SALE DEALS 🔥",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: mobileView ? 24 : 34,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
+            // Text(
+            //   "MEGA SALE DEALS 🔥",
+            //   style: TextStyle(
+            //     color: Colors.white,
+            //     fontSize: mobileView ? 24 : 34,
+            //     fontWeight: FontWeight.w800,
+            //   ),
+            // ),
 
-            const SizedBox(height: 2),
+            // const SizedBox(height: 2),
 
-            Text(
-              "Hot discounts on Yangon's trending fashion,",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: mobileView ? 11 : 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            // Text(
+            //   "Hot discounts on Yangon's trending fashion,",
+            //   style: TextStyle(
+            //     color: Colors.white,
+            //     fontSize: mobileView ? 11 : 14,
+            //     fontWeight: FontWeight.w500,
+            //   ),
+            // ),
 
-            Text(
-              "bags, shoes, and accessories.",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: mobileView ? 11 : 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            // Text(
+            //   "bags, shoes, and accessories.",
+            //   style: TextStyle(
+            //     color: Colors.white,
+            //     fontSize: mobileView ? 11 : 14,
+            //     fontWeight: FontWeight.w500,
+            //   ),
+            // ),
 
             const SizedBox(height: 10),
 
@@ -645,7 +645,7 @@ class _SalePageState extends State<SalePage> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                fontSize: 11,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
@@ -662,7 +662,7 @@ class _SalePageState extends State<SalePage> {
                 Text(
                   "\$${product.originalPrice.toStringAsFixed(2)}",
                   style: const TextStyle(
-                    fontSize: 10,
+                    fontSize: 13,
                     color: Colors.grey,
                     decoration: TextDecoration.lineThrough,
                   ),
@@ -673,7 +673,7 @@ class _SalePageState extends State<SalePage> {
                 Text(
                   "\$${product.salePrice.toStringAsFixed(2)}",
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
@@ -687,34 +687,35 @@ class _SalePageState extends State<SalePage> {
           // RATING
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 7),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Stars
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: List.generate(5, (index) {
-                    return Icon(
-                      index < product.rating.round()
-                          ? Icons.star
-                          : Icons.star_border,
-                      size: 13,
-                      color: Colors.orange,
-                    );
-                  }),
-                ),
 
-                const SizedBox(width: 5),
+            // child: Row(
+            //   crossAxisAlignment: CrossAxisAlignment.center,
+            //   children: [
+            //     // Stars
+            //     Row(
+            //       mainAxisSize: MainAxisSize.min,
+            //       children: List.generate(5, (index) {
+            //         return Icon(
+            //           index < product.rating.round()
+            //               ? Icons.star
+            //               : Icons.star_border,
+            //           size: 13,
+            //           color: Colors.orange,
+            //         );
+            //       }),
+            //     ),
 
-                // Review count
-                Text(
-                  "(${product.reviewCount})",
-                  style: const TextStyle(fontSize: 10, color: Colors.grey),
-                ),
-              ],
-            ),
+            //     const SizedBox(width: 5),
+
+            //     // Review count
+            //     Text(
+            //       "(${product.reviewCount})",
+            //       style: const TextStyle(fontSize: 10, color: Colors.grey),
+            //     ),
+            //   ],
+            // ),
           ),
-          
+
           const Spacer(),
 
           // VIEW DEAL BUTTON

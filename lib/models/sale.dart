@@ -1,4 +1,5 @@
 class SaleModel {
+  final String productCode;
   final String productName;
   final String category;
   final double originalPrice;
@@ -10,6 +11,7 @@ class SaleModel {
   final bool isNew;
 
   SaleModel({
+    required this.productCode,
     required this.productName,
     required this.category,
     required this.originalPrice,
@@ -23,6 +25,7 @@ class SaleModel {
 
   factory SaleModel.fromJson(Map<String, dynamic> json) {
     return SaleModel(
+      productCode: json['productCode'] ?? '',
       productName: json['productName'] ?? '',
       category: json['category'] ?? '',
       originalPrice: (json['originalPrice'] as num).toDouble(),

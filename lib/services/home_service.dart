@@ -63,38 +63,38 @@ class HomeService {
         "bannerId":1,
         "title":"YANGON SUMMER HEATWAVE SAVINGS!",
         "description":"Cool styles for Yangon’s hottest days.",
-        "imagePath":"assets/promotion-banner.png",
+        "imagePath":"assets/home.png",
         "link":"/sale",
         "sortOrder":1,
         "isActive":true
       },
-      {
-        "bannerId":2,
-        "title":"NEW ARRIVALS",
-        "description":"Discover latest fashion trends.",
-        "imagePath":"assets/promotion-banner2.png",
-        "link":"/products/new",
-        "sortOrder":2,
-        "isActive":true
-      },
-      {
-        "bannerId":3,
-        "title":"BIG SALE 50% OFF",
-        "description":"Don’t miss the best deals.",
-        "imagePath":"assets/promotion-banner.png",
-        "link":"/promotion",
-        "sortOrder":3,
-        "isActive":true
-      },
-      {
-        "bannerId":4,
-        "title":"NEW ARRIVALS",
-        "description":"Discover latest fashion trends.",
-        "imagePath":"assets/promotion-banner2.png",
-        "link":"/products/new",
-        "sortOrder":2,
-        "isActive":true
-      },
+      // {
+      //   "bannerId":2,
+      //   "title":"NEW ARRIVALS",
+      //   "description":"Discover latest fashion trends.",
+      //   "imagePath":"assets/home1.png",
+      //   "link":"/products/new",
+      //   "sortOrder":2,
+      //   "isActive":true
+      // },
+      // {
+      //   "bannerId":3,
+      //   "title":"BIG SALE 50% OFF",
+      //   "description":"Don’t miss the best deals.",
+      //   "imagePath":"assets/promotion-banner.png",
+      //   "link":"/promotion",
+      //   "sortOrder":3,
+      //   "isActive":true
+      // },
+      // {
+      //   "bannerId":4,
+      //   "title":"NEW ARRIVALS",
+      //   "description":"Discover latest fashion trends.",
+      //   "imagePath":"assets/promotion-banner2.png",
+      //   "link":"/products/new",
+      //   "sortOrder":2,
+      //   "isActive":true
+      // },
 
     ];
     return jsonData

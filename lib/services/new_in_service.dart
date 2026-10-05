@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../models/new_in.dart';
+import 'package:http/http.dart' as http;
 
 class NewInService {
   // ------------------------------------------------------------
@@ -115,14 +116,70 @@ class NewInService {
   // GET NEW IN PRODUCTS
   // ------------------------------------------------------------
 
+  static const String _newInUrl =
+      'https://www.capital-sys.net/CKMMallAPI/api/productshowcase/GetNewProductList';
+
   Future<List<NewInModel>> getNewInProducts() async {
-    // Simulate API delay
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      final response = await http.get(
+        Uri.parse(_newInUrl),
+        headers: {'Accept': 'application/json'},
+      );
 
-    final List<dynamic> jsonData = jsonDecode(_mockJson);
+      print('========== NEW IN API ==========');
+      print('URL: $_newInUrl');
+      print('Status Code: ${response.statusCode}');
+      print('Response: ${response.body}');
+      print('================================');
 
-    return jsonData
-        .map((json) => NewInModel.fromJson(json))
-        .toList();
+      if (response.statusCode != 200) {
+        throw Exception('Failed to load new products: ${response.statusCode}');
+      }
+
+      final List<dynamic> jsonData = jsonDecode(response.body);
+
+      return jsonData
+          .map((json) => NewInModel.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e, stackTrace) {
+      print('========== NEW IN API ERROR ==========');
+      print(e);
+      print(stackTrace);
+      print('======================================');
+
+      rethrow;
+    }
+  }
+
+  static const String _categoryUrl =
+      'https://www.capital-sys.net/CKMMallAPI/api/category/all';
+
+  Future<List<String>> getCategories() async {
+    try {
+      final response = await http.get(
+        Uri.parse(_categoryUrl),
+        headers: {'Accept': 'application/json'},
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to load categories: ${response.statusCode}');
+      }
+
+      final List<dynamic> jsonData = jsonDecode(response.body);
+
+      final categories = jsonData
+          .map<String>((json) => json['name'].toString())
+          .where((name) => name.toLowerCase() != 'root')
+          .toList();
+
+      return categories;
+    } catch (e, stackTrace) {
+      // print("========== CATEGORY ERROR ==========");
+      // print("Error: $e");
+      // print("StackTrace: $stackTrace");
+      // print("====================================");
+
+      rethrow;
+    }
   }
 }
