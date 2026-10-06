@@ -461,8 +461,8 @@ class ApiService extends ChangeNotifier {
   Future<Product> _getProductByIdFromApi(int id) async {
 
     try {
-      final url = Uri.parse('$baseUrl/products/$id');
-      // final url = Uri.parse('https://www.capital-sys.net/CKMMallAPI/api/Product/GetProductDetailByProductId/$id');
+      // final url = Uri.parse('$baseUrl/products/$id');
+      final url = Uri.parse('https://www.capital-sys.net/CKMMallAPI/api/Product/GetProductByProductID/$id');
       print('📡 Fetching product: $url');
 
       final response = await http
@@ -556,7 +556,7 @@ class ApiService extends ChangeNotifier {
     try {
       //  Log the exact URL being requested
       final url = Uri.parse(
-        'https://www.capital-sys.net/CKMMallAPI/api/category/categoryproduct/7',
+        'https://www.capital-sys.net/CKMMallAPI/api/category/categoryproduct/$categoryId',
       );
       // final url = Uri.parse('$baseUrl/products/category/$category');
       print('📡 Requesting: $url');
