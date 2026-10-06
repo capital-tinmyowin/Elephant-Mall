@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:http/http.dart' as http;
+import 'package:http/browser_client.dart' show BrowserClient;
 
 import '../models/Category.dart';
 import '../models/product_variant.dart';
 import '../models/sell_product_model.dart';
+import '../services/auth_service.dart';
 
 class ProductApiResponse {
   final bool success;
@@ -233,7 +235,9 @@ class ProductService {
   // ============================================================
 
   Future<ProductApiResponse> createProduct({
+    required AuthService authService,
     required String productCode,
+    required int userId,
     required String productName,
     required String description,
     required String location,
@@ -264,7 +268,7 @@ class ProductService {
         'variantID': '',
         'quantity': variant.quantity,
         'price': variant.price,
-        'discountPrice': variant.discountPrice,
+        'discountPrice': variant.discountPrice ?? 0,
         'variantName': variant.variantName,
       };
     }).toList();
@@ -272,12 +276,12 @@ class ProductService {
     final product = {
       'productId': 0,
       'productCode': productCode,
-      'userId': 1,
+      'userId': userId,
       'productName': productName,
       'description': description,
       'location': location,
       'price': price,
-      'discountPrice': discountPrice,
+      'discountPrice': discountPrice ?? 0,
       'condition': condition,
       'status': status,
       'businessContactGroupId': businessContactGroupId,
@@ -291,66 +295,66 @@ class ProductService {
 
     request.headers['Accept'] = 'application/json';
 
-    // Product JSON
     request.fields['product'] = jsonEncode(product);
 
-    // Images
-    // int imageIndex = 0;
-
-    // for (final image in imageBytes) {
-    //   if (image == null) {
-    //     continue;
-    //   }
-
-    //   request.files.add(
-    //     http.MultipartFile.fromBytes(
-    //       'image',
-    //       image,
-    //       filename: 'image_$imageIndex.jpg',
-    //     ),
-    //   );
-
-    //   imageIndex++;
-    // }
-
-    debugPrint('========== MULTIPART API REQUEST ==========');
+    debugPrint('========== CREATE API REQUEST ==========');
+    debugPrint('Method: POST');
     debugPrint('URL: $url');
-    debugPrint('Product: ${jsonEncode(product)}');
-    // debugPrint('Images: $imageIndex');
-    debugPrint('===========================================');
+    debugPrint('Fields: ${request.fields}');
+    debugPrint('========================================');
 
     try {
-      debugPrint('========== MULTIPART DETAILS ==========');
-      debugPrint('Method: ${request.method}');
-      debugPrint('URL: ${request.url}');
-      debugPrint('Headers: ${request.headers}');
-      debugPrint('Fields: ${request.fields}');
-      debugPrint('Files count: ${request.files.length}');
+      http.Response response;
 
-      for (final file in request.files) {
-        debugPrint(
-          'File: field=${file.field}, filename=${file.filename}, length=${file.length}',
-        );
+      if (kIsWeb) {
+        // Flutter Web:
+        // Browser automatically sends the authentication cookie.
+        final client = BrowserClient();
+        client.withCredentials = true;
+
+        try {
+          final streamedResponse = await client.send(request);
+
+          // IMPORTANT:
+          // Convert the streamed response before closing the client.
+          response = await http.Response.fromStream(streamedResponse);
+        } finally {
+          client.close();
+        }
+      } else {
+        // Android / iOS:
+        // Manually attach the cookie captured during login.
+        if (authService.authCookie != null &&
+            authService.authCookie!.isNotEmpty) {
+          request.headers['Cookie'] = authService.authCookie!;
+
+          debugPrint('CREATE AUTH: Authentication cookie attached.');
+        } else {
+          debugPrint('CREATE AUTH: No authentication cookie found.');
+        }
+
+        final client = http.Client();
+
+        try {
+          final streamedResponse = await client.send(request);
+
+          // Convert before closing the client.
+          response = await http.Response.fromStream(streamedResponse);
+        } finally {
+          client.close();
+        }
       }
 
-      debugPrint('=======================================');
-
-      final streamedResponse = await request.send();
-
-      final response = await http.Response.fromStream(streamedResponse);
-
-      debugPrint('========== API RESPONSE ==========');
+      debugPrint('========== CREATE API RESPONSE ==========');
       debugPrint('Status Code: ${response.statusCode}');
       debugPrint('Response Body: ${response.body}');
       debugPrint('Response Headers: ${response.headers}');
-      debugPrint('==================================');
+      debugPrint('=========================================');
 
+      // Authentication failure
       if (response.statusCode == 401) {
-        throw Exception('401 Unauthorized');
-      }
+        debugPrint('CREATE RESULT: 401 Unauthorized');
 
-      // 401 Unauthorized
-      if (response.statusCode == 401) {
         return ProductApiResponse(
           success: false,
           message: 'Please login or sign up first.',
@@ -358,35 +362,62 @@ class ProductService {
         );
       }
 
+      // Empty response
       if (response.body.isEmpty) {
+        final isSuccess =
+            response.statusCode >= 200 && response.statusCode < 300;
+
         return ProductApiResponse(
-          success: response.statusCode >= 200 && response.statusCode < 300,
-          message: response.statusCode >= 200 && response.statusCode < 300
-              ? 'Product saved successfully.'
-              : 'Failed to save product.',
+          success: isSuccess,
+          message: isSuccess
+              ? 'Product created successfully.'
+              : 'Failed to create product.',
+          statusCode: response.statusCode,
         );
       }
 
-      final responseData = jsonDecode(response.body);
+      dynamic decodedResponse;
+
+      try {
+        decodedResponse = jsonDecode(response.body);
+      } catch (e) {
+        debugPrint('CREATE JSON PARSE ERROR: $e');
+
+        return ProductApiResponse(
+          success: response.statusCode >= 200 && response.statusCode < 300,
+          message: response.body.isNotEmpty
+              ? response.body
+              : 'Failed to create product.',
+          statusCode: response.statusCode,
+        );
+      }
+
+      if (decodedResponse is! Map<String, dynamic>) {
+        return ProductApiResponse(
+          success: response.statusCode >= 200 && response.statusCode < 300,
+          message: decodedResponse.toString(),
+          statusCode: response.statusCode,
+        );
+      }
 
       final apiResponse = ProductApiResponse.fromJson(
-        responseData,
+        decodedResponse,
         statusCode: response.statusCode,
       );
-      debugPrint('========== PARSED API RESPONSE ==========');
+
+      debugPrint('========== PARSED CREATE RESPONSE ==========');
       debugPrint('Success: ${apiResponse.success}');
       debugPrint('Message: ${apiResponse.message}');
       debugPrint('ID: ${apiResponse.id}');
-      debugPrint('Saved At: ${apiResponse.savedAt}');
-      debugPrint('Updated At: ${apiResponse.updatedAt}');
-      debugPrint('==========================================');
+      debugPrint('Status Code: ${apiResponse.statusCode}');
+      debugPrint('============================================');
 
       return apiResponse;
     } catch (e, stackTrace) {
-      debugPrint('========== API ERROR ==========');
-      debugPrint(e.toString());
-      debugPrint(stackTrace.toString());
-      debugPrint('================================');
+      debugPrint('========== CREATE API ERROR ==========');
+      debugPrint('Error: $e');
+      debugPrint('StackTrace: $stackTrace');
+      debugPrint('======================================');
 
       return ProductApiResponse(success: false, message: e.toString());
     }
@@ -396,9 +427,19 @@ class ProductService {
   // UPDATE PRODUCT
   // ============================================================
 
+  // ============================================================
+  // UPDATE PRODUCT
+  // ============================================================
+
+  // ============================================================
+  // UPDATE PRODUCT
+  // ============================================================
+
   Future<ProductApiResponse> updateProduct({
+    required AuthService authService,
     required int productId,
     required String productCode,
+    required int userId,
     required String productName,
     required String description,
     required String location,
@@ -417,7 +458,10 @@ class ProductService {
       'https://www.capital-sys.net/CKMMallAPI/api/saleitem/UpdateSaleItem',
     );
 
-    // Categories
+    // ============================================================
+    // CATEGORIES
+    // ============================================================
+
     final pCategoryList = categoryIds.map((categoryId) {
       return {
         'id': 0,
@@ -426,7 +470,10 @@ class ProductService {
       };
     }).toList();
 
-    // Variants
+    // ============================================================
+    // VARIANTS
+    // ============================================================
+
     final pVariantList = variants.map((variant) {
       return {
         'id': 0,
@@ -434,11 +481,15 @@ class ProductService {
         'variantID': '',
         'quantity': variant.quantity.toString(),
         'price': variant.price,
+        'discountPrice': variant.discountPrice,
         'variantName': variant.variantName,
       };
     }).toList();
 
-    // Images
+    // ============================================================
+    // IMAGES
+    // ============================================================
+
     final pImageList = images.map((image) {
       return {
         'id': image['id'] ?? 0,
@@ -448,58 +499,109 @@ class ProductService {
       };
     }).toList();
 
-    // Complete request body
+    // ============================================================
+    // REQUEST BODY
+    // ============================================================
+
     final body = {
       'productId': productId,
       'productCode': productCode,
-      'userId': 1,
+      'userId': userId,
       'productName': productName,
       'description': description,
       'location': location,
       'price': price,
-      'discountPrice': discountPrice,
+      'discountPrice': discountPrice ?? 0,
       'condition': condition,
       'status': status,
       'businessContactGroupId': businessContactGroupId,
 
-      // Categories
-      'pCategoryList': categoryIds.map((categoryId) {
-        return {'id': 0, 'productId': 0, 'categoryId': categoryId.toString()};
-      }).toList(),
-
-      // Images
+      'pCategoryList': pCategoryList,
       'pImageList': pImageList,
-
-      // Variants
       'pVariantList': pVariantList,
-
-      // Contacts
       'businesscontact': businessContacts,
     };
 
     final jsonBody = jsonEncode(body);
 
     debugPrint('========== UPDATE API REQUEST ==========');
-    debugPrint(jsonBody);
+    debugPrint('Method: PUT');
+    debugPrint('URL: $url');
+    debugPrint('Body: $jsonBody');
     debugPrint('========================================');
 
     try {
-      final response = await http.put(
-        url,
-        headers: {
+      http.Response response;
+
+      // ============================================================
+      // WEB
+      // ============================================================
+
+      if (kIsWeb) {
+        final client = BrowserClient();
+
+        // IMPORTANT:
+        // This allows the browser to send the authentication cookie.
+        client.withCredentials = true;
+
+        try {
+          response = await client.put(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: jsonBody,
+          );
+        } finally {
+          client.close();
+        }
+      }
+      // ============================================================
+      // ANDROID / IOS
+      // ============================================================
+      else {
+        final headers = <String, String>{
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-        },
-        body: jsonBody,
-      );
+        };
+
+        // Native Flutter does not automatically send the login cookie.
+        if (authService.authCookie != null &&
+            authService.authCookie!.isNotEmpty) {
+          headers['Cookie'] = authService.authCookie!;
+
+          debugPrint('UPDATE AUTH: Authentication cookie attached.');
+        } else {
+          debugPrint('UPDATE AUTH: No authentication cookie found.');
+        }
+
+        final client = http.Client();
+
+        try {
+          response = await client.put(url, headers: headers, body: jsonBody);
+        } finally {
+          client.close();
+        }
+      }
+
+      // ============================================================
+      // RESPONSE DEBUG
+      // ============================================================
 
       debugPrint('========== UPDATE API RESPONSE ==========');
       debugPrint('Status Code: ${response.statusCode}');
       debugPrint('Response Body: ${response.body}');
+      debugPrint('Response Headers: ${response.headers}');
       debugPrint('=========================================');
 
-      // 401 Unauthorized
+      // ============================================================
+      // 401 UNAUTHORIZED
+      // ============================================================
+
       if (response.statusCode == 401) {
+        debugPrint('UPDATE RESULT: 401 Unauthorized');
+
         return ProductApiResponse(
           success: false,
           message: 'Please login or sign up first.',
@@ -507,36 +609,83 @@ class ProductService {
         );
       }
 
+      // ============================================================
+      // EMPTY RESPONSE
+      // ============================================================
+
       if (response.body.isEmpty) {
+        final isSuccess =
+            response.statusCode >= 200 && response.statusCode < 300;
+
         return ProductApiResponse(
-          success: response.statusCode >= 200 && response.statusCode < 300,
-          message: response.statusCode >= 200 && response.statusCode < 300
+          success: isSuccess,
+          message: isSuccess
               ? 'Product updated successfully.'
               : 'Failed to update product.',
+          statusCode: response.statusCode,
         );
       }
 
-      final responseData = jsonDecode(response.body);
+      // ============================================================
+      // PARSE JSON
+      // ============================================================
+
+      dynamic decodedResponse;
+
+      try {
+        decodedResponse = jsonDecode(response.body);
+      } catch (e) {
+        debugPrint('UPDATE JSON PARSE ERROR: $e');
+
+        return ProductApiResponse(
+          success: response.statusCode >= 200 && response.statusCode < 300,
+          message: response.body.isNotEmpty
+              ? response.body
+              : 'Failed to update product.',
+          statusCode: response.statusCode,
+        );
+      }
+
+      // ============================================================
+      // INVALID RESPONSE FORMAT
+      // ============================================================
+
+      if (decodedResponse is! Map<String, dynamic>) {
+        return ProductApiResponse(
+          success: response.statusCode >= 200 && response.statusCode < 300,
+          message: decodedResponse.toString(),
+          statusCode: response.statusCode,
+        );
+      }
+
+      // ============================================================
+      // API RESPONSE MODEL
+      // ============================================================
 
       final apiResponse = ProductApiResponse.fromJson(
-        responseData,
+        decodedResponse,
         statusCode: response.statusCode,
       );
-      debugPrint('Update Success: ${apiResponse.success}');
-      debugPrint('Update Message: ${apiResponse.message}');
-      debugPrint('Updated Product ID: ${apiResponse.id}');
+
+      debugPrint('========== PARSED UPDATE RESPONSE ==========');
+      debugPrint('Success: ${apiResponse.success}');
+      debugPrint('Message: ${apiResponse.message}');
+      debugPrint('ID: ${apiResponse.id}');
       debugPrint('Updated At: ${apiResponse.updatedAt}');
+      debugPrint('Status Code: ${apiResponse.statusCode}');
+      debugPrint('============================================');
 
       return apiResponse;
     } catch (e, stackTrace) {
       debugPrint('========== UPDATE API ERROR ==========');
-      debugPrint(e.toString());
-      debugPrint(stackTrace.toString());
+      debugPrint('Error: $e');
+      debugPrint('StackTrace: $stackTrace');
       debugPrint('======================================');
 
       return ProductApiResponse(success: false, message: e.toString());
     }
   }
+
   // Future<bool> createProduct({
   //   required String title,
   //   required String description,
