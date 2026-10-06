@@ -207,12 +207,12 @@ class _SalePageState extends State<SalePage> {
 
   Widget _buildHeroBanner(bool mobileView) {
     return Container(
-      height: mobileView ? 150 : 250,
+      height: mobileView ? 150 : 270,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         image: const DecorationImage(
-          image: AssetImage('assets/sale1.png'),
+          image: AssetImage('assets/sale.png'),
           fit: BoxFit.cover,
           alignment: Alignment(0, -0.3),
         ),
@@ -220,61 +220,92 @@ class _SalePageState extends State<SalePage> {
       child: Padding(
         padding: EdgeInsets.only(
           left: mobileView ? 20 : 35,
-          top: mobileView ? 18 : 20,
+          top: mobileView ? 1 : 1,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Text(
-            //   "MEGA SALE DEALS 🔥",
-            //   style: TextStyle(
-            //     color: Colors.white,
-            //     fontSize: mobileView ? 24 : 34,
-            //     fontWeight: FontWeight.w800,
-            //   ),
-            // ),
-
-            // const SizedBox(height: 2),
-
-            // Text(
-            //   "Hot discounts on Yangon's trending fashion,",
-            //   style: TextStyle(
-            //     color: Colors.white,
-            //     fontSize: mobileView ? 11 : 14,
-            //     fontWeight: FontWeight.w500,
-            //   ),
-            // ),
-
-            // Text(
-            //   "bags, shoes, and accessories.",
-            //   style: TextStyle(
-            //     color: Colors.white,
-            //     fontSize: mobileView ? 11 : 14,
-            //     fontWeight: FontWeight.w500,
-            //   ),
-            // ),
-
-            const SizedBox(height: 10),
-
-            SizedBox(
-              height: 30,
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xffF28C00),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                ),
-                child: const Text(
-                  "SHOP SALE NOW",
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: mobileView ? 16 : 150,
+            top: mobileView ? 12 : 10,
+            right: mobileView ? 100 : 300,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text("YANGON",
+                style: TextStyle(
+                  color: Colors.black87,
+                  fontSize: mobileView ? 11 : 16,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 6,
                 ),
               ),
-            ),
-          ],
+              Text("SUMMER",
+                style: TextStyle(
+                  color: const Color(0xFF4A4A4A),
+                  fontSize: mobileView ? 24 : 42,
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: 1,
+                  height: 1.0,
+                ),
+              ),
+              Text("SALE",
+                style: TextStyle(
+                  color: const Color(0xFFF28C00),
+                  fontSize: mobileView ? 30 : 72,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2,
+                  height: 1.0,
+                ),
+              ),
+              // SizedBox(height: mobileView ? 6 : 10),
+              Text(
+                "Cool styles for Yangon's hottest days.\n"
+                "Fashion, bags, shoes, and more.",
+                style: TextStyle(
+                  color: const Color(0xFF4A4A4A),
+                  fontSize: mobileView ? 11 : 14,
+                  height: 1.4,
+                ),
+              ),
+              // SizedBox(height: mobileView ? 10 : 16),
+              SizedBox(
+                height: mobileView ? 32 : 40,
+                child: ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF28C00),
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: mobileView ? 16 : 24,
+                    ),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text("SHOP NOW",
+                        style: TextStyle(
+                          fontSize: mobileView ? 11 : 14,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.chevron_right,
+                        size: mobileView ? 16 : 18,
+                        color: Colors.white,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
