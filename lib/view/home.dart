@@ -152,7 +152,7 @@ Widget buildHero() {
         children: [
           // SINGLE BANNER IMAGE
           Image.asset(
-            'assets/sale1.png',
+            'assets/home1.png',
             fit: BoxFit.cover,
             alignment: const Alignment(0, -0.3),
             errorBuilder: (context, error, stackTrace) {
