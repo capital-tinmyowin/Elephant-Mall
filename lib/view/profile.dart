@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'common/header.dart';
 import 'common/footer.dart';
+import 'sellernew.dart';
+
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -591,6 +593,14 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() {
           selectedMenu = index;
         });
+
+        // My Listings
+        if (title == "My Listings") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const NewSellerPage()),
+          );
+        }
       },
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 2),
