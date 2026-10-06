@@ -17,6 +17,9 @@ import 'common/footer.dart';
 
 import 'login.dart';
 
+import 'package:provider/provider.dart';
+import '../services/auth_service.dart';
+
 class SellPage extends StatefulWidget {
   final int? productId;
 
@@ -494,6 +497,56 @@ class _SellPageState extends State<SellPage> {
               },
               child: const Text(
                 "Login",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showSomethingWentWrongDialog() async {
+    if (!mounted) return;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xfffdfaf4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.error_outline, color: Color(0xFFC77C2E), size: 30),
+              SizedBox(width: 10),
+              Text(
+                "Something went wrong",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: const Text(
+            "We couldn't complete your request.\n\n"
+            "Please try again later.",
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFC77C2E),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(dialogContext);
+              },
+              child: const Text(
+                "OK",
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
@@ -2423,11 +2476,31 @@ class _SellPageState extends State<SellPage> {
                     bool requestSuccess = false;
 
                     try {
+                      final authService = Provider.of<AuthService>(
+                        context,
+                        listen: false,
+                      );
+
+                      final currentUser = authService.currentUser;
+
+                      if (currentUser == null) {
+                        setState(() {
+                          isSubmitting = false;
+                        });
+
+                        await _showLoginRequiredDialog();
+                        return;
+                      }
+
+                      final currentUserId = currentUser.id;
+                      debugPrint('CURRENT USER ID: $currentUserId');
                       if (widget.productId != null) {
                         // UPDATE
                         apiResponse = await productService.updateProduct(
+                          authService: authService,
                           productId: _productId!,
                           productCode: _productCode!,
+                          userId: currentUserId,
                           productName: titleController.text.trim(),
                           description: descriptionController.text.trim(),
                           location: locationController.text.trim(),
@@ -2483,8 +2556,10 @@ class _SellPageState extends State<SellPage> {
                       } else {
                         // CREATE
                         apiResponse = await productService.createProduct(
-                          productCode:
-                              'ELE-${DateTime.now().millisecondsSinceEpoch}',
+                          authService: authService,
+                          productCode: '',
+                          userId: currentUserId,
+
                           productName: titleController.text.trim(),
                           description: descriptionController.text.trim(),
                           location: locationController.text.trim(),
@@ -2544,8 +2619,6 @@ class _SellPageState extends State<SellPage> {
 
                       requestSuccess = false;
 
-                      final errorMessage = e.toString();
-
                       // HTTP 401 Unauthorized
                       if (_isUnauthorizedError(e)) {
                         if (!mounted) return;
@@ -2558,9 +2631,12 @@ class _SellPageState extends State<SellPage> {
                         return;
                       }
 
+                      // Keep the real error only in debug output.
+                      debugPrint("Backend/API error: $e");
+
                       apiResponse = ProductApiResponse(
                         success: false,
-                        message: errorMessage,
+                        message: 'Something went wrong',
                       );
                     }
                     if (!mounted) return;
@@ -2619,25 +2695,16 @@ class _SellPageState extends State<SellPage> {
                         variants.clear();
                       });
                     } else {
-                      final message =
-                          apiResponse?.message?.toString().toLowerCase() ?? '';
-
-                      if (message.contains('401') ||
-                          message.contains('unauthorized') ||
-                          message.contains('http 401')) {
+                      // HTTP 401 Unauthorized
+                      if (apiResponse?.statusCode == 401) {
                         await _showLoginRequiredDialog();
                         return;
                       }
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            apiResponse?.message?.isNotEmpty == true
-                                ? apiResponse!.message!
-                                : 'Failed to create product',
-                          ),
-                        ),
-                      );
+                      // Do NOT show backend error message to user.
+                      debugPrint('Backend error: ${apiResponse?.message}');
+
+                      await _showSomethingWentWrongDialog();
                     }
                   },
 

@@ -10,6 +10,8 @@ import 'view/login.dart';
 import 'view/seller.dart';
 import 'view/signup.dart';
 import 'view/new_in.dart';
+import 'services/product_service.dart';
+
 void main() {
   final apiService = ApiService();
 
@@ -30,6 +32,7 @@ class MyApp extends StatelessWidget {
 
         // Keep existing providers
         ChangeNotifierProvider.value(value: apiService),
+        
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

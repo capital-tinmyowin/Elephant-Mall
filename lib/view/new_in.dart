@@ -4,6 +4,7 @@ import '../models/new_in.dart';
 import '../services/new_in_service.dart';
 import 'common/header.dart';
 import 'common/footer.dart';
+import 'package:intl/intl.dart';
 
 class NewInPage extends StatefulWidget {
   const NewInPage({super.key});
@@ -16,7 +17,6 @@ class _NewInPageState extends State<NewInPage> {
   String selectedCategory = "All Categories";
   String selectedPrice = "All Prices";
   String selectedSort = "Newest";
-  
 
   final NewInService _newInService = NewInService();
 
@@ -115,7 +115,7 @@ class _NewInPageState extends State<NewInPage> {
       result.sort((a, b) => a.price.compareTo(b.price));
     } else if (selectedSort == "Price: High to Low") {
       result.sort((a, b) => b.price.compareTo(a.price));
-    } 
+    }
     // else if (selectedSort == "Rating") {
     //   result.sort((a, b) => b.rating.compareTo(a.rating));
     // }
@@ -266,7 +266,6 @@ class _NewInPageState extends State<NewInPage> {
             //     fontWeight: FontWeight.w800,
             //   ),
             // ),
-
             const SizedBox(height: 3),
 
             // Text(
@@ -284,7 +283,6 @@ class _NewInPageState extends State<NewInPage> {
             //     fontSize: mobileView ? 11 : 13,
             //   ),
             // ),
-
             const SizedBox(height: 10),
 
             SizedBox(
@@ -620,7 +618,7 @@ class _NewInPageState extends State<NewInPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 7),
             child: Text(
-              "${product.price.toStringAsFixed(2)} MMK",
+              "${NumberFormat('#,##0').format(product.price)} MMK",
               style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
