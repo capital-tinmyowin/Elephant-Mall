@@ -234,7 +234,7 @@ class _CommonHeaderState extends State<CommonHeader> {
                       _menuItem(context, "CATEGORIES", const CategoryPage()),
                       _menuItem(context, "SALE", const SalePage()),
                       _menuItem(context, "NEW IN", const NewInPage()),
-                      _menuItem(context, "MY ORDERS", const SellPage()),
+                      _menuItem(context, "MY ORDERS", const MyFavouritePage()),
                       _menuItem(context, "ABOUT US", const NewSellerPage()),
                     ],
                   ),
@@ -338,48 +338,96 @@ class _CommonHeaderState extends State<CommonHeader> {
   }
 
   // ============= PROFILE BUTTON =============
+  // Widget _buildProfileButton(BuildContext context, bool isLoggedIn) {
+  //   return MouseRegion(
+  //     cursor: SystemMouseCursors.click,
+  //     child: GestureDetector(
+  //       onTap: () {
+  //         Navigator.push(
+  //           context,
+  //           PageRouteBuilder(
+  //             pageBuilder: (context, animation, secondaryAnimation) =>
+  //                 NewSellerPage(),
+  //             transitionDuration: Duration.zero,
+  //             reverseTransitionDuration: Duration.zero,
+  //           ),
+  //         );
+  //       },
+  //       child: Container(
+  //         padding: const EdgeInsets.all(4),
+  //         decoration: BoxDecoration(
+  //           shape: BoxShape.circle,
+  //           color: isLoggedIn
+  //               ? const Color(0xFF2B6E3B).withOpacity(0.1)
+  //               : Colors.transparent,
+  //         ),
+  //         child: Stack(
+  //           children: [
+  //             const Icon(Icons.person_outline, size: 28),
+
+  //             if (isLoggedIn)
+  //               Positioned(
+  //                 right: 0,
+  //                 bottom: 0,
+  //                 child: Container(
+  //                   width: 10,
+  //                   height: 10,
+  //                   decoration: const BoxDecoration(
+  //                     color: Colors.green,
+  //                     shape: BoxShape.circle,
+  //                   ),
+  //                 ),
+  //               ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
   Widget _buildProfileButton(BuildContext context, bool isLoggedIn) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () {
+    return GestureDetector(
+      onTap: () {
+        if (isLoggedIn) {
+          // Show logout dialog
+          _showLogoutDialog(context);
+        } else {
+          // Navigate to login page
           Navigator.push(
             context,
             PageRouteBuilder(
               pageBuilder: (context, animation, secondaryAnimation) =>
-                  NewSellerPage(),
+                  LoginPage(),
               transitionDuration: Duration.zero,
               reverseTransitionDuration: Duration.zero,
             ),
           );
-        },
-        child: Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isLoggedIn
-                ? const Color(0xFF2B6E3B).withOpacity(0.1)
-                : Colors.transparent,
-          ),
-          child: Stack(
-            children: [
-              const Icon(Icons.person_outline, size: 28),
-
-              if (isLoggedIn)
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: const BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
-                    ),
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isLoggedIn
+              ? const Color(0xFF2B6E3B).withOpacity(0.1)
+              : Colors.transparent,
+        ),
+        child: Stack(
+          children: [
+            const Icon(Icons.person_outline, size: 28),
+            if (isLoggedIn)
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
@@ -417,6 +465,16 @@ class _CommonHeaderState extends State<CommonHeader> {
               onTap: () {
                 Navigator.pop(context);
                 // Navigate to profile
+                Navigator.push(
+                  context,
+
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                    ProfilePage(),
+                    transitionDuration: Duration.zero,
+                    reverseTransitionDuration: Duration.zero,
+                  ),
+                );
               },
             ),
             _buildLogoutMenuItem(
@@ -645,7 +703,7 @@ class CommonBottomBar extends StatelessWidget {
         break;
 
       case 3:
-        page = const SellPage();
+        page = const MyFavouritePage();
         break;
 
       case 4:

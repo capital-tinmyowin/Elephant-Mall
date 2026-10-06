@@ -4,6 +4,7 @@ import 'package:elephant_mall/models/Category.dart';
 import 'package:elephant_mall/view/category_detail.dart';
 import 'package:elephant_mall/widgets/app_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../services/Category_service.dart';
@@ -110,7 +111,7 @@ class _CategoryPageState extends State<CategoryPage> {
             children: [
               _buildHeroCarousel(false),
             const SizedBox(height: 16),
-              _buildDesktopProducts(),
+              _buildProducts(),
             ],
           ),
         ),
@@ -131,7 +132,7 @@ class _CategoryPageState extends State<CategoryPage> {
       children: [
         _buildHeroCarousel(true),
         const SizedBox(height: 12),
-        _buildMobileProducts(),
+        Center(child: _buildProducts()),
         const SizedBox(height: 20),
         _buildMobileTrendingSection(),
         const SizedBox(height: 20),
@@ -549,7 +550,7 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 
   // ============= DESKTOP PRODUCTS =============
-  Widget _buildDesktopProducts() {
+  Widget _buildProducts() {
   return Consumer<ApiService>(
     builder: (context, productController, child) {
       if (productController.isLoading) {
@@ -579,7 +580,7 @@ class _CategoryPageState extends State<CategoryPage> {
                       width: 100.0,
                       padding: const EdgeInsets.only(right: 5.0),
                       child: Center(
-                        child: _buildDesktopProductCard(category),
+                        child: _buildProductCard(category),
                       ),
                     ),
                   ),
@@ -617,96 +618,8 @@ class _CategoryPageState extends State<CategoryPage> {
   );
 }
 
-//   Widget _buildDesktopProducts() {
-//   return Consumer<ApiService>(
-//     builder: (context, productController, child) {
-//       if (productController.isLoading) {
-//         return const Center(
-//           child: Padding(
-//             padding: EdgeInsets.all(32.0),
-//             child: CircularProgressIndicator(),
-//           ),
-//         );
-//       }
-
-//       final products = productController.products;
-//       if (products.isEmpty) {
-//         return const Center(
-//           child: Padding(
-//             padding: EdgeInsets.all(32.0),
-//             child: Text('✨ No products found ✨'),
-//           ),
-//         );
-//       }
-
-//       final Map<String, List<Product>> groupedProducts = {};
-//       for (var product in products) {
-//         if (!groupedProducts.containsKey(product.category)) {
-//           groupedProducts[product.category] = [];
-//         }
-//         groupedProducts[product.category]!.add(product);
-//       }
-
-//       final categoryEntries = groupedProducts.entries.toList();
-
-//       return Wrap(
-//         spacing: 20,
-//         runSpacing: 5,
-//         children: categoryEntries.map((entry) {
-//           // 🔥 NEW: Take only the FIRST product from each category
-//           final firstProduct = entry.value.first;
-          
-//           return Container(
-//             width: 100, // Fixed width for single product
-//             child: Column(
-//               crossAxisAlignment: CrossAxisAlignment.center,
-//               children: [
-//                 SizedBox(
-//                   height: 120,
-//                   child: Center(
-//                     child: Container(
-//                       width: 100.0,
-//                       padding: const EdgeInsets.only(right: 5.0),
-//                       child: Center(
-//                         child: _buildDesktopProductCard(firstProduct),
-//                       ),
-//                     ),
-//                   ),
-//                 ),
-//                 const SizedBox(height: 2),
-//                 GestureDetector(
-//                   onTap: () {
-//                     Navigator.push(
-//                       context,
-//                       MaterialPageRoute(
-//                         builder: (context) => CategoryDetailPage(
-//                           categoryName: entry.key,
-//                         ),
-//                       ),
-//                     );
-//                   },
-//                   child: Center(
-//                     child: Text(
-//                       entry.key,
-//                       style: const TextStyle(
-//                         fontSize: 16,
-//                         fontWeight: FontWeight.bold,
-//                         color: Color(0xFF2B6E3B),
-//                       ),
-//                     ),
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           );
-//         }).toList(),
-//       );
-//     },
-//   );
-// }
-
   // ============= DESKTOP PRODUCT CARD =============
-  Widget _buildDesktopProductCard(Category category) {
+  Widget _buildProductCard(Category category) {
     return GestureDetector(
       // onTap: () {
       //   Navigator.push(
@@ -780,198 +693,6 @@ class _CategoryPageState extends State<CategoryPage> {
       ),
     );
   }
-
-  // Widget _buildDesktopProductCard(Product product) {
-  //   return GestureDetector(
-  //     onTap: () {
-  //       Navigator.push(
-  //         context,
-  //         MaterialPageRoute(
-  //           builder: (context) => ProductDetailPage(productId: product.productId),
-  //         ),
-  //       );
-  //     },
-  //     child: Container(
-  //       height: 130,
-  //       decoration: BoxDecoration(
-  //         borderRadius: BorderRadius.circular(12),
-  //         boxShadow: [
-  //           BoxShadow(
-  //             color: Colors.black.withOpacity(0.05),
-  //             blurRadius: 4,
-  //             spreadRadius: 1,
-  //           ),
-  //         ],
-  //       ),
-  //       child: Column(
-  //         crossAxisAlignment: CrossAxisAlignment.center,
-  //         mainAxisAlignment: MainAxisAlignment.center,
-  //         children: [
-  //           Padding(
-  //             padding: const EdgeInsets.all(2.0),
-  //             child: ClipRRect(
-  //               borderRadius: BorderRadius.circular(8),
-  //               child: AppImage(
-  //                 imageUrl: product.proxiedImageUrl,
-  //                 height: 90,
-  //                 width: 90,
-  //                 fit: BoxFit.cover,
-  //               ),
-  //             ),
-  //           ),
-  //           Padding(
-  //             padding: const EdgeInsets.all(2.0),
-  //             child: SizedBox(
-  //               width: double.infinity,
-  //               height: 20,
-  //               child: ElevatedButton(
-  //                 onPressed: () {
-  //                   Navigator.push(
-  //                     context,
-  //                     MaterialPageRoute(
-  //                       builder: (context) =>
-  //                           ProductDetailPage(productId: product.productId),
-  //                     ),
-  //                   );
-  //                 },
-  //                 style: ElevatedButton.styleFrom(
-  //                   backgroundColor: Colors.grey[100],
-  //                   foregroundColor: const Color(0xFF2B6E3B),
-  //                   padding: const EdgeInsets.symmetric(vertical: 3),
-  //                   shape: RoundedRectangleBorder(
-  //                     borderRadius: BorderRadius.circular(20),
-  //                   ),
-  //                   minimumSize: const Size(double.infinity, 22),
-  //                 ),
-  //                 child: const Text(
-  //                   'View Details',
-  //                   style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800),
-  //                 ),
-  //               ),
-  //             ),
-  //           ),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  // ============= MOBILE PRODUCTS =============
-  Widget _buildMobileProducts() {
-    return Consumer<ApiService>(
-      builder: (context, productController, child) {
-        if (productController.isLoading) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(12.0),
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
-        final products = productController.products;
-        if (products.isEmpty) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(12.0),
-              child: Text('✨ No products found ✨'),
-            ),
-          );
-        }
-
-        // final Map<String, List<Product>> groupedProducts = {};
-        // for (var product in products) {
-        //   if (!groupedProducts.containsKey(product.category)) {
-        //     groupedProducts[product.category] = [];
-        //   }
-        //   groupedProducts[product.category]!.add(product);
-        // }
-        final categories = productController.categories;
-        return Center(
-          child: Wrap(
-            spacing: 8.0,
-            runSpacing: 10.0,
-            children: categories.map((category) {
-              // final firstProduct = entry.value.first;
-
-              return SizedBox(
-                width: 80,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                CategoryDetailPage(categoryId: category.categoryId,categoryName: category.categoryName),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: AppImage(
-                                imageUrl:category.photoPath,
-                                height: 75,
-                                width: 85,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => CategoryDetailPage(
-                                    categoryId: category.categoryId,
-                                    categoryName: category.categoryName,
-                                  ),
-                                ),
-                              );
-                            },
-                              child: Padding(
-                                padding: const EdgeInsets.all(1.0),
-                                child: Text(
-                                  category.categoryName,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF2B6E3B),
-                                  ),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        );
-      },
-    );
-  }
-
   // ============= TRENDING SIDEBAR =============
   Widget _buildTrendingSidebar() {
   return Consumer<ApiService>(
