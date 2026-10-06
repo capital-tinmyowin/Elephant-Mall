@@ -407,7 +407,7 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
 
     if (!authService.isLoggedIn) {
       setState(() {
-        _favorites = _getMockFavorites();
+        _favorites = [];
         _isLoading = false;
         _resetPagination();
       });
@@ -417,38 +417,46 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
     setState(() => _isLoading = true);
 
     try {
-      final apiService = ApiService();
-      final response = await apiService.getUserFavorites(
-        authService.currentUser!.id,
-      );
+    // 🔥 AuthService handles the cookie/token internally
+    final products = await authService.getUserFavorites();
 
-      if (response['success'] == true && response['data'] != null) {
-        final List favoritesData = response['data'];
-        setState(() {
-          _favorites = favoritesData
-              .map((json) => Favorite.fromJson(json))
-              .toList();
-          _isLoading = false;
-          _resetPagination();
-        });
-      } else {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response['message'] ?? 'Error loading favorites'),
-            backgroundColor: Colors.red,
-          ),
+    if (!mounted) return;
+
+    setState(() {
+      // Wrap each Product into a Favorite so the rest of the page
+      // (which uses Favorite objects) doesn't need changes.
+      _favorites = products.asMap().entries.map((entry) {
+        return Favorite(
+          id: entry.key + 1,
+          userId: authService.currentUser?.id ?? 0,
+          productId: entry.value.productId,
+          addedDate: DateTime.now(),
+          product: entry.value,
         );
-      }
-    } catch (e) {
-      setState(() => _isLoading = false);
+      }).toList();
+      _isLoading = false;
+      _resetPagination();
+    });
+
+    // Show error if favorites couldn't be loaded
+    if (products.isEmpty && authService.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error loading favorites: $e'),
+          content: Text(authService.errorMessage!),
           backgroundColor: Colors.red,
         ),
       );
     }
+  } catch (e) {
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error loading favorites: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
   }
 
   @override

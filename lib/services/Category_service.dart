@@ -21,168 +21,6 @@ class ApiService extends ChangeNotifier {
   bool _useMockData = false;
   // Getter for useMockData
   bool get useMockData => _useMockData;
-  // ============= RESET METHODS =============
-  // void resetToBackend() {
-  //   _useMockData = false;
-  //   useMockDataStatic = false;
-  //   _apiAvailable = true;
-  //   notifyListeners();
-  // }
-
-  // void resetToMock() {
-  //   _useMockData = true;
-  //   useMockDataStatic = true;
-  //   _apiAvailable = false;
-  //   notifyListeners();
-  // }
-
-  // ============= AUTH METHODS =============
-  Future<Map<String, dynamic>> register(
-    String username,
-    String email,
-    String password, {
-    String? fullName,
-  }) async {
-    try {
-      final response = await http
-          .post(
-            Uri.parse(
-              'https://www.capital-sys.net/CKMMallAPI/api/auth/SignUp/',
-            ),
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: {
-              'username': username,
-              'email': email,
-              'password': password,
-              'fullName': fullName ?? username,
-            },
-          )
-          .timeout(const Duration(seconds: 15));
-
-      print('Register status: ${response.statusCode}');
-      print('Register body: ${response.body}');
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return json.decode(response.body);
-      } else {
-        return {
-          'message': 'Registration failed: ${response.statusCode}',
-          'success': false,
-        };
-      }
-    } catch (e) {
-      print('Register error: $e');
-      return {'message': 'Connection error', 'success': false};
-    }
-  }
-
-  Future<Map<String, dynamic>> login(
-    String email,
-    String password, {
-    String? token,
-  }) async {
-    try {
-      final response = await http
-          .post(
-            Uri.parse(
-              'https://www.capital-sys.net/CKMMallAPI/api/auth/login-web',
-            ),
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: {'Email': email, 'Password': password, 'token': token ?? ''},
-          )
-          .timeout(const Duration(seconds: 15));
-
-      print('Login status: ${response.statusCode}');
-      print('Login body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final setCookie = response.headers['set-cookie'];
-      if (setCookie != null && setCookie.isNotEmpty) {
-        // Take only the "name=value" part, drop Path/Expires/etc.
-        final cookieValue = setCookie.split(';').first.trim();
-        _authCookie = cookieValue;
-        print('🍪 Captured cookie: $_authCookie');
-      }
-        return json.decode(response.body);
-      } else if (response.statusCode == 401) {
-        return {'success': false, 'message': 'Invalid email or password'};
-      } else {
-        return {
-          'success': false,
-          'message': 'Login failed: ${response.statusCode}',
-        };
-      }
-    } catch (e) {
-      print('Login error: $e');
-      return {'success': false, 'message': 'Connection error'};
-    }
-  }
-
-  // ============= FAVORITE METHODS =============
-  Future<Map<String, dynamic>> getUserFavorites(int userId) async {
-    try {
-      final headers = <String, String>{
-      'Content-Type': 'application/x-www-form-urlencoded',
-    };
-    if (_authCookie != null) {
-      headers['Cookie'] = _authCookie!;
-    }
-      final response = await http.get(
-        // Uri.parse('$baseUrl/Favorites/user/$userId'),
-        Uri.parse('https://www.capital-sys.net/CKMMallAPI/api/productshowcase/GetFavouriteProductList'),
-        headers: headers,
-      ).timeout(const Duration(seconds: 15));
-      print('Favorites status: ${response.statusCode}');
-      print('Favorites body: ${response.body}');
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return {
-          'success': true,
-          'data': data['data'] ?? data['favorites'] ?? [],
-          'message': data['message'] ?? 'Success',
-        };
-      } else {
-        return {
-          'success': false,
-          'message': 'Failed to get favorites: ${response.statusCode}',
-        };
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Failed to get favorites: ${e.toString()}',
-      };
-    }
-  }
-
-  Future<Map<String, dynamic>> addFavorite(int userId, int productId) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/Favorites?userId=$userId&productId=$productId'),
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return json.decode(response.body) as Map<String, dynamic>;
-      } else {
-        return {
-          'success': false,
-          'message': 'Failed to add favorite: ${response.statusCode}',
-        };
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Failed to add favorite: ${e.toString()}',
-      };
-    }
-  }
-
-  // Setter for useMockData
-  // set useMockData(bool value) {
-  //   _useMockData = value;
-  //   useMockDataStatic = value;
-  // }
 
   // ============= CART STATE =============
   List<CartItem> _cartItems = [];
@@ -346,11 +184,6 @@ class ApiService extends ChangeNotifier {
 
   // ============= GET LOCAL IMAGE URL =============
   static String getLocalImageUrl(Product product) {
-    // If mock data is enabled, use local images
-    // if (useMockDataStatic) {
-    //   return MockApiService.getImageUrl(product);
-    // }
-    // If not, use the product's image URL with proxy
     if (product.image != null && product.image!.isNotEmpty) {
       return getProxiedImageUrl(product.image!);
     }
@@ -368,15 +201,15 @@ class ApiService extends ChangeNotifier {
       print('🔄 LOADING PRODUCTS...');
       _allProducts = await _getProductsFromApi();
       _filteredProducts = _allProducts;
-      print('✅ SUCCESS: Loaded ${_allProducts.length} products');
+      print(' SUCCESS: Loaded ${_allProducts.length} products');
 
       if (_allProducts.isEmpty) {
         _errorMessage = 'No products found in database';
-        print('⚠️ No products found');
+        print(' No products found');
       }
     } catch (e) {
       _errorMessage = 'Error loading products: $e';
-      print('❌ ERROR: $e');
+      print(' ERROR: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -384,20 +217,6 @@ class ApiService extends ChangeNotifier {
   }
 
   Future<List<Product>> _getProductsFromApi() async {
-    //  FIRST: Check if mock data is explicitly enabled
-    // if (_useMockData || useMockDataStatic) {
-    //   print('📦 Using mock data (forced)');
-    //   return MockApiService.getMockProducts();
-    // }
-
-    //  SECOND: Check if API is known to be unavailable
-    // if (!_apiAvailable) {
-    //    print('📦 API unavailable, using mock data');
-    //   useMockDataStatic = true;
-    //   return MockApiService.getMockProducts();
-    // }
-
-    //  THIRD: Try to call the API
     try {
       final url = Uri.parse('$baseUrl/products');
       // final url = Uri.parse('$baseUrl/product/all');
@@ -408,25 +227,25 @@ class ApiService extends ChangeNotifier {
           .timeout(
             const Duration(seconds: 15),
             onTimeout: () {
-              print('⏰ API timeout, using mock data');
+              print(' API timeout, using mock data');
               // _apiAvailable = false;
               // useMockDataStatic = true;
               throw Exception('Timeout');
             },
           );
 
-      print('📡 Response status: ${response.statusCode}');
+      print(' Response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final dynamic data = json.decode(response.body);
-        print('📦 Response data type: ${data.runtimeType}');
+        print(' Response data type: ${data.runtimeType}');
         // Check if it's the backend format (with 'data' field)
         if (data is Map<String, dynamic> && data['data'] is List) {
           final List<dynamic> productsData = data['data'];
-          print('✅ Found ${productsData.length} products (wrapped)');
+          print(' Found ${productsData.length} products (wrapped)');
           return productsData.map((j) => _parseProductFromJson(j)).toList();
         } else if (data is List) {
-          print('✅ Found ${data.length} products (direct)');
+          print(' Found ${data.length} products (direct)');
           return data.map((j) => _parseProductFromJson(j)).toList();
         } else {
           throw Exception('Unexpected response format');
@@ -435,8 +254,8 @@ class ApiService extends ChangeNotifier {
         throw Exception('HTTP ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Products API Error: $e');
-      print('📦 Using mock data as fallback');
+      print(' Products API Error: $e');
+      print(' Using mock data as fallback');
       // _apiAvailable = false;
       // useMockDataStatic = true;
       return [];
@@ -445,9 +264,9 @@ class ApiService extends ChangeNotifier {
 
   // Parse product from backend format
   Product _parseProductFromJson(Map<String, dynamic> json) {
-    print('📦 Parsing product: ${json['productName'] ?? json['name']}');
+    print(' Parsing product: ${json['productName'] ?? json['name']}');
 
-    // 🔥 FIX: productCode can be int or string, handle both
+    //  FIX: productCode can be int or string, handle both
     int productId = json['productId'];
     String productCode = '';
 
@@ -458,13 +277,6 @@ class ApiService extends ChangeNotifier {
         productCode = productId.toString();
       } else if (json['productCode'] is String) {
         productCode = json['productCode'];
-        // Try to extract numbers from string code
-        // final numericPart = productCode.replaceAll(RegExp(r'[^0-9]'), '');
-        // if (numericPart.isNotEmpty) {
-        //   productId = int.tryParse(numericPart) ?? productCode.hashCode;
-        // } else {
-        //   productId = productCode.hashCode;
-        // }
       }
     }
 
@@ -487,7 +299,7 @@ class ApiService extends ChangeNotifier {
     String imageUrl =
         json['imageUrl'] ?? json['ImageUrl'] ?? json['image'] ?? '';
 
-    print('🖼️ Raw imageUrl from backend: ${json['imageUrl']}');
+    print(' Raw imageUrl from backend: ${json['imageUrl']}');
 
     // If empty, use placeholder
     if (imageUrl.isEmpty) {
@@ -520,13 +332,13 @@ class ApiService extends ChangeNotifier {
       }
     }
 
-    // 🔥 Only add imageUrl if productImages is truly empty
+    // Only add imageUrl if productImages is truly empty
     if (productImages.isEmpty && imageUrl.isNotEmpty) {
       productImages = [imageUrl];
     }
     final location = json['location']?.toString() ?? '';
     final condition = json['condition']?.toString() ?? '';
-    // 🔥 REMOVE duplicates
+    // REMOVE duplicates
     productImages = productImages.toSet().toList();
 
     return Product(
@@ -563,14 +375,6 @@ class ApiService extends ChangeNotifier {
   }
 
   Future<List<Category>> _getCategoriesFromApi() async {
-    // if (_useMockData || useMockDataStatic) {
-    //   return MockApiService.getMockCategories();
-    // }
-
-    // if (!_apiAvailable) {
-    //   return MockApiService.getMockCategories();
-    // }
-
     try {
       // final url = Uri.parse('$baseUrl/categories');
       final url = Uri.parse(
@@ -593,14 +397,14 @@ class ApiService extends ChangeNotifier {
           throw Exception('Unexpected category format');
         }
 
-        print('✅ Found ${categoriesData.length} categories');
+        print('Found ${categoriesData.length} categories');
         return categoriesData.map((j) => _parseCategoryFromJson(j)).toList();
       } else {
         throw Exception('HTTP ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Categories API error: $e');
-      return []; // 🔥 empty, no mock
+      print(' Categories API error: $e');
+      return []; //  empty, no mock
     }
   }
 
@@ -622,29 +426,6 @@ class ApiService extends ChangeNotifier {
     }
     print(id);
     return Category(categoryId: id, categoryName: name, photoPath: imagePath);
-  }
-
-  Product _parseProductFromJsonRealApi(Map<String, dynamic> json) {
-    final id = json['id'] ?? json['productCode'] ?? 0;
-    final name = json['name'] ?? json['productName'] ?? '';
-    final desciption = json['description'];
-    final location = json['location'];
-    final price = json['price'];
-    final condition = json['condition'];
-    final status = json['status'];
-    final variants = json['variants'];
-    String imagePath =
-        json['categoryImageUrl'] ??
-        json['photoPath'] ??
-        json['imageUrl'] ??
-        json['icon'] ??
-        '';
-
-    if (imagePath.isEmpty) {
-      imagePath = 'assets/images/placeholders/category_placeholder.jpg';
-    }
-
-    return Product(productCode: id, productName: name, price: price);
   }
 
   // ============= LOAD PRODUCT DETAIL =============
@@ -678,21 +459,17 @@ class ApiService extends ChangeNotifier {
   }
 
   Future<Product> _getProductByIdFromApi(int id) async {
-    // If mock data is enabled, return mock immediately
-    // if (_useMockData || useMockDataStatic) {
-    //   return MockApiService.getMockProductById(id);
-    // }
 
     try {
-      final url = Uri.parse('$baseUrl/products/$id');
-      // final url = Uri.parse('https://www.capital-sys.net/CKMMallAPI/api/Product/GetProductDetailByProductId/$id');
+      // final url = Uri.parse('$baseUrl/products/$id');
+      final url = Uri.parse('https://www.capital-sys.net/CKMMallAPI/api/Product/GetProductByProductID/$id');
       print('📡 Fetching product: $url');
 
       final response = await http
           .get(url, headers: {'Content-Type': 'application/json'})
           .timeout(
             const Duration(seconds: 30),
-          ); // 🔥 Reduced from 8 to 5 seconds
+          ); //  Reduced from 8 to 5 seconds
 
       print('📡 Response: ${response.statusCode}');
 
@@ -710,20 +487,16 @@ class ApiService extends ChangeNotifier {
 
         if (items.isEmpty) throw Exception('No product found');
 
-        // 🔥 Parse the FIRST item as the main product
+        // Parse the FIRST item as the main product
         final mainJson = items.first as Map<String, dynamic>;
         final product = _parseProductFromJson(mainJson);
 
-        // 🔥 Parse ALL items as variants
+        //  Parse ALL items as variants
         final variants = items
             .map(
               (item) => ProductVariant.fromJson(item as Map<String, dynamic>),
             )
             .toList();
-
-        // 🔥 Attach variants to the product
-        // Since your model has `final List<ProductVariant>? variants`,
-        // we return a new Product with variants set.
         return Product(
           productId: product.productId,
           productCode: product.productCode,
@@ -736,14 +509,14 @@ class ApiService extends ChangeNotifier {
           description: product.description,
           seller: product.seller,
           productImages: product.productImages,
-          variants: variants, // 🔥 attach here
+          variants: variants, //  attach here
           colors: product.colors,
         );
       } else {
         throw Exception('HTTP ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Product detail error: $e');
+      print(' Product detail error: $e');
       rethrow;
     }
   }
@@ -759,19 +532,19 @@ class ApiService extends ChangeNotifier {
       _selectedCategory = categoryId;
 
       if (categoryId == 0) {
-        // 🔥 Apply color variation only for mock/all data
+        //  Apply color variation only for mock/all data
         _filteredProducts = getProductsWithColorVariations(_allProducts);
       } else {
         final products = await _getProductsByCategoryFromApi(categoryId);
 
-        // 🔥 For API data, DON'T expand color variations
+        //  For API data, DON'T expand color variations
         // Use products directly since API already returns proper products
         _filteredProducts = products;
-        print('✅ Loaded ${products.length} products for category: $categoryId');
+        print('Loaded ${products.length} products for category: $categoryId');
       }
     } catch (e) {
       _errorMessage = 'Error loading products by category: $e';
-      print('❌ Error: $e');
+      print(' Error: $e');
       _filteredProducts = [];
     } finally {
       _isLoading = false;
@@ -780,14 +553,10 @@ class ApiService extends ChangeNotifier {
   }
 
   Future<List<Product>> _getProductsByCategoryFromApi(int categoryId) async {
-    // if (_useMockData) {
-    //   return MockApiService.getMockProductsByCategory(category);
-    // }
-
     try {
-      // 🔥 Log the exact URL being requested
+      //  Log the exact URL being requested
       final url = Uri.parse(
-        'https://www.capital-sys.net/CKMMallAPI/api/category/categoryproduct/7',
+        'https://www.capital-sys.net/CKMMallAPI/api/category/categoryproduct/$categoryId',
       );
       // final url = Uri.parse('$baseUrl/products/category/$category');
       print('📡 Requesting: $url');
@@ -796,8 +565,8 @@ class ApiService extends ChangeNotifier {
           .get(url, headers: {'Content-Type': 'application/json'})
           .timeout(const Duration(seconds: 15));
 
-      print('📡 Status: ${response.statusCode}');
-      print('📡 Body: ${response.body}'); // 🔥 Log full response
+      print(' Status: ${response.statusCode}');
+      print(' Body: ${response.body}'); //  Log full response
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -813,14 +582,14 @@ class ApiService extends ChangeNotifier {
           throw Exception('Unexpected response format: ${data.runtimeType}');
         }
 
-        print('✅ Parsed ${productsData.length} products from API');
+        print(' Parsed ${productsData.length} products from API');
         return productsData.map((json) => _parseProductFromJson(json)).toList();
       } else {
         throw Exception('HTTP ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ API Error: $e');
-      // 🔥 Return empty list, DON'T fall back to mock
+      print(' API Error: $e');
+      //  Return empty list, DON'T fall back to mock
       return [];
     }
   }
@@ -848,49 +617,7 @@ class ApiService extends ChangeNotifier {
       notifyListeners();
     }
   }
-  // Future<List<Product>> _fetchTrendingProducts() async {
-  //   // if (_useMockData || useMockDataStatic) {
-  //   //   return MockApiService.getMockTrendingProducts();
-  //   // }
-
-  //   // if (!_apiAvailable) {
-  //   //   return MockApiService.getMockTrendingProducts();
-  //   // }
-
-  //   try {
-  //     final url = Uri.parse('$baseUrl/products/trending');
-  //     final response = await http
-  //         .get(url, headers: {'Content-Type': 'application/json'})
-  //         .timeout(
-  //           const Duration(seconds: 15),
-  //           onTimeout: () {
-  //             // _apiAvailable = false;
-  //             // useMockDataStatic = true;
-  //             throw Exception('Timeout');
-  //           },
-  //         );
-
-  //     if (response.statusCode == 200) {
-  //       final data = json.decode(response.body);
-  //       if (data['success'] == true && data['data'] != null) {
-  //         List<dynamic> productsData = data['data'];
-  //         _apiAvailable = true;
-  //         return productsData.map((json) => _parseProductFromJson(json)).toList();
-  //       } else if (data is List) {
-  //         _apiAvailable = true;
-  //         return data.map((json) => _parseProductFromJson(json)).toList();
-  //       } else {
-  //         throw Exception(data['message'] ?? 'Failed to load trending products');
-  //       }
-  //     } else {
-  //       throw Exception('Failed to load trending products');
-  //     }
-  //   } catch (e) {
-  //     // _apiAvailable = false;
-  //     // useMockDataStatic = true;
-  //     return MockApiService.getMockTrendingProducts();
-  //   }
-  // }
+  
   Future<List<Product>> _fetchTrendingProducts() async {
     try {
       final url = Uri.parse('$baseUrl/products/trending');
@@ -915,8 +642,8 @@ class ApiService extends ChangeNotifier {
         throw Exception('HTTP ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Trending error: $e');
-      return []; // 🔥 no mock
+      print(' Trending error: $e');
+      return []; //  no mock
     }
   }
 
@@ -947,9 +674,6 @@ class ApiService extends ChangeNotifier {
 
   // ============= TOGGLE MOCK DATA =============
   void toggleMockData(bool useMock) {
-    // _useMockData = useMock;
-    // useMockDataStatic = useMock;
-    // _apiAvailable = !useMock;
     loadProducts();
     notifyListeners();
   }
