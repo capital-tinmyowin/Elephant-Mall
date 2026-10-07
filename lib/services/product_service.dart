@@ -208,7 +208,7 @@ class ProductService {
 
   Future<SellProductModel?> getSellProductByCode(int productId) async {
     final url = Uri.parse(
-      'https://www.capital-sys.net/CKMMallAPI/api/Product/GetProductDetailByProductId/$productId',
+      'https://www.capital-sys.net/CKMMallAPI/api/Product/GetProductByProductID/$productId',
     );
 
     debugPrint('GET PRODUCT URL: $url');

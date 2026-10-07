@@ -12,7 +12,6 @@ import '../sellernew.dart';
 import '../sale.dart';
 import '../sellerpage.dart';
 
-
 class CommonHeader extends StatefulWidget {
   final bool showMobileHeader;
 
@@ -88,7 +87,7 @@ class _CommonHeaderState extends State<CommonHeader> {
                               _menuItem(
                                 context,
                                 "ABOUT US",
-                                const NewSellerPage(),
+                                const SellerStorePage(sellerId: 1),
                               ),
                             ],
                           ),
@@ -472,7 +471,7 @@ class _CommonHeaderState extends State<CommonHeader> {
 
                   PageRouteBuilder(
                     pageBuilder: (context, animation, secondaryAnimation) =>
-                    ProfilePage(),
+                        ProfilePage(),
                     transitionDuration: Duration.zero,
                     reverseTransitionDuration: Duration.zero,
                   ),
