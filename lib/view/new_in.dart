@@ -16,7 +16,6 @@ class _NewInPageState extends State<NewInPage> {
   String selectedCategory = "All Categories";
   String selectedPrice = "All Prices";
   String selectedSort = "Newest";
-  
 
   final NewInService _newInService = NewInService();
 
@@ -115,7 +114,7 @@ class _NewInPageState extends State<NewInPage> {
       result.sort((a, b) => a.price.compareTo(b.price));
     } else if (selectedSort == "Price: High to Low") {
       result.sort((a, b) => b.price.compareTo(a.price));
-    } 
+    }
     // else if (selectedSort == "Rating") {
     //   result.sort((a, b) => b.rating.compareTo(a.rating));
     // }
@@ -241,67 +240,129 @@ class _NewInPageState extends State<NewInPage> {
 
   Widget _buildHeroBanner(bool mobileView) {
     return Container(
-      height: mobileView ? 150 : 250,
+      height: mobileView ? 180 : 250,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         image: const DecorationImage(
-          image: AssetImage("assets/newarrival2.png"),
+          image: AssetImage('assets/newarrival1.png'),
           fit: BoxFit.cover,
+          alignment:
+              Alignment.centerRight, //  keep the products visible on the right
         ),
       ),
       child: Padding(
         padding: EdgeInsets.only(
-          left: mobileView ? 20 : 28,
-          top: mobileView ? 20 : 25,
+          left: mobileView ? 16 : 130,
+          top: mobileView ? 14 : 24,
+          right: mobileView ? 100 : 320, //  keep text off the products
+          bottom: mobileView ? 14 : 24,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Text(
-            //   "NEW IN THIS WEEK",
-            //   style: TextStyle(
-            //     color: const Color(0xff3D2116),
-            //     fontSize: mobileView ? 24 : 32,
-            //     fontWeight: FontWeight.w800,
-            //   ),
-            // ),
+            // ───── "YANGON" small letter-spaced ─────
+            Text(
+              "YANGON",
+              style: TextStyle(
+                color: const Color(0xFF3D2116),
+                fontSize: mobileView ? 11 : 16,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 6,
+              ),
+            ),
 
-            const SizedBox(height: 3),
+            SizedBox(height: mobileView ? 4 : 8),
 
-            // Text(
-            //   "Fresh arrivals, handpicked for you.",
-            //   style: TextStyle(
-            //     color: const Color(0xff4A3328),
-            //     fontSize: mobileView ? 11 : 13,
-            //   ),
-            // ),
+            // ───── "NEW ARRIVALS" — mixed colors ─────
+            RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: "NEW ",
+                    style: TextStyle(
+                      color: const Color(0xFF3D2116),
+                      fontSize: mobileView ? 28 : 48,
+                      fontWeight: FontWeight.w900,
+                      fontStyle: FontStyle.italic,
+                      letterSpacing: 1,
+                      height: 1.0,
+                    ),
+                  ),
+                  TextSpan(
+                    text: "ARRIVALS",
+                    style: TextStyle(
+                      color: const Color(0xFFF28C00), // 🔥 orange
+                      fontSize: mobileView ? 28 : 48,
+                      fontWeight: FontWeight.w900,
+                      fontStyle: FontStyle.italic,
+                      letterSpacing: 1,
+                      height: 1.0,
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
-            // Text(
-            //   "Stay ahead of the trends in Yangon.",
-            //   style: TextStyle(
-            //     color: const Color(0xff4A3328),
-            //     fontSize: mobileView ? 11 : 13,
-            //   ),
-            // ),
+            SizedBox(height: mobileView ? 8 : 12),
 
-            const SizedBox(height: 10),
+            Row(
+              children: [
+                // ───── Horizontal line ─────
+                Container(
+                  width: mobileView ? 60 : 90,
+                  height: 1.5,
+                  color: const Color(0xFF3D2116).withOpacity(0.6),
+                ),
+                // ───── Description (two lines) ─────
+                Text(
+                  "Fresh arrivals, handpicked for you.\n"
+                  "Stay ahead of the trends in Yangon.",
+                  style: TextStyle(
+                    color: const Color(0xFF3D2116),
+                    fontSize: mobileView ? 11 : 14,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: mobileView ? 12 : 20),
 
+            // ───── EXPLORE NEW ARRIVALS button ─────
             SizedBox(
-              height: 28,
+              height: mobileView ? 34 : 42,
               child: ElevatedButton(
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
+                  backgroundColor: const Color(0xFFF28C00),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  elevation: 0,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: mobileView ? 18 : 24,
+                  ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(5),
+                    borderRadius: BorderRadius.circular(30),
                   ),
                 ),
-                child: const Text(
-                  "EXPLORE NEW ARRIVALS",
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "EXPLORE NEW ARRIVALS",
+                      style: TextStyle(
+                        fontSize: mobileView ? 10 : 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      Icons.chevron_right,
+                      size: mobileView ? 16 : 18,
+                      color: Colors.white,
+                    ),
+                  ],
                 ),
               ),
             ),
