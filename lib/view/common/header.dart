@@ -81,11 +81,6 @@ class _CommonHeaderState extends State<CommonHeader> {
                               _menuItem(context, "NEW IN", const NewInPage()),
                               _menuItem(
                                 context,
-                                "MY FAVORITE",
-                                const MyFavouritePage(),
-                              ),
-                              _menuItem(
-                                context,
                                 "ABOUT US",
                                 const SellerStorePage(sellerId: 1),
                               ),
@@ -159,19 +154,14 @@ class _CommonHeaderState extends State<CommonHeader> {
 
                     const SizedBox(width: 10),
 
-                    // PROFILE BUTTON - Shows Login/Logout based on state
-                    _buildProfileButton(context, isLoggedIn),
-
-                    const SizedBox(width: 10),
-
                     IconButton(
                       icon: const Icon(Icons.favorite_border, size: 28),
                       onPressed: () {
                         // Open Favorite
-                        // if (!isLoggedIn) {
-                        //   _showLoginRequiredDialog(context);
-                        //   return;
-                        // }
+                        if (!isLoggedIn) {
+                          _showLoginRequiredDialog(context);
+                          return;
+                        }
                         Navigator.push(
                           context,
                           PageRouteBuilder(
@@ -187,36 +177,31 @@ class _CommonHeaderState extends State<CommonHeader> {
 
                     const SizedBox(width: 10),
 
-                    IconButton(
-                      icon: const Icon(Icons.shopping_cart_outlined, size: 28),
-                      onPressed: () {
-                        //  Open Cart
-                      },
-                    ),
-
-                    const SizedBox(width: 15),
-
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          PageRouteBuilder(
-                            pageBuilder:
-                                (context, animation, secondaryAnimation) =>
-                                    LoginPage(),
-                            transitionDuration: Duration.zero,
-                            reverseTransitionDuration: Duration.zero,
+                    if (!isLoggedIn)
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) =>
+                                      LoginPage(),
+                              transitionDuration: Duration.zero,
+                              reverseTransitionDuration: Duration.zero,
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          "Sign In",
+                          style: TextStyle(
+                            color: Color(0xff2f6b2f),
+                            fontWeight: FontWeight.bold,
                           ),
-                        );
-                      },
-                      child: const Text(
-                        "Sign In",
-                        style: TextStyle(
-                          color: Color(0xff2f6b2f),
-                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
+                    const SizedBox(width: 10),
+                    // PROFILE BUTTON - Shows Login/Logout based on state
+                    if (isLoggedIn) _buildProfileButton(context, true),
                   ],
                 ),
               ),
@@ -263,9 +248,6 @@ class _CommonHeaderState extends State<CommonHeader> {
 
       case "/new-in":
         return menuName == "NEW IN";
-
-      case "/favorite":
-        return menuName == "MY FAVORITE";
 
       case "/about":
         return menuName == "ABOUT US";
@@ -629,10 +611,6 @@ class _CommonHeaderState extends State<CommonHeader> {
 
             case "NEW IN":
               routeName = "/new-in";
-              break;
-
-            case "MY FAVORITE":
-              routeName = "/favorite";
               break;
 
             case "ABOUT US":

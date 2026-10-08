@@ -1,7 +1,5 @@
+import 'package:elephant_mall/models/productImage.dart';
 import 'package:elephant_mall/models/product_variant.dart';
-import 'package:elephant_mall/services/mock_api_service.dart';
-import 'package:flutter/foundation.dart';
-
 import '../services/Category_service.dart';
 
 class Product {
@@ -16,8 +14,8 @@ class Product {
   // final double rating;
   // final int ratingCount;
   final String? description;
-  final Seller? seller; //  Must be Seller? not String?
-  final List<String>? productImages;
+  final int? userId; //  Must be Seller? not String?
+  final List<ProductImage>? productImages;
   final List<ProductVariant>? variants;
   final List<String> colors;
   final bool isNew;
@@ -27,14 +25,14 @@ class Product {
     required this.productCode,
     required this.productName,
     required this.price,
-     this.category='',
-     this.location='',
-     this.condition='',
-     this.image='',
+    this.category = '',
+    this.location = '',
+    this.condition = '',
+    this.image = '',
     // this.rating = 4.5,
     // this.ratingCount = 0,
     this.description,
-    this.seller,
+    this.userId,
     this.productImages,
     this.variants,
     this.colors = const [],
@@ -46,166 +44,57 @@ class Product {
     return colors.isNotEmpty ? colors.first : 'default';
   }
 
-//   String get proxiedImageUrl {
-//   // If using mock data
-//   if (ApiService.useMockDataStatic) {
-//     if (image.isNotEmpty) {
-//       if (image.startsWith('http://') || image.startsWith('https://')) {
-//         return MockApiService.getProductImagePath(this);
-//       }
-//       if (image.startsWith('images/')) {
-//         return 'assets/$image';
-//       }
-//       if (image.startsWith('assets/')) {
-//         return image;
-//       }
-//       if (!image.contains('/')) {
-//         return 'images/categories/${MockApiService.getCategoryFolder(category)}/$image';
-//       }
-//       return 'assets/$image';
-//     }
-//     return MockApiService.getProductImagePath(this);
-//   }
-
-//   // If image is empty, use placeholder
-//   if (image.isEmpty) {
-//     return 'https://picsum.photos/seed/${productCode.toString()}/200/200';
-//   }
-  
-//   //  If image is from Pinterest, use the backend proxy
-//   if (image.contains('pinimg.com') || 
-//       image.contains('pinterest')) {
-//     final encodedUrl = Uri.encodeComponent(image);
-//     return '${ApiService.baseUrl}/image/proxy?url=$encodedUrl';
-//   }
-  
-//   // If it's a valid URL, return directly
-//   if (image.startsWith('http://') || image.startsWith('https://')) {
-//     return image;
-//   }
-  
-//   // For local paths
-//   if (image.startsWith('images/') || image.startsWith('assets/')) {
-//     return 'assets/$image';
-//   }
-  
-//   // Fallback
-//   return 'https://picsum.photos/seed/${productCode.toString()}/200/200';
-// }
-String get proxiedImageUrl {
-  // If image is empty, use placeholder
-  if (image.isEmpty) {
-    return 'https://picsum.photos/seed/${productCode.toString()}/200/200';
+  String get proxiedImageUrl {
+    return ApiService.getProxiedImageUrl(image);
   }
-  
-  // For Pinterest images, use backend proxy
-  if (image.contains('pinimg.com') || image.contains('pinterest')) {
-    final encodedUrl = Uri.encodeComponent(image);
-    return '${ApiService.baseUrl}/image/proxy?url=$encodedUrl';
-  }
-  
-  // If it's a valid URL, return directly
-  if (image.startsWith('http://') || image.startsWith('https://')) {
-    return image;
-  }
-  
-  // For local paths - 🔥 FIX: Remove duplicate 'assets/'
-  if (image.startsWith('assets/')) {
-    return image; // It already has 'assets/'
-  }
-  if (image.startsWith('images/')) {
-    return 'assets/$image';
-  }
-  
-  // Fallback
-  return 'https://picsum.photos/seed/${productCode.toString()}/200/200';
-}
-  // All product images (for gallery) - returns all colors
-  List<String> proxiedAllImages(String img) {
-    // if (ApiService.useMockDataStatic) {
-    //   List<String> images = [];
 
-    //   // Get the product folder from mock service
-    //   String folder = MockApiService.getProductFolder(this);
+  List<String> get proxiedAllImages {
+    final Set<String> uniqueUrls = {};
 
-    //   // Add all color images
-    //   for (var color in colors) {
-    //     images.add('$folder/$color.jpg');
-    //   }
+    if (image.isNotEmpty) uniqueUrls.add(image);
 
-    //   // If no colors, use default
-    //   if (images.isEmpty) {
-    //     images.add(MockApiService.getProductImagePath(this));
-    //   }
-
-    //   return images;
-    // }
-
-    // If backend is running
-    final List<String> images = [img];
-    if (productImages != null && productImages!.isNotEmpty) {
-      images.addAll(productImages!);
+    if (productImages != null) {
+      for (final pi in productImages!) {
+        if (pi.imageUrl.isNotEmpty) uniqueUrls.add(pi.imageUrl);
+      }
     }
-    return images.map((url) => ApiService.getProxiedImageUrl(url)).toList();
+
+    if (uniqueUrls.isEmpty) {
+      uniqueUrls.add('https://picsum.photos/seed/$productCode/400/400');
+    }
+
+    return uniqueUrls.map((url) => ApiService.getProxiedImageUrl(url)).toList();
   }
 
-  // String get proxiedImageUrl {
-  //   return ApiService.getProxiedImageUrl(image);
-  // }
-
-//   List<String> get proxiedAllImages {
-//   // 🔥 Use a Set to deduplicate
-//   final Set<String> uniqueUrls = {};
-
-//   if (image.isNotEmpty) uniqueUrls.add(image);
-
-//   if (productImages != null) {
-//     for (var url in productImages!) {
-//       if (url.isNotEmpty) uniqueUrls.add(url);
-//     }
-//   }
-
-//   if (uniqueUrls.isEmpty) {
-//     uniqueUrls.add('https://picsum.photos/seed/$productCode/400/400');
-//   }
-
-//   return uniqueUrls.map((url) => ApiService.getProxiedImageUrl(url)).toList();
-// }
   factory Product.fromJson(Map<String, dynamic> json) {
-
+    int productId = 0;
+    final rawId = json['productId'] ?? json['id'];
+    if (rawId is int) {
+      productId = rawId;
+    } else if (rawId is String) {
+      productId = int.tryParse(rawId) ?? 0;
+    }
     // Get productCode
-    final productCode = json['productCode'] ?? json['id'] ?? 0;
+    final productCode =
+        (json['productCode'] ?? json['id'] ?? json['productId'] ?? '')
+            .toString();
 
     // Get productName
-    final productName = json['productName'] ?? json['name'] ?? '';
+    final productName = (json['productName'] ?? json['name'] ?? '').toString();
 
     // Get price
     double price = 0;
-    if (json['price'] != null) {
-      price = (json['price'] as num).toDouble();
+    final rawPrice = json['price'];
+    if (rawPrice is num) {
+      price = rawPrice.toDouble();
+    } else if (rawPrice is String) {
+      price = double.tryParse(rawPrice.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0;
     }
 
     // Get category
     String category = json['category'] ?? json['categoryName'] ?? '';
-
-    //  CRITICAL FIX: Check for ImageUrl (capital I) FIRST
     String imageUrl =
         json['ImageUrl'] ?? json['imageUrl'] ?? json['image'] ?? '';
-
-    // If image is from blocked domain, use placeholder
-    if (imageUrl.contains('pinimg.com') ||
-        imageUrl.contains('pinterest') ||
-        imageUrl.contains('walmartimages.com') ||
-        imageUrl.contains('img.susercontent.com')) {
-      final hash = imageUrl.hashCode.abs().toString();
-      imageUrl = 'https://picsum.photos/seed/$hash/200/200';
-    }
-
-    // If empty, use placeholder
-    if (imageUrl.isEmpty) {
-      imageUrl = 'https://picsum.photos/seed/${productCode.toString()}/200/200';
-    }
-
     // Get colors
     List<String> colors = [];
     if (json['colors'] != null && json['colors'] is List) {
@@ -213,19 +102,29 @@ String get proxiedImageUrl {
     }
 
     // Get seller
-    Seller? seller;
-    if (json['seller'] != null && json['seller'] is Map<String, dynamic>) {
-      seller = Seller.fromJson(json['seller']);
+    int? userId;
+    if (json['userId'] != null) {
+      userId = json['userId'] is int
+          ? json['userId']
+          : int.tryParse(json['userId'].toString());
     }
 
     // Get product images
-    List<String> productImages = [];
-    if (json['productImages'] != null && json['productImages'] is List) {
-      productImages = List<String>.from(json['productImages']);
+    List<ProductImage> productImages = [];
+    if (json['pImageList'] is List) {
+      productImages = (json['pImageList'] as List)
+          .whereType<Map<String, dynamic>>()
+          .map((e) => ProductImage.fromJson(e))
+          .toList();
+    } else if (json['productImages'] is List) {
+      productImages = (json['productImages'] as List)
+          .whereType<Map<String, dynamic>>()
+          .map((e) => ProductImage.fromJson(e))
+          .toList();
     }
-    if (productImages.isEmpty && imageUrl.isNotEmpty) {
-      productImages = [imageUrl];
-    }
+    // if (productImages.isEmpty && imageUrl.isNotEmpty) {
+    //   productImages = [imageUrl];
+    // }
     List<ProductVariant>? variants;
     if (json['variants'] != null && json['variants'] is List) {
       variants = (json['variants'] as List)
@@ -233,15 +132,16 @@ String get proxiedImageUrl {
           .toList();
     }
     return Product(
+      productId: productId,
       productCode: productCode,
       productName: productName,
+      userId: userId,
       price: price,
       category: category,
       image: imageUrl,
       // rating: (json['rating'] ?? 4.5).toDouble(),
       // ratingCount: json['ratingCount'] ?? 0,
       description: json['description'] ?? '',
-      seller: seller,
       productImages: productImages,
       variants: variants,
       colors: colors,
@@ -258,9 +158,9 @@ String get proxiedImageUrl {
       // 'rating': rating,
       // 'ratingCount': ratingCount,
       'description': description,
-      'seller': seller?.toJson(),
+      'userId': userId,
       'productImages': productImages,
-      'variants': variants
+      'variants': variants,
     };
   }
 }

@@ -207,13 +207,13 @@ class _SalePageState extends State<SalePage> {
 
   Widget _buildHeroBanner(bool mobileView) {
     return Container(
-      height: mobileView ? 150 : 270,
+      height: mobileView ? 150 : 250,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         image: const DecorationImage(
           image: AssetImage('assets/sale.png'),
-          fit: BoxFit.cover,
+          fit: BoxFit.fill,
           alignment: Alignment(0, -0.3),
         ),
       ),
@@ -232,18 +232,18 @@ class _SalePageState extends State<SalePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text("YANGON",
-                style: TextStyle(
-                  color: Colors.black87,
-                  fontSize: mobileView ? 11 : 16,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 6,
-                ),
-              ),
-              Text("SUMMER",
+              // Text("YANGON",
+              //   style: TextStyle(
+              //     color: Colors.black87,
+              //     fontSize: mobileView ? 11 : 16,
+              //     fontWeight: FontWeight.w500,
+              //     letterSpacing: 6,
+              //   ),
+              // ),
+              Text("YANGON SUMMER",
                 style: TextStyle(
                   color: const Color(0xFF4A4A4A),
-                  fontSize: mobileView ? 24 : 42,
+                  fontSize: mobileView ? 24 : 32,
                   fontWeight: FontWeight.w400,
                   letterSpacing: 1,
                   height: 1.0,
@@ -254,7 +254,7 @@ class _SalePageState extends State<SalePage> {
                   color: const Color(0xFFF28C00),
                   fontSize: mobileView ? 30 : 72,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: 2,
+                  letterSpacing: 4,
                   height: 1.0,
                 ),
               ),
@@ -268,7 +268,7 @@ class _SalePageState extends State<SalePage> {
                   height: 1.4,
                 ),
               ),
-              // SizedBox(height: mobileView ? 10 : 16),
+              SizedBox(height: mobileView ? 10 : 16),
               SizedBox(
                 height: mobileView ? 32 : 40,
                 child: ElevatedButton(

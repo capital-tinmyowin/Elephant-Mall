@@ -111,6 +111,7 @@ class _HomePageState extends State<HomePage> {
                   constraints: const BoxConstraints(maxWidth: 1400),
                   child: Padding(
                     padding: const EdgeInsets.all(20),
+                    // padding: EdgeInsets.only(left: 80,right: 80),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -142,87 +143,90 @@ Widget buildHero() {
   final width = MediaQuery.of(context).size.width;
   final isMobile = width < 600;
 
-  return SizedBox(
-    height: isMobile ? 150 : 250,
-    width: double.infinity,
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // SINGLE BANNER IMAGE
-          Image.asset(
-            'assets/home1.png',
-            fit: BoxFit.cover,
-            alignment: const Alignment(0, -0.3),
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                color: Colors.grey.shade300,
-                child: const Icon(
-                  Icons.image_not_supported,
-                  size: 40,
-                ),
-              );
-            },
-          ),
-
-          // DARK OVERLAY
-          Container(
-            color: Colors.black.withValues(alpha: 0.25),
-          ),
-
-          // TEXT
-          Positioned(
-            left: isMobile ? 15 : 40,
-            top: isMobile ? 15 : 40,
-            right: 10,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'YANGON SUMMER HEATWAVE SAVINGS!',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: isMobile ? 14 : 28,
-                    fontWeight: FontWeight.bold,
+  return Padding(
+    padding: const EdgeInsets.only(top: 10),
+    child: SizedBox(
+      height: isMobile ? 150 : 250,
+      width: double.infinity,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // SINGLE BANNER IMAGE
+            Image.asset(
+              'assets/home1.png',
+              fit: BoxFit.cover,
+              alignment: const Alignment(0, -0.3),
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: Colors.grey.shade300,
+                  child: const Icon(
+                    Icons.image_not_supported,
+                    size: 40,
                   ),
-                ),
-
-                const SizedBox(height: 8),
-
-                Text(
-                  'Cool styles for Yangon’s hottest days.',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: isMobile ? 11 : 16,
-                  ),
-                ),
-
-                const SizedBox(height: 15),
-
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  onPressed: () {},
-                  child: const Text(
-                    'SHOP NOW',
+                );
+              },
+            ),
+    
+            // DARK OVERLAY
+            Container(
+              color: Colors.black.withValues(alpha: 0.25),
+            ),
+    
+            // TEXT
+            Positioned(
+              left: isMobile ? 15 : 40,
+              top: isMobile ? 15 : 40,
+              right: 10,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'YANGON SUMMER HEATWAVE SAVINGS!',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: Colors.white,
+                      fontSize: isMobile ? 14 : 28,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-              ],
+    
+                  const SizedBox(height: 8),
+    
+                  Text(
+                    'Cool styles for Yangon’s hottest days.',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: isMobile ? 11 : 16,
+                    ),
+                  ),
+    
+                  const SizedBox(height: 15),
+    
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    onPressed: () {},
+                    child: const Text(
+                      'SHOP NOW',
+                      style: TextStyle(
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     ),
   );
