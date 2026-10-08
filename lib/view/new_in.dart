@@ -4,6 +4,7 @@ import '../models/new_in.dart';
 import '../services/new_in_service.dart';
 import 'common/header.dart';
 import 'common/footer.dart';
+import 'package:intl/intl.dart';
 
 class NewInPage extends StatefulWidget {
   const NewInPage({super.key});
@@ -681,7 +682,7 @@ class _NewInPageState extends State<NewInPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 7),
             child: Text(
-              "${product.price.toStringAsFixed(2)} MMK",
+              "${NumberFormat('#,##0').format(product.price)} MMK",
               style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,

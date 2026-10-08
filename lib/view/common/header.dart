@@ -10,6 +10,7 @@ import '../login.dart';
 import '../new_in.dart';
 import '../sellernew.dart';
 import '../sale.dart';
+import '../sellerpage.dart';
 
 class CommonHeader extends StatefulWidget {
   final bool showMobileHeader;
@@ -81,7 +82,7 @@ class _CommonHeaderState extends State<CommonHeader> {
                               _menuItem(
                                 context,
                                 "ABOUT US",
-                                const NewSellerPage(),
+                                const SellerStorePage(sellerId: 1),
                               ),
                             ],
                           ),

@@ -33,7 +33,7 @@ class NewInModel {
       category: json['category']?.toString() ?? '',
 
       price: double.tryParse(
-            json['price']?.toString() ?? '',
+            json['price']?.toString().replaceAll(',', '') ?? '',
           ) ??
           0.0,
 

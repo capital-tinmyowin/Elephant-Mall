@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'common/header.dart';
 import 'common/footer.dart';
+import '../services/auth_service.dart';
+import 'sellerpage.dart';
+import 'package:provider/provider.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -14,6 +17,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   int selectedMenu = 0;
+  final ImagePicker _imagePicker = ImagePicker();
 
   // PROFILE DATA
   Map<String, dynamic> profileData = {
@@ -59,9 +63,6 @@ class _ProfilePageState extends State<ProfilePage> {
   late TextEditingController businessTypeController;
   late TextEditingController businessLocationController;
   late TextEditingController businessDescriptionController;
-
-  // IMAGE
-  final ImagePicker _imagePicker = ImagePicker();
 
   XFile? _profileImage;
   // PROFILE MENU
@@ -591,6 +592,49 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() {
           selectedMenu = index;
         });
+
+        if (title == "My Listings") {
+          // Get the SAME AuthService instance that was created in main.dart
+          final authService = Provider.of<AuthService>(context, listen: false);
+
+          print("========================================");
+          print("MY LISTINGS DEBUG");
+          print("AuthService isLoggedIn: ${authService.isLoggedIn}");
+          print("AuthService currentUser: ${authService.currentUser}");
+
+          final currentUser = authService.currentUser;
+
+          if (currentUser == null) {
+            print("❌ CURRENT USER IS NULL");
+            print("========================================");
+
+            showUpdateMessage("Please login first.");
+            return;
+          }
+
+          print("✅ CURRENT USER FOUND");
+          print("User ID: ${currentUser.id}");
+          print("Username: ${currentUser.username}");
+          print("Email: ${currentUser.email}");
+          print("Full Name: ${currentUser.fullName}");
+
+          final currentUserId = currentUser.id;
+
+          print("➡️ Passing sellerId to SellerStorePage: $currentUserId");
+          print("========================================");
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SellerStorePage(
+                sellerId: currentUserId,
+                sellerName: currentUser.username,
+              ),
+            ),
+          );
+
+          return;
+        }
       },
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 2),
