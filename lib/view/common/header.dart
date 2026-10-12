@@ -79,11 +79,11 @@ class _CommonHeaderState extends State<CommonHeader> {
                               ),
                               _menuItem(context, "SALE", const SalePage()),
                               _menuItem(context, "NEW IN", const NewInPage()),
-                              _menuItem(
-                                context,
-                                "ABOUT US",
-                                const SellerStorePage(sellerId: 1),
-                              ),
+                              // _menuItem(
+                              //   context,
+                              //   "ABOUT US",
+                              //   const SellerStorePage(sellerId: 1),
+                              // ),
                             ],
                           ),
                         ),
@@ -221,7 +221,7 @@ class _CommonHeaderState extends State<CommonHeader> {
                       _menuItem(context, "SALE", const SalePage()),
                       _menuItem(context, "NEW IN", const NewInPage()),
                       _menuItem(context, "MY ORDERS", const MyFavouritePage()),
-                      _menuItem(context, "ABOUT US", const NewSellerPage()),
+                      // _menuItem(context, "ABOUT US", const NewSellerPage()),
                     ],
                   ),
                 ),
@@ -249,8 +249,8 @@ class _CommonHeaderState extends State<CommonHeader> {
       case "/new-in":
         return menuName == "NEW IN";
 
-      case "/about":
-        return menuName == "ABOUT US";
+      // case "/about":
+      //   return menuName == "ABOUT US";
 
       default:
         return false;
@@ -613,9 +613,9 @@ class _CommonHeaderState extends State<CommonHeader> {
               routeName = "/new-in";
               break;
 
-            case "ABOUT US":
-              routeName = "/about";
-              break;
+            // case "ABOUT US":
+            //   routeName = "/about";
+            //   break;
 
             default:
               routeName = "/";
