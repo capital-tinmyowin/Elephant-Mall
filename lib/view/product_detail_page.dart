@@ -1,3 +1,4 @@
+import 'package:elephant_mall/services/auth_service.dart';
 import 'package:elephant_mall/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -32,16 +33,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     _apiService = ApiService();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // 🔥 Load list AND detail together
-      await Future.wait([
-        // _apiService.loadProducts(),
-        _apiService.loadProductDetail(widget.productId),
-      ]);
-
+      final auth = Provider.of<AuthService>(context, listen: false);
+      final json = await auth.getProductDetail(widget.productId);
       if (!mounted) return;
-      setState(
-        () {},
-      ); // force rebuild so _getSellerProducts sees the populated list
+
+      if (json != null) {
+        _apiService.setProductFromJson(json);
+      }
+      setState(() {});
     });
   }
 
@@ -370,12 +369,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   // ============= PRODUCT INFO =============
   Widget _buildProductInfo(Product product) {
-    final String category = product.category.isNotEmpty
-        ? product.category
-        : '';
-    final String sku =
-        'EL-${category.substring(0, category.length > 3 ? 3 : category.length).toUpperCase()}-${product.productCode}';
-    final String qty = '22';
+    final List<String> categories = product.categories.isNotEmpty
+        ? product.categories
+        : (product.category.isNotEmpty ? [product.category] : []);
+    // final String sku =
+    //     'EL-${category.substring(0, category.length > 3 ? 3 : category.length).toUpperCase()}-${product.productCode}';
+    // final String qty = '22';
     final String location = product.location;
     final String condition = product.condition;
     print(location);
@@ -414,13 +413,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           ),
           child: Column(
             children: [
-              _buildMetaRow('Category', category, 'Condition', condition),
+              _buildCategoryRow(categories),
               SizedBox(
                 height: 0.9,
                 width: double.infinity,
                 child: Container(color: Colors.grey),
               ),
-              _buildMetaRow('SKU', sku, 'Location', location),
+              _buildMetaRow('Condition', condition, 'Location', location),
             ],
           ),
         ),
@@ -519,6 +518,32 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     );
   }
 
+  Widget _buildCategoryRow(List<String> categories) {
+    final value = categories.isEmpty ? '' : categories.join(' / ');
+    return Row(
+      children: [
+        Container(
+          width: 100,
+          padding: const EdgeInsets.all(10),
+          color: Colors.grey[200],
+          child: const Text(
+            'Category',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            child: Text(
+              value,
+              // style: const TextStyle(fontSize: 13, color: Colors.black87),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildMetaRow(
     String label1,
     String value1,
@@ -538,7 +563,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           ),
         ),
         // Value 1
-        Expanded(child: Container(child: Text(value1))),
+        Expanded(child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          child: Text(value1),
+        )),
         // Label 2
         Container(
           width: 100,
@@ -550,7 +578,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           ),
         ),
         // Value 2
-        Expanded(child: Container(child: Text(value2))),
+        Expanded(child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          child: Text(value2),
+        )),
       ],
     );
   }
@@ -638,7 +669,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       children: [
         Text(
           desc,
-          style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.5),
+          style: TextStyle(fontSize: 14, color: Colors.grey[800], height: 1.5),
         ),
         const SizedBox(height: 8),
         Text(

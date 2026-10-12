@@ -8,6 +8,7 @@ class Product {
   final String productName;
   final double price;
   final String category;
+  final List<String> categories;
   final String location;
   final String condition;
   final String image;
@@ -26,6 +27,7 @@ class Product {
     required this.productName,
     required this.price,
     this.category = '',
+    this.categories = const [],
     this.location = '',
     this.condition = '',
     this.image = '',
@@ -92,6 +94,26 @@ class Product {
     }
 
     // Get category
+    List<String> categories = [];
+    if (json['pCategoryList'] is List) {
+      for (final item in json['pCategoryList'] as List) {
+        if (item is Map) {
+          final name = item['categoryName']?.toString() ?? '';
+          if (name.isNotEmpty) {
+            categories.add(name);
+          }
+        }
+      }
+    }
+
+    // Fallbacks if pCategoryList was missing/empty
+    if (categories.isEmpty) {
+      final single =
+          json['category']?.toString() ??
+          json['categoryName']?.toString() ??
+          '';
+      if (single.isNotEmpty) categories.add(single);
+    }
     String category = json['category'] ?? json['categoryName'] ?? '';
     String imageUrl =
         json['ImageUrl'] ?? json['imageUrl'] ?? json['image'] ?? '';
@@ -138,6 +160,7 @@ class Product {
       userId: userId,
       price: price,
       category: category,
+      categories: categories, 
       image: imageUrl,
       // rating: (json['rating'] ?? 4.5).toDouble(),
       // ratingCount: json['ratingCount'] ?? 0,

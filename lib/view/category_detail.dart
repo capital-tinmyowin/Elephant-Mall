@@ -60,6 +60,8 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
     _apiService = ApiService();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _apiService.loadProductsByCategory(widget.categoryId);
+      _apiService.loadCategories(); // 🔥 populates api.categories
+      _apiService.loadCategoryCounts();
     });
   }
 
@@ -439,20 +441,40 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          _buildCategoryItem(1, 'T-Shirts', 12),
-          _buildCategoryItem(2, 'Blouses', 4),
-          _buildCategoryItem(3, 'Bags', 6),
-          _buildCategoryItem(4, 'Hats', 6),
-          _buildCategoryItem(5, 'Shoes', 8),
-          _buildCategoryItem(6, 'Jeans', 12),
-          _buildCategoryItem(7, 'Accessories', 15),
-          _buildCategoryItem(8, 'Electronics', 4),
-          _buildCategoryItem(9, 'Headphones', 5),
-          _buildCategoryItem(10, 'Power Banks', 4),
-          _buildCategoryItem(11, 'Clearance', 2),
-          _buildCategoryItem(12, 'Home Decor', 5),
-          _buildCategoryItem(13, 'Appliances', 5),
-
+          // _buildCategoryItem(1, 'T-Shirts', 12),
+          // _buildCategoryItem(2, 'Blouses', 4),
+          // _buildCategoryItem(3, 'Bags', 6),
+          // _buildCategoryItem(4, 'Hats', 6),
+          // _buildCategoryItem(5, 'Shoes', 8),
+          // _buildCategoryItem(6, 'Jeans', 12),
+          // _buildCategoryItem(7, 'Accessories', 15),
+          // _buildCategoryItem(8, 'Electronics', 4),
+          // _buildCategoryItem(9, 'Headphones', 5),
+          // _buildCategoryItem(10, 'Power Banks', 4),
+          // _buildCategoryItem(11, 'Clearance', 2),
+          // _buildCategoryItem(12, 'Home Decor', 5),
+          // _buildCategoryItem(13, 'Appliances', 5),
+          Consumer<ApiService>(
+            builder: (context, api, _) {
+              final cats = api.categories; // from _sortedCategories
+              if (cats.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text('No categories'),
+                );
+              }
+              return Column(
+                children: cats.map((c) {
+                  final count = api.categoryCounts[c.categoryId] ?? 0;
+                  return _buildCategoryItem(
+                    c.categoryId,
+                    c.categoryName,
+                    count,
+                  );
+                }).toList(),
+              );
+            },
+          ),
           const Divider(height: 24),
 
           const Text(
@@ -1116,11 +1138,15 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: isMobile ? 180 : 250, // Only this changes
+            // maxCrossAxisExtent: isMobile ? 180 : 250, // Only this changes
+            // crossAxisSpacing: 16,
+            // mainAxisSpacing: 24,
+            // childAspectRatio: 0.54,
+            // mainAxisExtent: isMobile ? 290 : 380,
+            maxCrossAxisExtent: isMobile ? 200 : 240,
             crossAxisSpacing: 16,
-            mainAxisSpacing: 24,
-            childAspectRatio: 0.54,
-            mainAxisExtent: isMobile ? 290 : 380,
+            mainAxisSpacing: 20,
+            mainAxisExtent: isMobile ? 270 : 340,
           ),
           itemCount: products.length,
           itemBuilder: (context, index) {
@@ -1240,7 +1266,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                             color: const Color(0xFF2B6E3B),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        // const SizedBox(width: 8),
                         if (product.productId % 2 == 0)
                           Text(
                             '\$${(product.price * 1.15).toStringAsFixed(2)}',
@@ -1329,12 +1355,11 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min, // Add this
           children: [
-            // Product Image - Use AspectRatio for consistent sizing
-            AspectRatio(
-              aspectRatio: 1,
+            // ── Image takes whatever height is left after text ──
+            Expanded(
               child: Stack(
+                fit: StackFit.expand,
                 children: [
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
@@ -1346,7 +1371,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                       fit: BoxFit.cover,
                     ),
                   ),
-                  // Discount Badge
+                  // Discount badge
                   if (product.productId % 2 == 0)
                     Positioned(
                       top: 8,
@@ -1370,7 +1395,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                         ),
                       ),
                     ),
-                  // Favorite Button
+                  // Favorite
                   Positioned(
                     top: 8,
                     right: 8,
@@ -1379,15 +1404,11 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                         color: Colors.white,
                         shape: BoxShape.circle,
                       ),
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.favorite_border,
-                          size: isMobile ? 16 : 20,
-                          color: Colors.grey[600],
-                        ),
-                        onPressed: () {},
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        Icons.favorite_border,
+                        size: isMobile ? 16 : 18,
+                        color: Colors.grey[700],
                       ),
                     ),
                   ),
@@ -1396,7 +1417,12 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
             ),
             // Product Info
             Padding(
-              padding: EdgeInsets.all(isMobile ? 8 : 10),
+              padding: EdgeInsets.fromLTRB(
+                isMobile ? 8 : 10,
+                isMobile ? 8 : 10,
+                isMobile ? 8 : 10,
+                isMobile ? 8 : 12,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min, // Add this
@@ -1411,23 +1437,23 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: isMobile ? 4 : 6),
                   Row(
                     children: [
                       Text(
                         '\$${product.price.toStringAsFixed(2)}',
                         style: TextStyle(
-                          fontSize: isMobile ? 14 : 16,
+                          fontSize: isMobile ? 13 : 15,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFF2B6E3B),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 1),
                       if (product.productId % 2 == 0)
                         Text(
                           '\$${(product.price * 1.15).toStringAsFixed(2)}',
                           style: TextStyle(
-                            fontSize: isMobile ? 11 : 13,
+                            fontSize: isMobile ? 10 : 12,
                             decoration: TextDecoration.lineThrough,
                             color: Colors.grey[500],
                           ),
@@ -1435,9 +1461,10 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                     ],
                   ),
 
-                  const SizedBox(height: 6),
+                  SizedBox(height: isMobile ? 6 : 8),
                   SizedBox(
                     width: double.infinity,
+                    height: isMobile ? 30 : 34,
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.push(
@@ -1451,13 +1478,14 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey[100],
                         foregroundColor: const Color(0xFF2B6E3B),
-                        padding: EdgeInsets.symmetric(
-                          vertical: isMobile ? 10 : 15,
-                        ),
+                        // padding: EdgeInsets.symmetric(
+                        //   vertical: isMobile ? 10 : 15,
+                        // ),
+                        padding: EdgeInsets.zero,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        minimumSize: Size(double.infinity, isMobile ? 30 : 32),
+                        // minimumSize: Size(double.infinity, isMobile ? 30 : 32),
                       ),
                       child: Text(
                         'View Detail',
