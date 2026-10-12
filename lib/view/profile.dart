@@ -612,7 +612,7 @@ class _ProfilePageState extends State<ProfilePage> {
             return;
           }
 
-          print("✅ CURRENT USER FOUND");
+          print(" CURRENT USER FOUND");
           print("User ID: ${currentUser.id}");
           print("Username: ${currentUser.username}");
           print("Email: ${currentUser.email}");
@@ -620,7 +620,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
           final currentUserId = currentUser.id;
 
-          print("➡️ Passing sellerId to SellerStorePage: $currentUserId");
+          print("Passing sellerId to SellerStorePage: $currentUserId");
+          debugPrint('current user name: ${currentUser.username}');
+          debugPrint('current user name: ${currentUser.email}');
+
           print("========================================");
 
           Navigator.push(

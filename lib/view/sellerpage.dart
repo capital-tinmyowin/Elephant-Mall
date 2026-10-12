@@ -7,6 +7,13 @@ import 'common/footer.dart';
 import 'common/header.dart';
 import 'product_detail_page.dart';
 import 'sell.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../services/auth_service.dart';
+import '../models/category.dart';
+import '../models/new_in.dart';
+import 'new_in.dart';
+import 'common/loading_widget.dart';
 
 class SellerStorePage extends StatefulWidget {
   final int? sellerId;
@@ -26,18 +33,36 @@ class _SellerStorePageState extends State<SellerStorePage> {
   bool loading = true;
   bool isFollowing = false;
 
+  // Products that have successfully been added to favourites.
+  final Set<int> favouriteProductIds = {};
+
+  // Products currently waiting for the favourite API response.
+  final Set<int> favouriteLoadingIds = {};
+
   String? errorMessage;
 
+  List<Category> categories = [];
+
+  bool categoryLoading = false;
+
   String selectedCategory = 'By Category';
+  int? selectedCategoryId;
   String selectedPrice = 'Price';
   String selectedSort = 'Primmys by Price';
   String selectedShipping = 'Shipping & Payment';
+
+  List<NewInModel> newestArrivals = [];
+
+  bool newestArrivalsLoading = true;
+  String? newestArrivalsError;
 
   @override
   void initState() {
     super.initState();
 
     loadProducts();
+    loadCategories();
+    loadNewestArrivals();
   }
 
   @override
@@ -45,6 +70,85 @@ class _SellerStorePageState extends State<SellerStorePage> {
     _searchController.dispose();
 
     super.dispose();
+  }
+
+  Future<void> loadCategories() async {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      categoryLoading = true;
+    });
+
+    try {
+      final result = await _service.fetchCategories();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        categories = result;
+        categoryLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        categories = [];
+        categoryLoading = false;
+      });
+    }
+  }
+
+  String formatPrice(String price) {
+    final value = double.tryParse(price);
+
+    if (value == null) {
+      return price;
+    }
+
+    return NumberFormat('#,##0').format(value);
+  }
+
+  // ============================================================
+  // LOAD NEWEST ARRIVALS
+  // ============================================================
+
+  Future<void> loadNewestArrivals() async {
+    if (!mounted) return;
+
+    setState(() {
+      newestArrivalsLoading = true;
+      newestArrivalsError = null;
+    });
+
+    try {
+      final authService = context.read<AuthService>();
+
+      final result = await _service.fetchNewestArrivals(
+        authService: authService,
+      );
+      if (!mounted) return;
+
+      setState(() {
+        newestArrivals = result;
+        newestArrivalsLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        newestArrivals = [];
+        newestArrivalsLoading = false;
+        newestArrivalsError = e.toString();
+      });
+
+      debugPrint('Failed to load newest arrivals: $e');
+    }
   }
 
   Future<void> loadProducts() async {
@@ -64,13 +168,25 @@ class _SellerStorePageState extends State<SellerStorePage> {
         throw Exception('Seller ID is required.');
       }
 
-      debugPrint('');
-      debugPrint('==============================================');
-      debugPrint('SELLER STORE');
-      debugPrint('SELLER ID: $sellerId');
-      debugPrint('==============================================');
-
       final result = await _service.fetchSellerProducts(sellerId.toString());
+
+      // ==========================================================
+      // SORT BY PRODUCT ID - BIGGEST FIRST
+      // ==========================================================
+
+      result.sort((a, b) => (b.productId ?? 0).compareTo(a.productId ?? 0));
+
+      // ==========================================================
+      // LOAD EXISTING FAVOURITES
+      // ==========================================================
+
+      final existingFavouriteIds = <int>{};
+
+      for (final product in result) {
+        if (product.productId != null && product.favourite == 1) {
+          existingFavouriteIds.add(product.productId!);
+        }
+      }
 
       if (!mounted) {
         return;
@@ -78,19 +194,15 @@ class _SellerStorePageState extends State<SellerStorePage> {
 
       setState(() {
         products = result;
+
+        favouriteProductIds
+          ..clear()
+          ..addAll(existingFavouriteIds);
+
         loading = false;
         errorMessage = null;
       });
-
-      debugPrint('Seller products loaded: ${products.length}');
-    } catch (e, stackTrace) {
-      debugPrint('');
-      debugPrint('==============================================');
-      debugPrint('SELLER STORE PRODUCT ERROR');
-      debugPrint('ERROR: $e');
-      debugPrint('STACK TRACE: $stackTrace');
-      debugPrint('==============================================');
-
+    } catch (e) {
       if (!mounted) {
         return;
       }
@@ -121,13 +233,228 @@ class _SellerStorePageState extends State<SellerStorePage> {
     return null;
   }
 
+  // NEWEST ARRIVALS SECTION
+
+  Widget buildNewestArrivalsSection(bool mobile) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // TITLE + VIEW ALL
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Newest Arrivals',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: mobile ? 20 : 23,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                viewAllProducts('Newest Arrivals');
+              },
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(50, 25),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'VIEW ALL',
+                style: TextStyle(
+                  fontSize: mobile ? 10 : 12,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xff28733D),
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 5),
+
+        // LOADING
+        if (newestArrivalsLoading)
+          const SizedBox(
+            height: 150,
+            child: Center(child: CircularProgressIndicator()),
+          )
+        // ERROR
+        else if (newestArrivalsError != null)
+          SizedBox(
+            height: 100,
+            child: Center(
+              child: TextButton(
+                onPressed: loadNewestArrivals,
+                child: const Text('Failed to load. Tap to retry'),
+              ),
+            ),
+          )
+        // EMPTY
+        else if (newestArrivals.isEmpty)
+          const SizedBox(
+            height: 100,
+            child: Center(child: Text('No newest arrivals available.')),
+          )
+        // API PRODUCTS
+        else
+          SizedBox(
+            height: mobile ? 150 : 205,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: newestArrivals.length > 4 ? 4 : newestArrivals.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 5),
+              itemBuilder: (context, index) {
+                final item = newestArrivals[index];
+
+                return SizedBox(
+                  width: mobile ? 135 : 180,
+                  child: buildNewestArrivalCard(item, mobile),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  // NEWEST ARRIVAL CARD
+
+  Widget buildNewestArrivalCard(NewInModel item, bool mobile) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.grey.shade300, width: 0.8),
+        borderRadius: BorderRadius.circular(5),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // IMAGE
+          SizedBox(
+            height: mobile ? 85 : 125,
+            width: double.infinity,
+            child: _buildProductImage(item.imageUrl, mobile),
+          ),
+
+          // NAME + PRICE
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 3, 4, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.productName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: mobile ? 9 : 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${NumberFormat('#,##0').format(item.price)} Kyat',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: mobile ? 9 : 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const Spacer(),
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(7, 1, 7, 6),
+            child: SizedBox(
+              width: double.infinity,
+              height: mobile ? 22 : 28,
+              child: ElevatedButton(
+                onPressed: () {
+                  // Add product-detail navigation when the
+                  // NewInModel product ID is confirmed.
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xffF28C00),
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.zero,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                ),
+                child: Text(
+                  'VIEW DETAILS',
+                  style: TextStyle(
+                    fontSize: mobile ? 8 : 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildProductError() {
+    return SizedBox(
+      width: double.infinity,
+      height: 250,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off_outlined, size: 45, color: Colors.grey),
+            const SizedBox(height: 12),
+            const Text(
+              'Failed to load products',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Please check your connection and try again.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: Colors.black54),
+            ),
+            const SizedBox(height: 14),
+            ElevatedButton.icon(
+              onPressed: loading ? null : loadProducts,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xffF28C00),
+                foregroundColor: Colors.white,
+                elevation: 0,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final mobile = isMobile(context);
 
     return Scaffold(
       backgroundColor: const Color(0xffFFFFFF),
-
       body: Column(
         children: [
           const CommonHeader(),
@@ -145,37 +472,38 @@ class _SellerStorePageState extends State<SellerStorePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // SELLER HEADER
+                        // SELLER HEADER — always visible
                         buildSellerHeader(mobile),
 
                         const SizedBox(height: 5),
 
-                        // SEARCH
+                        // SEARCH — always visible
                         buildSearchBox(mobile),
 
                         const SizedBox(height: 4),
 
-                        // FILTERS
+                        // FILTERS — always visible
                         buildFilters(mobile),
 
                         const SizedBox(height: 7),
 
+                        // MAIN PRODUCT GRID ONLY
                         if (loading)
-                          const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(30),
-                              child: CircularProgressIndicator(),
-                            ),
+                          const CommonLoading(
+                            size: 42,
+                            height: 300,
+                            message: 'Loading products...',
                           )
+                        else if (errorMessage != null)
+                          buildProductError()
                         else if (products.isEmpty)
                           buildEmptyProducts()
                         else ...[
-                          // PRODUCT GRID
                           buildProductGrid(mobile),
 
                           const SizedBox(height: 12),
 
-                          // NEWEST ARRIVALS + BEST SELLERS
+                          // Other sections remain visible after loading
                           buildProductSections(mobile),
                         ],
 
@@ -188,22 +516,17 @@ class _SellerStorePageState extends State<SellerStorePage> {
             ),
           ),
 
-          // ======================================================
           // DESKTOP FOOTER
-          // ======================================================
           if (!mobile) const CommonFooter(),
         ],
       ),
 
-      // ==========================================================
       // MOBILE BOTTOM BAR
-      // ==========================================================
       bottomNavigationBar: mobile
           ? const CommonBottomBar(currentIndex: 4)
           : null,
     );
   }
-
   // ============================================================
   // SELLER HEADER
   // ============================================================
@@ -326,7 +649,7 @@ class _SellerStorePageState extends State<SellerStorePage> {
         controller: _searchController,
         style: TextStyle(fontSize: mobile ? 10 : 13),
         decoration: InputDecoration(
-          hintText: "Search in Sarah J.'s Store",
+          hintText: "Search Items",
           hintStyle: TextStyle(
             fontSize: mobile ? 9 : 12,
             color: Colors.grey.shade600,
@@ -365,9 +688,87 @@ class _SellerStorePageState extends State<SellerStorePage> {
     );
   }
 
-  // ============================================================
-  // FILTERS
-  // ============================================================
+  Widget buildCategoryFilter(bool mobile) {
+    return SizedBox(
+      width: mobile ? 125 : 170,
+      height: mobile ? 27 : 34,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xffF8F8F8),
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: selectedCategory,
+
+            isExpanded: true,
+            isDense: true,
+
+            icon: Icon(Icons.keyboard_arrow_down, size: mobile ? 13 : 17),
+
+            style: TextStyle(
+              color: Colors.black87,
+              fontSize: mobile ? 8.5 : 12,
+            ),
+
+            dropdownColor: Colors.white,
+
+            items: [
+              // ==================================================
+              // DEFAULT
+              // ==================================================
+              const DropdownMenuItem<String>(
+                value: 'By Category',
+                child: Text(
+                  'By Category',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+
+              // ==================================================
+              // API CATEGORIES
+              // ==================================================
+              ...categories.map((category) {
+                return DropdownMenuItem<String>(
+                  value: category.categoryName,
+                  child: Text(
+                    category.categoryName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }),
+            ],
+
+            onChanged: categoryLoading
+                ? null
+                : (value) {
+                    if (value == null) {
+                      return;
+                    }
+
+                    setState(() {
+                      selectedCategory = value;
+
+                      if (value == 'By Category') {
+                        selectedCategoryId = null;
+                      } else {
+                        final selectedCategory = categories.firstWhere(
+                          (category) => category.categoryName == value,
+                        );
+
+                        selectedCategoryId = selectedCategory.categoryId;
+                      }
+                    });
+                  },
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget buildFilters(bool mobile) {
     return SizedBox(
@@ -376,21 +777,16 @@ class _SellerStorePageState extends State<SellerStorePage> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
+            // ====================================================
             // CATEGORY
-            buildFilter(
-              selectedCategory,
-              ['By Category', 'Men', 'Women', 'Accessories'],
-              (value) {
-                setState(() {
-                  selectedCategory = value;
-                });
-              },
-              mobile,
-            ),
+            // ====================================================
+            buildCategoryFilter(mobile),
 
-            const SizedBox(width: 4),
+            SizedBox(width: mobile ? 8 : 12),
 
+            // ====================================================
             // PRICE
+            // ====================================================
             buildFilter(
               selectedPrice,
               ['Price', 'Under 50,000', '50,000 - 100,000', 'Over 100,000'],
@@ -402,9 +798,11 @@ class _SellerStorePageState extends State<SellerStorePage> {
               mobile,
             ),
 
-            const SizedBox(width: 4),
+            SizedBox(width: mobile ? 8 : 12),
 
+            // ====================================================
             // SORT
+            // ====================================================
             buildFilter(
               selectedSort,
               ['Primmys by Price', 'Lowest Price', 'Highest Price'],
@@ -416,9 +814,11 @@ class _SellerStorePageState extends State<SellerStorePage> {
               mobile,
             ),
 
-            const SizedBox(width: 4),
+            SizedBox(width: mobile ? 8 : 12),
 
+            // ====================================================
             // SHIPPING
+            // ====================================================
             buildFilter(
               selectedShipping,
               ['Shipping & Payment', 'Shipping', 'Payment'],
@@ -435,48 +835,51 @@ class _SellerStorePageState extends State<SellerStorePage> {
     );
   }
 
-  // ============================================================
-  // FILTER DROPDOWN
-  // ============================================================
-
   Widget buildFilter(
     String value,
     List<String> items,
     ValueChanged<String> onChanged,
     bool mobile,
   ) {
-    return Container(
+    return SizedBox(
+      width: mobile ? 125 : 170,
       height: mobile ? 27 : 34,
-      decoration: BoxDecoration(
-        color: const Color(0xffF8F8F8),
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 3),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: items.contains(value) ? value : items.first,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xffF8F8F8),
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: items.contains(value) ? value : items.first,
 
-          isDense: true,
+            isExpanded: true,
+            isDense: true,
 
-          icon: Icon(Icons.keyboard_arrow_down, size: mobile ? 13 : 17),
+            icon: Icon(Icons.keyboard_arrow_down, size: mobile ? 13 : 17),
 
-          style: TextStyle(color: Colors.black87, fontSize: mobile ? 8.5 : 12),
+            style: TextStyle(
+              color: Colors.black87,
+              fontSize: mobile ? 8.5 : 12,
+            ),
 
-          dropdownColor: Colors.white,
+            dropdownColor: Colors.white,
 
-          items: items.map((item) {
-            return DropdownMenuItem<String>(
-              value: item,
-              child: Text(item, overflow: TextOverflow.ellipsis),
-            );
-          }).toList(),
+            items: items.map((item) {
+              return DropdownMenuItem<String>(
+                value: item,
+                child: Text(item, maxLines: 1, overflow: TextOverflow.ellipsis),
+              );
+            }).toList(),
 
-          onChanged: (value) {
-            if (value != null) {
-              onChanged(value);
-            }
-          },
+            onChanged: (value) {
+              if (value != null) {
+                onChanged(value);
+              }
+            },
+          ),
         ),
       ),
     );
@@ -612,7 +1015,7 @@ class _SellerStorePageState extends State<SellerStorePage> {
 
                 // PRICE
                 Text(
-                  "${product.price} Kyat",
+                  "${formatPrice(product.price.toString())} Kyat",
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -632,34 +1035,54 @@ class _SellerStorePageState extends State<SellerStorePage> {
             padding: const EdgeInsets.fromLTRB(4, 3, 4, 0),
             child: Row(
               children: [
-                // =================================================
-                // ADD TO FAVORITE
-                // =================================================
                 Expanded(
                   child: SizedBox(
                     height: mobile ? 18 : 27,
                     child: ElevatedButton(
-                      onPressed: () {
-                        addToCart(product);
-                      },
+                      onPressed: favouriteLoadingIds.contains(product.productId)
+                          ? null
+                          : () {
+                              toggleFavourite(product);
+                            },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xffE88A17),
+                        backgroundColor:
+                            favouriteProductIds.contains(product.productId)
+                            ? const Color(0xffC62828)
+                            : const Color(0xffE88A17),
+                        disabledBackgroundColor:
+                            favouriteProductIds.contains(product.productId)
+                            ? const Color(0xffC62828)
+                            : const Color(0xffE88A17),
                         foregroundColor: Colors.white,
+                        disabledForegroundColor: Colors.white,
                         elevation: 0,
                         padding: EdgeInsets.zero,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(3),
                         ),
                       ),
-                      child: Text(
-                        'Add to Favorite',
-                        maxLines: 1,
-                        overflow: TextOverflow.clip,
-                        style: TextStyle(
-                          fontSize: mobile ? 7 : 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: favouriteLoadingIds.contains(product.productId)
+                          ? SizedBox(
+                              width: mobile ? 10 : 14,
+                              height: mobile ? 10 : 14,
+                              child: const CircularProgressIndicator(
+                                strokeWidth: 1.5,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              favouriteProductIds.contains(product.productId)
+                                  ? 'Remove Favorite'
+                                  : 'Add to Favorite',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: mobile ? 7 : 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
                 ),
@@ -705,6 +1128,89 @@ class _SellerStorePageState extends State<SellerStorePage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget buildNewestArrivals(bool mobile) {
+    if (newestArrivalsLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (newestArrivalsError != null) {
+      return Center(
+        child: Column(
+          children: [
+            const Text('Failed to load newest arrivals.'),
+            TextButton(
+              onPressed: loadNewestArrivals,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (newestArrivals.isEmpty) {
+      return const Center(child: Text('No newest arrivals available.'));
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: newestArrivals.length > 4 ? 4 : newestArrivals.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: mobile ? 2 : 4,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: mobile ? 0.65 : 0.7,
+      ),
+      itemBuilder: (context, index) {
+        final item = newestArrivals[index];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                color: const Color(0xffF5F5F5),
+                child: item.imageUrl.startsWith('http')
+                    ? Image.network(
+                        item.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.image_not_supported),
+                      )
+                    : Image.asset(
+                        item.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.image_not_supported),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              item.productName,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${NumberFormat('#,##0').format(item.price)} MMK',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xffC77C2E),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -772,58 +1278,41 @@ class _SellerStorePageState extends State<SellerStorePage> {
     );
   }
 
-  // ============================================================
-  // NEWEST ARRIVALS + BEST SELLERS
-  // ============================================================
+  // NEWEST ARRIVALS + SALES
 
   Widget buildProductSections(bool mobile) {
-    final newest = products.take(4).toList();
-
-    final best = products.length > 4
+    final sales = products.length > 4
         ? products.skip(4).take(4).toList()
-        : products.take(4).toList();
-
-    // ==========================================================
-    // MOBILE
-    // ==========================================================
+        : <Product>[];
 
     if (mobile) {
       return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          buildProductSection(
-            title: 'Newest Arrivals',
-            items: newest,
-            mobile: true,
-          ),
+          // NEWEST ARRIVALS FROM API
+          buildNewestArrivalsSection(true),
 
           const SizedBox(height: 15),
 
-          buildProductSection(title: 'Sales', items: best, mobile: true),
+          // SALES FROM SELLER PRODUCTS
+          buildProductSection(title: 'Sales', items: sales, mobile: true),
         ],
       );
     }
 
-    // ==========================================================
-    // LAPTOP / DESKTOP
-    // ==========================================================
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: buildProductSection(
-            title: 'Newest Arrivals',
-            items: newest,
-            mobile: false,
-          ),
-        ),
+        // NEWEST ARRIVALS FROM API
+        Expanded(child: buildNewestArrivalsSection(false)),
 
         const SizedBox(width: 20),
 
+        // SALES FROM SELLER PRODUCTS
         Expanded(
           child: buildProductSection(
             title: 'Sales',
-            items: best,
+            items: sales,
             mobile: false,
           ),
         ),
@@ -957,7 +1446,7 @@ class _SellerStorePageState extends State<SellerStorePage> {
                 const SizedBox(height: 2),
 
                 Text(
-                  "${product.price} Kyat",
+                  "${formatPrice(product.price.toString())} Kyat",
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -971,28 +1460,31 @@ class _SellerStorePageState extends State<SellerStorePage> {
 
           const Spacer(),
 
-          // ======================================================
-          // BUTTON
-          // ======================================================
           Padding(
-            padding: const EdgeInsets.all(3),
+            padding: const EdgeInsets.fromLTRB(7, 1, 7, 6),
             child: SizedBox(
-              height: mobile ? 18 : 25,
               width: double.infinity,
-              child: OutlinedButton(
+              height: mobile ? 22 : 28,
+              child: ElevatedButton(
                 onPressed: () {
-                  openProduct(product);
+                  // Add product-detail navigation when the
+                  // NewInModel product ID is confirmed.
                 },
-                style: OutlinedButton.styleFrom(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xffF28C00),
+                  foregroundColor: Colors.white,
                   padding: EdgeInsets.zero,
-                  side: BorderSide(color: Colors.grey.shade400, width: 0.8),
+                  elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(3),
+                    borderRadius: BorderRadius.circular(5),
                   ),
                 ),
                 child: Text(
-                  'View Details',
-                  style: TextStyle(fontSize: mobile ? 7 : 9),
+                  'VIEW DETAILS',
+                  style: TextStyle(
+                    fontSize: mobile ? 8 : 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -1000,11 +1492,7 @@ class _SellerStorePageState extends State<SellerStorePage> {
         ],
       ),
     );
-  }
-
-  // ============================================================
-  // EMPTY PRODUCTS
-  // ============================================================
+  } 
 
   Widget buildEmptyProducts() {
     return SizedBox(
@@ -1019,40 +1507,99 @@ class _SellerStorePageState extends State<SellerStorePage> {
               size: 50,
               color: Colors.grey.shade400,
             ),
-
             const SizedBox(height: 10),
-
-            Text(
+            const Text(
               'No products found',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
+              style: TextStyle(
+                color: Colors.black87,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-
-            // --------------------------------------------------
-            // SHOW RETRY ONLY WHEN API FAILED
-            // --------------------------------------------------
-            if (errorMessage != null) ...[
-              const SizedBox(height: 8),
-
-              TextButton(onPressed: loadProducts, child: const Text('Retry')),
-            ],
+            const SizedBox(height: 5),
+            const Text(
+              'There are no products available in this store.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black54, fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: loadProducts,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Reload Products'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xffF28C00),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  // ============================================================
-  // ADD TO CART
-  // ============================================================
+  Future<void> toggleFavourite(Product product) async {
+    final productId = product.productId;
 
-  void addToCart(Product product) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${product.productName} added to Favorite'),
-        duration: const Duration(seconds: 1),
-        backgroundColor: const Color(0xff28733D),
-      ),
-    );
+    if (productId == null) {
+      return;
+    }
+
+    // Prevent multiple requests for the same product.
+    if (favouriteLoadingIds.contains(productId)) {
+      return;
+    }
+
+    final bool isFavourite = favouriteProductIds.contains(productId);
+
+    setState(() {
+      favouriteLoadingIds.add(productId);
+    });
+
+    try {
+      final authService = context.read<AuthService>();
+
+      bool success;
+
+      if (isFavourite) {
+        // Currently favourite -> remove it.
+        success = await _service.removeFavourite(
+          authService: authService,
+          productId: productId,
+        );
+
+        if (!mounted) {
+          return;
+        }
+
+        if (success) {
+          setState(() {
+            favouriteProductIds.remove(productId);
+          });
+        }
+      } else {
+        // Currently not favourite -> add it.
+        success = await _service.addFavourite(
+          authService: authService,
+          productId: productId,
+        );
+
+        if (!mounted) {
+          return;
+        }
+
+        if (success) {
+          setState(() {
+            favouriteProductIds.add(productId);
+          });
+        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          favouriteLoadingIds.remove(productId);
+        });
+      }
+    }
   }
 
   void editProduct(Product product) {
@@ -1088,14 +1635,16 @@ class _SellerStorePageState extends State<SellerStorePage> {
     );
   }
 
-  // ============================================================
   // VIEW ALL
-  // ============================================================
 
   void viewAllProducts(String section) {
-    debugPrint('View all: $section');
-
-    // TODO:
-    // Connect this to your product listing page.
+    if (section == 'Newest Arrivals') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const NewInPage()),
+      );
+    } else {
+      debugPrint('View all: $section');
+    }
   }
 }

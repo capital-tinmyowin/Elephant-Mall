@@ -5,6 +5,10 @@ import '../services/new_in_service.dart';
 import 'common/header.dart';
 import 'common/footer.dart';
 import 'package:intl/intl.dart';
+import 'common/loading_widget.dart';
+import '../services/auth_service.dart';
+import 'package:provider/provider.dart';
+import 'login.dart';
 
 class NewInPage extends StatefulWidget {
   const NewInPage({super.key});
@@ -62,6 +66,13 @@ class _NewInPageState extends State<NewInPage> {
   }
 
   Future<void> _loadProducts() async {
+    if (!mounted) return;
+
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
     try {
       final products = await _newInService.getNewInProducts();
 
@@ -70,6 +81,7 @@ class _NewInPageState extends State<NewInPage> {
       setState(() {
         allProducts = products;
         isLoading = false;
+        errorMessage = null;
       });
     } catch (e) {
       if (!mounted) return;
@@ -123,38 +135,172 @@ class _NewInPageState extends State<NewInPage> {
     return result;
   }
 
-  // BUILD
+  Future<void> _showLoginRequiredDialog() async {
+    if (!mounted) return;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xfffdfaf4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.lock_outline, color: Color(0xFFC77C2E), size: 28),
+              SizedBox(width: 10),
+              Text(
+                "Login Required",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: const Text(
+            "Your session has expired or you are not logged in.\n\n"
+            "Please login to continue.",
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFC77C2E),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(dialogContext);
+
+                if (!mounted) return;
+
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              },
+              child: const Text(
+                "Login",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _toggleFavourite(NewInModel product) async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+
+    final currentUser = authService.currentUser;
+    if (currentUser == null) {
+      await _showLoginRequiredDialog();
+      return;
+    }
+
+    // Already favourited → do nothing for now
+    if (product.favourite == 1) {
+      // ← compare with 1
+      return;
+    }
+
+    try {
+      final success = await _newInService.addFavourite(
+        authService: authService,
+        productId: product.productId,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        setState(() {
+          product.favourite = 1; 
+        });
+
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   const SnackBar(
+        //     content: Text('Added to favourites'),
+        //     backgroundColor: Colors.green,
+        //     duration: Duration(seconds: 2),
+        //   ),
+        // );
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      final message = e.toString().toLowerCase();
+
+      if (message.contains('401') ||
+          message.contains('unauthorized') ||
+          message.contains('please login')) {
+        await _showLoginRequiredDialog();
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Widget _buildProductError() {
+    return SizedBox(
+      width: double.infinity,
+      height: 240,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off_outlined, size: 45, color: Colors.grey),
+            const SizedBox(height: 12),
+            const Text(
+              'Failed to load products',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Please check your connection and try again.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: Colors.black54),
+            ),
+            const SizedBox(height: 14),
+            ElevatedButton.icon(
+              onPressed: isLoading ? null : _loadProducts,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xffF28C00),
+                foregroundColor: Colors.white,
+                elevation: 0,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final mobileView = isMobile(context);
-
-    // if (isLoading) {
-    //   return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    // }
-
-    if (errorMessage != null) {
-      return Scaffold(
-        body: Center(
-          child: Text(
-            "Failed to load products",
-            style: const TextStyle(color: Colors.red),
-          ),
-        ),
-      );
-    }
-
     final products = filteredProducts;
 
     return Scaffold(
       backgroundColor: const Color(0xffFFFFFF),
-
       body: Column(
         children: [
-          // COMMON HEADER
           const CommonHeader(showMobileHeader: true),
 
-          // PAGE CONTENT
           Expanded(
             child: SingleChildScrollView(
               child: Center(
@@ -168,19 +314,34 @@ class _NewInPageState extends State<NewInPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // _buildBreadcrumb(),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
 
+                        // Banner stays visible during product loading
                         _buildHeroBanner(mobileView),
+
                         const SizedBox(height: 10),
 
+                        // Filters stay visible during product loading
                         _buildFilterRow(mobileView),
+
                         const SizedBox(height: 10),
 
-                        _buildProductCount(products.length),
-                        const SizedBox(height: 5),
+                        if (!isLoading && errorMessage == null) ...[
+                          _buildProductCount(products.length),
+                          const SizedBox(height: 5),
+                        ],
 
-                        _buildProductGrid(products, mobileView),
+                        // Only the product section reloads
+                        if (isLoading)
+                          const CommonLoading(
+                            size: 42,
+                            message: 'Loading products...',
+                            height: 240,
+                          )
+                        else if (errorMessage != null)
+                          _buildProductError()
+                        else
+                          _buildProductGrid(products, mobileView),
 
                         const SizedBox(height: 10),
                       ],
@@ -191,20 +352,14 @@ class _NewInPageState extends State<NewInPage> {
             ),
           ),
 
-          // COMMON FOOTER
           if (!mobileView) const CommonFooter(),
         ],
       ),
-
-      // MOBILE BOTTOM BAR
       bottomNavigationBar: mobileView
           ? const CommonBottomBar(currentIndex: 0)
           : null,
     );
   }
-
-  // BREADCRUMB
-
   // Widget _buildBreadcrumb() {
   //   return Row(
   //     children: [
@@ -549,17 +704,39 @@ class _NewInPageState extends State<NewInPage> {
   // PRODUCT GRID
 
   Widget _buildProductGrid(List<NewInModel> products, bool mobileView) {
-    // if (products.isEmpty) {
-    //   return const SizedBox(
-    //     height: 200,
-    //     child: Center(
-    //       child: Text(
-    //         "No products found.",
-    //         style: TextStyle(color: Colors.grey),
-    //       ),
-    //     ),
-    //   );
-    // }
+    if (products.isEmpty) {
+      return SizedBox(
+        width: double.infinity,
+        height: 240,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.inventory_2_outlined,
+                size: 45,
+                color: Colors.grey.shade400,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'No products found',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 5),
+              const Text(
+                'Try another category or price filter.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return GridView.builder(
       shrinkWrap: true,
@@ -649,11 +826,14 @@ class _NewInPageState extends State<NewInPage> {
                   top: 4,
                   right: 4,
                   child: InkWell(
-                    onTap: () {},
-                    child: const Icon(
-                      Icons.favorite_border,
+                    onTap: () => _toggleFavourite(product),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Icon(
+                      product.favourite == 1
+                          ? Icons.favorite
+                          : Icons.favorite_border,
                       size: 22,
-                      color: Colors.grey,
+                      color: product.favourite == 1 ? Colors.red : Colors.grey,
                     ),
                   ),
                 ),

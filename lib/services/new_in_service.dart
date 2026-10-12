@@ -1,7 +1,12 @@
 import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' hide Category;
+import 'package:http/http.dart' as http;
+import 'package:http/browser_client.dart' show BrowserClient;
 
 import '../models/new_in.dart';
 import 'package:http/http.dart' as http;
+import '../services/auth_service.dart';
 
 class NewInService {
   // ------------------------------------------------------------
@@ -119,12 +124,45 @@ class NewInService {
   static const String _newInUrl =
       'https://www.capital-sys.net/CKMMallAPI/api/productshowcase/GetNewProductList';
 
-  Future<List<NewInModel>> getNewInProducts() async {
+  Future<List<NewInModel>> getNewInProducts({AuthService? authService}) async {
     try {
-      final response = await http.get(
-        Uri.parse(_newInUrl),
-        headers: {'Accept': 'application/json'},
-      );
+      http.Response response;
+
+      // ============================================================
+      // WEB
+      // ============================================================
+      if (kIsWeb) {
+        final client = BrowserClient();
+        client.withCredentials = true; // send login cookie
+
+        try {
+          response = await client.get(
+            Uri.parse(_newInUrl),
+            headers: {'Accept': 'application/json'},
+          );
+        } finally {
+          client.close();
+        }
+      }
+      // ============================================================
+      // ANDROID / iOS
+      // ============================================================
+      else {
+        final headers = <String, String>{'Accept': 'application/json'};
+
+        if (authService?.authCookie != null &&
+            authService!.authCookie!.isNotEmpty) {
+          headers['Cookie'] = authService.authCookie!;
+          print('GET NEW IN AUTH: Cookie attached');
+        }
+
+        final client = http.Client();
+        try {
+          response = await client.get(Uri.parse(_newInUrl), headers: headers);
+        } finally {
+          client.close();
+        }
+      }
 
       print('========== NEW IN API ==========');
       print('URL: $_newInUrl');
@@ -146,7 +184,6 @@ class NewInService {
       print(e);
       print(stackTrace);
       print('======================================');
-
       rethrow;
     }
   }
@@ -179,6 +216,89 @@ class NewInService {
       // print("StackTrace: $stackTrace");
       // print("====================================");
 
+      rethrow;
+    }
+  }
+
+  static const String _addFavBaseUrl =
+      'https://www.capital-sys.net/CKMMallAPI/api/UserAction/addFavourite';
+
+  /// Calls: POST /api/UserAction/addFavourite/{productId}
+  Future<bool> addFavourite({
+    required AuthService authService,
+    required int productId,
+  }) async {
+    final url = Uri.parse('$_addFavBaseUrl/$productId');
+
+    print('========== ADD FAV API ==========');
+    print('URL: $url');
+
+    try {
+      http.Response response;
+
+      // ============================================================
+      // WEB
+      // ============================================================
+      if (kIsWeb) {
+        final client = BrowserClient();
+        client.withCredentials = true; // browser will send the login cookie
+
+        try {
+          response = await client.post(
+            url,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+          );
+        } finally {
+          client.close();
+        }
+      }
+      // ============================================================
+      // ANDROID / iOS
+      // ============================================================
+      else {
+        final headers = <String, String>{
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        };
+
+        if (authService.authCookie != null &&
+            authService.authCookie!.isNotEmpty) {
+          headers['Cookie'] = authService.authCookie!;
+          print('ADD FAV AUTH: Authentication cookie attached.');
+        } else {
+          print('ADD FAV AUTH: No authentication cookie found.');
+        }
+
+        final client = http.Client();
+        try {
+          response = await client.post(url, headers: headers);
+        } finally {
+          client.close();
+        }
+      }
+
+      print('Status Code: ${response.statusCode}');
+      print('Response: ${response.body}');
+      print('=================================');
+
+      // 401 → user not logged in
+      if (response.statusCode == 401) {
+        throw Exception('Please login or sign up first.');
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      }
+
+      throw Exception('Failed to add favourite: ${response.statusCode}');
+    } catch (e, stackTrace) {
+      print('========== ADD FAV API ERROR ==========');
+      print(e);
+      print(stackTrace);
+      print('=======================================');
       rethrow;
     }
   }
