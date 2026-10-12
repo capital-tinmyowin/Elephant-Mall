@@ -506,19 +506,19 @@ Widget buildHero() {
                     const SizedBox(width: 8),
 
                     // Rating
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: List.generate(
-                        5,
-                        (i) => Icon(
-                          Icons.star,
-                          size: 12,
-                          color: i < p.rating.round()
-                              ? Colors.amber
-                              : Colors.grey,
-                        ),
-                      ),
-                    ),
+                    // Row(
+                    //   mainAxisSize: MainAxisSize.min,
+                    //   children: List.generate(
+                    //     5,
+                    //     (i) => Icon(
+                    //       Icons.star,
+                    //       size: 12,
+                    //       color: i < p.rating.round()
+                    //           ? Colors.amber
+                    //           : Colors.grey,
+                    //     ),
+                    //   ),
+                    // ),
                   ],
                 ),
               ),

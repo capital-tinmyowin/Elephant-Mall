@@ -1,101 +1,104 @@
 import 'package:flutter/material.dart';
+import '../home.dart';   
 
 class CommonFooter extends StatelessWidget {
   const CommonFooter({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    return SizedBox(
+    return Container(
       width: double.infinity,
-      child: Material(
-        color: const Color(0xFFF8F8F8),
-        elevation: 4,
-        child: Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(
-                color: Colors.grey.shade300,
-                width: 1,
-              ),
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: _buildNavLinks(context),
+          ),
+
+          const SizedBox(height: 14),
+
+          const Text(
+            'CKM Mall  ·  Yangon, Myanmar',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              color: Color(0xFFB0A090),
+              height: 1.4,
             ),
           ),
-          padding: EdgeInsets.symmetric(
-            horizontal: screenWidth > 1000 ? 60 : 25,
-            vertical: 10,
+
+          const SizedBox(height: 10),
+
+          const Text(
+            'Copyright © 2026 CKMMall. All Rights Reserved.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              color: Color(0xFFB0A090),
+            ),
           ),
-          child: Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              SizedBox(
-                width: 180,
-                child: _footerColumn(
-                  "CUSTOMER CARE",
-                  ["Home"],
-                ),
-              ),
-
-              SizedBox(
-                width: 180,
-                child: _footerColumn(
-                  "ABOUT US",
-                  ["About Us"],
-                ),
-              ),
-
-              SizedBox(
-                width: 180,
-                child: _footerColumn(
-                  "CONNECT WITH US",
-                  ["Contact Us"],
-                ),
-              ),
-
-              SizedBox(
-                width: 180,
-                child: _footerColumn(
-                  "LEGAL",
-                  ["Legal"],
-                ),
-              ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _footerColumn(String title, List<String> items) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
+  List<Widget> _buildNavLinks(BuildContext context) {
+    final links = [
+      {
+        'label': 'Home',
+        'onTap': () {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const HomePage()),
+            (route) => false,
+          );
+        },
+      },
+      {'label': 'Products', 'onTap': () {}},
+      {'label': 'About Us', 'onTap': () {}},
+      {'label': 'Guide', 'onTap': () {}},
+      {'label': 'Reviews', 'onTap': () {}},
+      {'label': 'Contact', 'onTap': () {}},
+      {'label': 'Q&A', 'onTap': () {}},
+    ];
+
+    final widgets = <Widget>[];
+
+    for (int i = 0; i < links.length; i++) {
+      widgets.add(
+        InkWell(
+          onTap: links[i]['onTap'] as VoidCallback,
+          child: Text(
+            links[i]['label'] as String,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF333333),
+              fontWeight: FontWeight.w400,
+            ),
           ),
         ),
+      );
 
-        const SizedBox(height: 10),
-
-        ...items.map(
-          (item) => 
-          // Padding(
-            // padding: const EdgeInsets.only(bottom: 8),
-            // child: 
-            Text(
-              item,
-              style: const TextStyle(fontSize: 14),
+      if (i < links.length - 1) {
+        widgets.add(
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              '|',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF333333),
+              ),
             ),
-          // ),
-        ),
-      ],
-    );
+          ),
+        );
+      }
+    }
+
+    return widgets;
   }
 }
