@@ -98,6 +98,98 @@ class _CategoryPageState extends State<CategoryPage> {
     );
   }
 
+  Widget buildHero() {
+  final width = MediaQuery.of(context).size.width;
+  final isMobile = width < 600;
+
+  return Padding(
+    padding: const EdgeInsets.only(top: 10),
+    child: SizedBox(
+      height: isMobile ? 150 : 250,
+      width: double.infinity,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // SINGLE BANNER IMAGE
+            Image.asset(
+              'assets/ShopbyCategorySummerStyle.png',
+              fit: BoxFit.cover,
+              // alignment: const Alignment(0, -0.3),
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: Colors.grey.shade300,
+                  child: const Icon(
+                    Icons.image_not_supported,
+                    size: 40,
+                  ),
+                );
+              },
+            ),
+    
+            // DARK OVERLAY
+            Container(
+              color: Colors.black.withValues(alpha: 0.25),
+            ),
+    
+            // TEXT
+            // Positioned(
+            //   left: isMobile ? 15 : 40,
+            //   top: isMobile ? 15 : 40,
+            //   right: 10,
+            //   child: Column(
+            //     crossAxisAlignment: CrossAxisAlignment.start,
+            //     children: [
+            //       Text(
+            //         'YANGON SUMMER HEATWAVE SAVINGS!',
+            //         maxLines: 1,
+            //         overflow: TextOverflow.ellipsis,
+            //         style: TextStyle(
+            //           color: Colors.white,
+            //           fontSize: isMobile ? 14 : 28,
+            //           fontWeight: FontWeight.bold,
+            //         ),
+            //       ),
+    
+            //       const SizedBox(height: 8),
+    
+            //       Text(
+            //         'Cool styles for Yangon’s hottest days.',
+            //         maxLines: 2,
+            //         overflow: TextOverflow.ellipsis,
+            //         style: TextStyle(
+            //           color: Colors.white,
+            //           fontSize: isMobile ? 11 : 16,
+            //         ),
+            //       ),
+    
+            //       const SizedBox(height: 15),
+    
+            //       ElevatedButton(
+            //         style: ElevatedButton.styleFrom(
+            //           backgroundColor: Colors.orange,
+            //           shape: RoundedRectangleBorder(
+            //             borderRadius: BorderRadius.circular(20),
+            //           ),
+            //         ),
+            //         onPressed: () {},
+            //         child: const Text(
+            //           'SHOP NOW',
+            //           style: TextStyle(
+            //             color: Colors.white,
+            //           ),
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
   // ============= DESKTOP LAYOUT =============
   Widget _buildDesktopLayout() {
     return Row(
@@ -109,7 +201,8 @@ class _CategoryPageState extends State<CategoryPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeroCarousel(false),
+            buildHero(),
+              // _buildHeroCarousel(false),
             const SizedBox(height: 16),
               _buildProducts(),
             ],
@@ -130,7 +223,8 @@ class _CategoryPageState extends State<CategoryPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildHeroCarousel(true),
+        buildHero(),
+        // _buildHeroCarousel(true),
         const SizedBox(height: 12),
         Center(child: _buildProducts()),
         const SizedBox(height: 20),
@@ -230,324 +324,324 @@ class _CategoryPageState extends State<CategoryPage> {
 }
 
   // ============= HERO CAROUSEL =============
-  Widget _buildHeroCarousel(bool isMobile) {
-    final List<Map<String, dynamic>> slides = [
-      {
-        'title': 'SUMMER ESSENTIALS!',
-        'subtitle':
-            'Get the latest dresses, shorts, lightweight,\nand accessories',
-        'offer': 'Up to 30% off on selected items',
-        'imageCount': 5, // Number of images for this slide
-        'baseName': 'slide',
-      },
-      {
-        'title': 'BEACH READY',
-        'subtitle':
-            'Straw hats, sandals, linen shirts & summer totes.\nMake a splash with our new arrivals.',
-        'offer': 'Free shipping on orders \$50+',
-        'imageCount': 5,
-        'baseName': 'slide',
-      },
-      {
-        'title': 'SUMMER GADGETS',
-        'subtitle':
-            'Wireless earbuds, power banks & smart accessories.\nStay connected on the go.',
-        'offer': 'Limited time offers',
-        'imageCount': 5,
-        'baseName': 'slide',
-      },
-    ];
+  // Widget _buildHeroCarousel(bool isMobile) {
+  //   final List<Map<String, dynamic>> slides = [
+  //     {
+  //       'title': 'SUMMER ESSENTIALS!',
+  //       'subtitle':
+  //           'Get the latest dresses, shorts, lightweight,\nand accessories',
+  //       'offer': 'Up to 30% off on selected items',
+  //       'imageCount': 5, // Number of images for this slide
+  //       'baseName': 'slide',
+  //     },
+  //     {
+  //       'title': 'BEACH READY',
+  //       'subtitle':
+  //           'Straw hats, sandals, linen shirts & summer totes.\nMake a splash with our new arrivals.',
+  //       'offer': 'Free shipping on orders \$50+',
+  //       'imageCount': 5,
+  //       'baseName': 'slide',
+  //     },
+  //     {
+  //       'title': 'SUMMER GADGETS',
+  //       'subtitle':
+  //           'Wireless earbuds, power banks & smart accessories.\nStay connected on the go.',
+  //       'offer': 'Limited time offers',
+  //       'imageCount': 5,
+  //       'baseName': 'slide',
+  //     },
+  //   ];
 
-    return Column(
-      children: [
-        SizedBox(
-          height: isMobile ? 110 : 140, //  Proper height
-          child: CarouselSlider(
-            options: CarouselOptions(
-              height: isMobile ? 110 : 150,
-              autoPlay: true,
-              autoPlayInterval: const Duration(seconds: 20),
-              autoPlayAnimationDuration: const Duration(milliseconds: 3000),
-              autoPlayCurve: Curves.fastOutSlowIn,
-              viewportFraction: 1.0,
-              enableInfiniteScroll: true,
-              onPageChanged: (index, reason) {
-                setState(() {
-                  _currentSlideIndex = index;
-                });
-              },
-            ),
-            items: slides.map((slide) {
-              return Builder(
-                builder: (BuildContext context) {
-                  List<String> images = [];
-                  int count = slide['imageCount'] as int;
-                  String baseName = slide['baseName'] as String;
-                  for (int i = 1; i <= count; i++) {
-                    images.add('assets/images/heroslider/${baseName}_$i.jpg');
-                  }
+  //   return Column(
+  //     children: [
+  //       SizedBox(
+  //         height: isMobile ? 110 : 140, //  Proper height
+  //         child: CarouselSlider(
+  //           options: CarouselOptions(
+  //             height: isMobile ? 110 : 150,
+  //             autoPlay: true,
+  //             autoPlayInterval: const Duration(seconds: 20),
+  //             autoPlayAnimationDuration: const Duration(milliseconds: 3000),
+  //             autoPlayCurve: Curves.fastOutSlowIn,
+  //             viewportFraction: 1.0,
+  //             enableInfiniteScroll: true,
+  //             onPageChanged: (index, reason) {
+  //               setState(() {
+  //                 _currentSlideIndex = index;
+  //               });
+  //             },
+  //           ),
+  //           items: slides.map((slide) {
+  //             return Builder(
+  //               builder: (BuildContext context) {
+  //                 List<String> images = [];
+  //                 int count = slide['imageCount'] as int;
+  //                 String baseName = slide['baseName'] as String;
+  //                 for (int i = 1; i <= count; i++) {
+  //                   images.add('assets/images/heroslider/${baseName}_$i.jpg');
+  //                 }
 
-                  // Add images to slide data
-                  slide['images'] = images;
-                  return Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.symmetric(horizontal: 0),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF2B6E3B), Color(0xFFD68247)],
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                      ),
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isMobile ? 12.0 : 24.0,
-                        vertical: isMobile ? 8.0 : 16.0,
-                      ),
-                      child: isMobile
-                          ? _buildMobileSlide(slide)
-                          : _buildDesktopSlide(slide),
-                    ),
-                  );
-                },
-              );
-            }).toList(),
-          ),
-        ),
-        Transform.translate(
-          offset: Offset(0, -12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: slides.asMap().entries.map((entry) {
-              final isActive = _currentSlideIndex == entry.key;
-              return Container(
-                width: isActive ? (isMobile ? 6 : 20) : (isMobile ? 5 : 7),
-                height: isMobile ? 6 : 6,
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(4),
-                  color: isActive ? Colors.white : Colors.grey.withOpacity(0.7),
-                  boxShadow: isActive
-                      ? [
-                          BoxShadow(
-                            color: Colors.white.withOpacity(0.3),
-                            blurRadius: 4,
-                          ),
-                        ]
-                      : null,
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
+  //                 // Add images to slide data
+  //                 slide['images'] = images;
+  //                 return Container(
+  //                   width: double.infinity,
+  //                   margin: const EdgeInsets.symmetric(horizontal: 0),
+  //                   decoration: BoxDecoration(
+  //                     borderRadius: BorderRadius.circular(12),
+  //                     gradient: const LinearGradient(
+  //                       colors: [Color(0xFF2B6E3B), Color(0xFFD68247)],
+  //                       begin: Alignment.centerLeft,
+  //                       end: Alignment.centerRight,
+  //                     ),
+  //                   ),
+  //                   child: Padding(
+  //                     padding: EdgeInsets.symmetric(
+  //                       horizontal: isMobile ? 12.0 : 24.0,
+  //                       vertical: isMobile ? 8.0 : 16.0,
+  //                     ),
+  //                     child: isMobile
+  //                         ? _buildMobileSlide(slide)
+  //                         : _buildDesktopSlide(slide),
+  //                   ),
+  //                 );
+  //               },
+  //             );
+  //           }).toList(),
+  //         ),
+  //       ),
+  //       Transform.translate(
+  //         offset: Offset(0, -12),
+  //         child: Row(
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           children: slides.asMap().entries.map((entry) {
+  //             final isActive = _currentSlideIndex == entry.key;
+  //             return Container(
+  //               width: isActive ? (isMobile ? 6 : 20) : (isMobile ? 5 : 7),
+  //               height: isMobile ? 6 : 6,
+  //               margin: const EdgeInsets.symmetric(horizontal: 4),
+  //               decoration: BoxDecoration(
+  //                 borderRadius: BorderRadius.circular(4),
+  //                 color: isActive ? Colors.white : Colors.grey.withOpacity(0.7),
+  //                 boxShadow: isActive
+  //                     ? [
+  //                         BoxShadow(
+  //                           color: Colors.white.withOpacity(0.3),
+  //                           blurRadius: 4,
+  //                         ),
+  //                       ]
+  //                     : null,
+  //               ),
+  //             );
+  //           }).toList(),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
-  Widget _buildHeroImage(String imageUrl) {
-      // String cleanPath = imageUrl.replaceFirst('assets/', '');
-      return AppImage(
-        imageUrl:  imageUrl,
-        fit: BoxFit.cover,
-      );
-  }
+  // Widget _buildHeroImage(String imageUrl) {
+  //     // String cleanPath = imageUrl.replaceFirst('assets/', '');
+  //     return AppImage(
+  //       imageUrl:  imageUrl,
+  //       fit: BoxFit.cover,
+  //     );
+  // }
 
-  // ============= DESKTOP SLIDE =============
-  Widget _buildDesktopSlide(Map<String, dynamic> slide) {
-    final images = slide['images'] as List<String>;
+  // // ============= DESKTOP SLIDE =============
+  // Widget _buildDesktopSlide(Map<String, dynamic> slide) {
+  //   final images = slide['images'] as List<String>;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // Left: Text Content
-        Expanded(
-          flex: 6,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                slide['title']!,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                slide['subtitle']!,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.white.withOpacity(0.9),
-                ),
-              ),
-              const SizedBox(height: 4),
-            ],
-          ),
-        ),
-        // Right: Images
-        Expanded(
-          flex: 4,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Container(
-                width: 65,
-                height: 100,
-                margin: const EdgeInsets.only(right: 4),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: _buildHeroImage(images[0]),
-                ),
-              ),
-              SizedBox(
-                width: 80,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            height: 47,
-                            margin: const EdgeInsets.all(2),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: _buildHeroImage(images[1]),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Container(
-                            height: 47,
-                            margin: const EdgeInsets.all(2),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: _buildHeroImage(images[2]),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            height: 47,
-                            margin: const EdgeInsets.all(2),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: _buildHeroImage(images[3]),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Container(
-                            height: 47,
-                            margin: const EdgeInsets.all(2),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: _buildHeroImage(images[4]),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  //   return Row(
+  //     crossAxisAlignment: CrossAxisAlignment.center,
+  //     children: [
+  //       // Left: Text Content
+  //       Expanded(
+  //         flex: 6,
+  //         child: Column(
+  //           crossAxisAlignment: CrossAxisAlignment.start,
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           children: [
+  //             Text(
+  //               slide['title']!,
+  //               style: const TextStyle(
+  //                 fontSize: 22,
+  //                 fontWeight: FontWeight.bold,
+  //                 color: Colors.white,
+  //               ),
+  //             ),
+  //             const SizedBox(height: 4),
+  //             Text(
+  //               slide['subtitle']!,
+  //               style: TextStyle(
+  //                 fontSize: 12,
+  //                 color: Colors.white.withOpacity(0.9),
+  //               ),
+  //             ),
+  //             const SizedBox(height: 4),
+  //           ],
+  //         ),
+  //       ),
+  //       // Right: Images
+  //       Expanded(
+  //         flex: 4,
+  //         child: Row(
+  //           mainAxisAlignment: MainAxisAlignment.end,
+  //           children: [
+  //             Container(
+  //               width: 65,
+  //               height: 100,
+  //               margin: const EdgeInsets.only(right: 4),
+  //               child: ClipRRect(
+  //                 borderRadius: BorderRadius.circular(8),
+  //                 child: _buildHeroImage(images[0]),
+  //               ),
+  //             ),
+  //             SizedBox(
+  //               width: 80,
+  //               child: Column(
+  //                 mainAxisAlignment: MainAxisAlignment.center,
+  //                 children: [
+  //                   Row(
+  //                     children: [
+  //                       Expanded(
+  //                         child: Container(
+  //                           height: 47,
+  //                           margin: const EdgeInsets.all(2),
+  //                           child: ClipRRect(
+  //                             borderRadius: BorderRadius.circular(6),
+  //                             child: _buildHeroImage(images[1]),
+  //                           ),
+  //                         ),
+  //                       ),
+  //                       Expanded(
+  //                         child: Container(
+  //                           height: 47,
+  //                           margin: const EdgeInsets.all(2),
+  //                           child: ClipRRect(
+  //                             borderRadius: BorderRadius.circular(6),
+  //                             child: _buildHeroImage(images[2]),
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                   Row(
+  //                     children: [
+  //                       Expanded(
+  //                         child: Container(
+  //                           height: 47,
+  //                           margin: const EdgeInsets.all(2),
+  //                           child: ClipRRect(
+  //                             borderRadius: BorderRadius.circular(6),
+  //                             child: _buildHeroImage(images[3]),
+  //                           ),
+  //                         ),
+  //                       ),
+  //                       Expanded(
+  //                         child: Container(
+  //                           height: 47,
+  //                           margin: const EdgeInsets.all(2),
+  //                           child: ClipRRect(
+  //                             borderRadius: BorderRadius.circular(6),
+  //                             child: _buildHeroImage(images[4]),
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
-  // ============= MOBILE SLIDE =============
-  Widget _buildMobileSlide(Map<String, dynamic> slide) {
-    final images = slide['images'] as List<String>;
-    final displayImages = images.take(3).toList();
+  // // ============= MOBILE SLIDE =============
+  // Widget _buildMobileSlide(Map<String, dynamic> slide) {
+  //   final images = slide['images'] as List<String>;
+  //   final displayImages = images.take(3).toList();
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // Left: Text
-        Expanded(
-          flex: 6,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                slide['title']!,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                slide['subtitle']!.replaceAll('\n', ' '),
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.white.withOpacity(0.9),
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-            ],
-          ),
-        ),
-        // Right: Images
-        Expanded(
-          flex: 4,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Container(
-                width: 45,
-                height: 70,
-                margin: const EdgeInsets.only(right: 2),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: _buildHeroImage(displayImages[0]),
-                ),
-              ),
-              SizedBox(
-                width: 40,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      height: 33,
-                      margin: const EdgeInsets.only(bottom: 2),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: _buildHeroImage(displayImages[1]),
-                      ),
-                    ),
-                    Container(
-                      height: 33,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: _buildHeroImage(displayImages[2]),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  //   return Row(
+  //     crossAxisAlignment: CrossAxisAlignment.center,
+  //     children: [
+  //       // Left: Text
+  //       Expanded(
+  //         flex: 6,
+  //         child: Column(
+  //           crossAxisAlignment: CrossAxisAlignment.start,
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           children: [
+  //             Text(
+  //               slide['title']!,
+  //               style: const TextStyle(
+  //                 fontSize: 14,
+  //                 fontWeight: FontWeight.bold,
+  //                 color: Colors.white,
+  //               ),
+  //               maxLines: 1,
+  //               overflow: TextOverflow.ellipsis,
+  //             ),
+  //             const SizedBox(height: 2),
+  //             Text(
+  //               slide['subtitle']!.replaceAll('\n', ' '),
+  //               style: TextStyle(
+  //                 fontSize: 11,
+  //                 color: Colors.white.withOpacity(0.9),
+  //               ),
+  //               maxLines: 2,
+  //               overflow: TextOverflow.ellipsis,
+  //             ),
+  //             const SizedBox(height: 2),
+  //           ],
+  //         ),
+  //       ),
+  //       // Right: Images
+  //       Expanded(
+  //         flex: 4,
+  //         child: Row(
+  //           mainAxisAlignment: MainAxisAlignment.end,
+  //           children: [
+  //             Container(
+  //               width: 45,
+  //               height: 70,
+  //               margin: const EdgeInsets.only(right: 2),
+  //               child: ClipRRect(
+  //                 borderRadius: BorderRadius.circular(6),
+  //                 child: _buildHeroImage(displayImages[0]),
+  //               ),
+  //             ),
+  //             SizedBox(
+  //               width: 40,
+  //               child: Column(
+  //                 mainAxisAlignment: MainAxisAlignment.center,
+  //                 children: [
+  //                   Container(
+  //                     height: 33,
+  //                     margin: const EdgeInsets.only(bottom: 2),
+  //                     child: ClipRRect(
+  //                       borderRadius: BorderRadius.circular(4),
+  //                       child: _buildHeroImage(displayImages[1]),
+  //                     ),
+  //                   ),
+  //                   Container(
+  //                     height: 33,
+  //                     child: ClipRRect(
+  //                       borderRadius: BorderRadius.circular(4),
+  //                       child: _buildHeroImage(displayImages[2]),
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   // ============= DESKTOP PRODUCTS =============
   Widget _buildProducts() {

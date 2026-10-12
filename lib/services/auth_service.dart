@@ -187,6 +187,35 @@ class AuthService extends ChangeNotifier {
   }
 
   // ============= FAVORITES =============
+  Future<Map<String, dynamic>?> getProductDetail(int id) async {
+    try {
+      final response = await _client
+          .get(
+            Uri.parse('$_baseUrl/Product/GetProductByProductID/$id'),
+            headers: {'Content-Type': 'application/json'},
+          )
+          .timeout(const Duration(seconds: 30));
+
+      print('📡 Product detail status: ${response.statusCode}');
+      print('📡 Product detail body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data is Map<String, dynamic>) return data;
+        if (data is List && data.isNotEmpty) {
+          return data.first as Map<String, dynamic>;
+        }
+      }
+      _errorMessage = 'Product detail failed (${response.statusCode})';
+      notifyListeners();
+      return null;
+    } catch (e) {
+      _errorMessage = 'Network error: $e';
+      notifyListeners();
+      return null;
+    }
+  }
+
   Future<List<Product>> getUserFavorites() async {
     if (_currentUser == null) return [];
 

@@ -12,15 +12,18 @@ class ApiService extends ChangeNotifier {
   static String? _authCookie;
   static String? get authCookie => _authCookie;
   static void setAuthCookie(String? cookie) => _authCookie = cookie;
+
+  final Map<int, int> _categoryCounts = {};
+  Map<int, int> get categoryCounts => _categoryCounts;
   // static const String baseUrl = 'https://www.capital-sys.net/CKMMallAPI/api';
   // Static variable for mock data flag
-  static bool useMockDataStatic = false;
-  static bool _apiAvailable = true;
+  // static bool useMockDataStatic = false;
+  // static bool _apiAvailable = true;
 
   // Instance variable for mock data flag
-  bool _useMockData = false;
+  // bool _useMockData = false;
   // Getter for useMockData
-  bool get useMockData => _useMockData;
+  // bool get useMockData => _useMockData;
 
   // ============= CART STATE =============
   List<CartItem> _cartItems = [];
@@ -162,41 +165,41 @@ class ApiService extends ChangeNotifier {
   }
 
   // ============= IMAGE PROXY =============
-//   static String getProxiedImageUrl(String originalUrl) {
-//   if (originalUrl.isEmpty) return '';
-//   if (originalUrl.contains('/image/proxy?url=')) return originalUrl;
-//   if (originalUrl.startsWith('assets/')) return originalUrl;
-//   if (originalUrl.startsWith('images/')) return 'assets/$originalUrl';
+  //   static String getProxiedImageUrl(String originalUrl) {
+  //   if (originalUrl.isEmpty) return '';
+  //   if (originalUrl.contains('/image/proxy?url=')) return originalUrl;
+  //   if (originalUrl.startsWith('assets/')) return originalUrl;
+  //   if (originalUrl.startsWith('images/')) return 'assets/$originalUrl';
 
-//   // ✅ If it's already a full https URL, just use it — no proxy
-//   if (originalUrl.startsWith('https://')) return originalUrl;
-//   if (originalUrl.startsWith('http://'))  return originalUrl;
+  //   // ✅ If it's already a full https URL, just use it — no proxy
+  //   if (originalUrl.startsWith('https://')) return originalUrl;
+  //   if (originalUrl.startsWith('http://'))  return originalUrl;
 
-//   // Only proxy relative paths
-//   final encodedUrl = Uri.encodeComponent(originalUrl);
-//   return '$baseUrl/image/proxy?url=$encodedUrl';
-// }
-static String getProxiedImageUrl(String originalUrl) {
-  if (originalUrl.isEmpty) return '';
-  if (originalUrl.contains('/image/proxy?url=')) return originalUrl;
-  if (originalUrl.startsWith('assets/')) return originalUrl;
-  if (originalUrl.startsWith('images/')) return 'assets/$originalUrl';
+  //   // Only proxy relative paths
+  //   final encodedUrl = Uri.encodeComponent(originalUrl);
+  //   return '$baseUrl/image/proxy?url=$encodedUrl';
+  // }
+  static String getProxiedImageUrl(String originalUrl) {
+    if (originalUrl.isEmpty) return '';
+    if (originalUrl.contains('/image/proxy?url=')) return originalUrl;
+    if (originalUrl.startsWith('assets/')) return originalUrl;
+    if (originalUrl.startsWith('images/')) return 'assets/$originalUrl';
 
-  // Hosts that DO send CORS headers on Web
-  const corsSafeHosts = [
-    'picsum.photos',
-    'gstatic.com',            // encrypted-tbn*.gstatic.com works
-    'images.unsplash.com',
-    'placehold.co',
-  ];
-  final lower = originalUrl.toLowerCase();
-  if (corsSafeHosts.any(lower.contains)) {
-    return originalUrl;
+    // Hosts that DO send CORS headers on Web
+    const corsSafeHosts = [
+      'picsum.photos',
+      'gstatic.com', // encrypted-tbn*.gstatic.com works
+      'images.unsplash.com',
+      'placehold.co',
+    ];
+    final lower = originalUrl.toLowerCase();
+    if (corsSafeHosts.any(lower.contains)) {
+      return originalUrl;
+    }
+
+    // Everything else → placeholder (since we can't proxy)
+    return 'https://picsum.photos/seed/${originalUrl.hashCode.abs()}/400/400';
   }
-
-  // Everything else → placeholder (since we can't proxy)
-  return 'https://picsum.photos/seed/${originalUrl.hashCode.abs()}/400/400';
-}
 
   // ============= GET LOCAL IMAGE URL =============
   static String getLocalImageUrl(Product product) {
@@ -278,6 +281,11 @@ static String getProxiedImageUrl(String originalUrl) {
     }
   }
 
+  void setProductFromJson(Map<String, dynamic> json) {
+    _selectedProduct = _parseProductFromJson(json);
+    notifyListeners();
+  }
+
   // Parse product from backend format
   Product _parseProductFromJson(Map<String, dynamic> json) {
     // ───── productId ─────
@@ -314,20 +322,23 @@ static String getProxiedImageUrl(String originalUrl) {
     }
 
     // ───── category from pCategoryList ─────
-    String category = '';
-    if (json['pCategoryList'] is List &&
-        (json['pCategoryList'] as List).isNotEmpty) {
-      final first = (json['pCategoryList'] as List).first;
-      if (first is Map && first['categoryName'] != null) {
-        category = first['categoryName'].toString();
+    List<String> categories = [];
+    if (json['pCategoryList'] is List) {
+      for (final item in json['pCategoryList'] as List) {
+        if (item is Map) {
+          final name = item['categoryName']?.toString() ?? '';
+          if (name.isNotEmpty) categories.add(name);
+        }
       }
     }
-    if (category.isEmpty) {
-      category =
+    if (categories.isEmpty) {
+      final single =
           json['category']?.toString() ??
           json['categoryName']?.toString() ??
           '';
+      if (single.isNotEmpty) categories.add(single);
     }
+    final category = categories.isNotEmpty ? categories.first : '';
 
     // ───── image ─────
     String imageUrl = '';
@@ -387,6 +398,7 @@ static String getProxiedImageUrl(String originalUrl) {
       productName: productName,
       price: price,
       category: category,
+      categories: categories,
       location: json['location']?.toString() ?? '',
       condition: json['condition']?.toString() ?? '',
       image: imageUrl,
@@ -399,6 +411,63 @@ static String getProxiedImageUrl(String originalUrl) {
   }
 
   // ============= LOAD CATEGORIES =============
+  Future<void> loadCategoryCounts() async {
+    try {
+      // Fetch the full category list (id + name)
+      final url = Uri.parse(
+        'https://www.capital-sys.net/CKMMallAPI/api/category/all',
+      );
+      final response = await http
+          .get(url, headers: {'Content-Type': 'application/json'})
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode != 200) return;
+
+      final dynamic data = json.decode(response.body);
+      List<dynamic> list = [];
+      if (data is List) {
+        list = data;
+      } else if (data is Map<String, dynamic> && data['data'] is List) {
+        list = data['data'];
+      }
+      _categories = list
+          .whereType<Map<String, dynamic>>()
+          .map(_parseCategoryFromJson)
+          .toList();
+      _sortedCategories = _sortCategoriesByOrder(_categories);
+      
+      for (final cat in list) {
+        if (cat is! Map) continue;
+        final id = cat['id'] ?? cat['categoryId'];
+        if (id is! int) continue;
+
+        // Fetch products for this category, count them
+        try {
+          final prodUrl = Uri.parse('https://www.capital-sys.net/CKMMallAPI/api/category/categoryproduct/$id');
+          final prodRes = await http
+              .get(prodUrl, headers: {'Content-Type': 'application/json'})
+              .timeout(const Duration(seconds: 10));
+
+          if (prodRes.statusCode == 200) {
+            final pData = json.decode(prodRes.body);
+            int count = 0;
+            if (pData is List) {
+              count = pData.length;
+            } else if (pData is Map<String, dynamic> && pData['data'] is List) {
+              count = (pData['data'] as List).length;
+            }
+            _categoryCounts[id] = count;
+          }
+        } catch (_) {
+          _categoryCounts[id] = 0;
+        }
+      }
+      notifyListeners();
+    } catch (e) {
+      print('category counts error: $e');
+    }
+  }
+
   Future<void> loadCategories() async {
     _isLoading = true;
     notifyListeners();
