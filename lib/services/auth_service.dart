@@ -50,13 +50,13 @@ class AuthService extends ChangeNotifier {
       final response = await _client
           .post(
             Uri.parse('$_baseUrl/auth/SignUp/'),
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: {
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({
               'username': generatedUsername,
               'email': email,
               'password': password,
               'fullName': fullName,
-            },
+            }),
           )
           .timeout(const Duration(seconds: 15));
 
@@ -205,11 +205,28 @@ class AuthService extends ChangeNotifier {
       print('======================');
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final List items = (data['data'] ?? data['favorites'] ?? []) as List;
-        return items.map((json) => Product.fromJson(json)).toList();
-      }
+        final dynamic data = json.decode(response.body);
 
+        List<dynamic> items = [];
+        if (data is List) {
+          items = data; // ← your case
+        } else if (data is Map<String, dynamic>) {
+          if (data['data'] is List) {
+            items = data['data'];
+          } else if (data['favorites'] is List) {
+            items = data['favorites'];
+          }
+        }
+
+        return items.whereType<Map<String, dynamic>>().map((json) {
+          debugPrint('🔵 About to parse: $json');
+          final p = Product.fromJson(json);
+          debugPrint(
+            '🟢 Parsed → productId=${p.productId}, productCode=${p.productCode}',
+          );
+          return p;
+        }).toList();
+      }
       //  Show exact backend message + status code inline
       String backendMsg = '';
       try {
@@ -256,7 +273,7 @@ class AuthService extends ChangeNotifier {
       final response = await _client
           .post(
             Uri.parse(
-              '$_baseUrl/productshowcase/AddFavouriteProduct?productId=$productId',
+              'https://www.capital-sys.net/CKMMallAPI/api/UserAction/addFavourite/$productId',
             ),
             headers: headers,
           )

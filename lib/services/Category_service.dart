@@ -1,11 +1,11 @@
 import 'dart:convert';
+import 'package:elephant_mall/models/productImage.dart';
 import 'package:elephant_mall/models/product_variant.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../models/Category.dart';
 import '../models/product.dart';
 import '../models/cart_item.dart';
-import 'mock_api_service.dart';
 
 class ApiService extends ChangeNotifier {
   static const String baseUrl = 'http://localhost:5150/api';
@@ -162,25 +162,41 @@ class ApiService extends ChangeNotifier {
   }
 
   // ============= IMAGE PROXY =============
-  static String getProxiedImageUrl(String originalUrl) {
-    if (originalUrl.isEmpty) return '';
+//   static String getProxiedImageUrl(String originalUrl) {
+//   if (originalUrl.isEmpty) return '';
+//   if (originalUrl.contains('/image/proxy?url=')) return originalUrl;
+//   if (originalUrl.startsWith('assets/')) return originalUrl;
+//   if (originalUrl.startsWith('images/')) return 'assets/$originalUrl';
 
-    // For Pinterest images, use your backend proxy
-    if (originalUrl.contains('pinimg.com') ||
-        originalUrl.contains('pinterest')) {
-      final encodedUrl = Uri.encodeComponent(originalUrl);
-      return '$baseUrl/image/proxy?url=$encodedUrl';
-    }
+//   // ✅ If it's already a full https URL, just use it — no proxy
+//   if (originalUrl.startsWith('https://')) return originalUrl;
+//   if (originalUrl.startsWith('http://'))  return originalUrl;
 
-    // For other HTTP/HTTPS URLs, return directly
-    if (originalUrl.startsWith('http://') ||
-        originalUrl.startsWith('https://')) {
-      return originalUrl;
-    }
+//   // Only proxy relative paths
+//   final encodedUrl = Uri.encodeComponent(originalUrl);
+//   return '$baseUrl/image/proxy?url=$encodedUrl';
+// }
+static String getProxiedImageUrl(String originalUrl) {
+  if (originalUrl.isEmpty) return '';
+  if (originalUrl.contains('/image/proxy?url=')) return originalUrl;
+  if (originalUrl.startsWith('assets/')) return originalUrl;
+  if (originalUrl.startsWith('images/')) return 'assets/$originalUrl';
 
-    final encodedUrl = Uri.encodeComponent(originalUrl);
-    return '$baseUrl/image/proxy?url=$encodedUrl';
+  // Hosts that DO send CORS headers on Web
+  const corsSafeHosts = [
+    'picsum.photos',
+    'gstatic.com',            // encrypted-tbn*.gstatic.com works
+    'images.unsplash.com',
+    'placehold.co',
+  ];
+  final lower = originalUrl.toLowerCase();
+  if (corsSafeHosts.any(lower.contains)) {
+    return originalUrl;
   }
+
+  // Everything else → placeholder (since we can't proxy)
+  return 'https://picsum.photos/seed/${originalUrl.hashCode.abs()}/400/400';
+}
 
   // ============= GET LOCAL IMAGE URL =============
   static String getLocalImageUrl(Product product) {
@@ -264,82 +280,106 @@ class ApiService extends ChangeNotifier {
 
   // Parse product from backend format
   Product _parseProductFromJson(Map<String, dynamic> json) {
-    print(' Parsing product: ${json['productName'] ?? json['name']}');
+    // ───── productId ─────
+    int productId = 0;
+    if (json['productId'] is int) {
+      productId = json['productId'];
+    } else if (json['productId'] != null) {
+      productId = int.tryParse(json['productId'].toString()) ?? 0;
+    }
 
-    //  FIX: productCode can be int or string, handle both
-    int productId = json['productId'];
-    String productCode = '';
+    // ───── productCode ─────
+    String productCode =
+        json['productCode']?.toString() ?? productId.toString();
 
-    // Handle productCode - could be int or string
-    if (json['productCode'] != null) {
-      if (json['productCode'] is int) {
-        // productId = json['productCode'];
-        productCode = productId.toString();
-      } else if (json['productCode'] is String) {
-        productCode = json['productCode'];
+    // ───── userId ─────
+    int? userId;
+    if (json['userId'] != null) {
+      userId = json['userId'] is int
+          ? json['userId']
+          : int.tryParse(json['userId'].toString());
+    }
+
+    // ───── name ─────
+    final productName =
+        json['productName']?.toString() ?? json['name']?.toString() ?? '';
+
+    // ───── price ─────
+    double price = 0;
+    final rawPrice = json['price'];
+    if (rawPrice is num) {
+      price = rawPrice.toDouble();
+    } else if (rawPrice is String) {
+      price = double.tryParse(rawPrice.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0;
+    }
+
+    // ───── category from pCategoryList ─────
+    String category = '';
+    if (json['pCategoryList'] is List &&
+        (json['pCategoryList'] as List).isNotEmpty) {
+      final first = (json['pCategoryList'] as List).first;
+      if (first is Map && first['categoryName'] != null) {
+        category = first['categoryName'].toString();
       }
     }
-
-    // If productCode is null, try 'id' field
-    // if (productId == 0 && json['id'] != null) {
-    //   productId = json['id'] as int;
-    //   productCode = productId.toString();
-    // }
-
-    final productName = json['productName'] ?? json['name'] ?? '';
-
-    double price = 0;
-    if (json['price'] != null) {
-      price = (json['price'] as num).toDouble();
+    if (category.isEmpty) {
+      category =
+          json['category']?.toString() ??
+          json['categoryName']?.toString() ??
+          '';
     }
 
-    String category = json['category'] ?? json['categoryName'] ?? '';
-
-    // Get image URL
-    String imageUrl =
-        json['imageUrl'] ?? json['ImageUrl'] ?? json['image'] ?? '';
-
-    print(' Raw imageUrl from backend: ${json['imageUrl']}');
-
-    // If empty, use placeholder
+    // ───── image ─────
+    String imageUrl = '';
+    // prefer first image from pImageList if product-level imageUrl is empty
+    if (json['pImageList'] is List && (json['pImageList'] as List).isNotEmpty) {
+      final first = (json['pImageList'] as List).first;
+      if (first is Map &&
+          first['imageUrl'] is String &&
+          (first['imageUrl'] as String).isNotEmpty) {
+        imageUrl = first['imageUrl'];
+      }
+    }
     if (imageUrl.isEmpty) {
-      imageUrl = 'https://picsum.photos/seed/${productId.toString()}/200/200';
+      imageUrl =
+          json['imageUrl']?.toString() ??
+          json['ImageUrl']?.toString() ??
+          json['image']?.toString() ??
+          '';
+    }
+    if (imageUrl.isEmpty) {
+      imageUrl = 'https://picsum.photos/seed/$productId/300/300';
     }
 
-    // Get colors
-    List<String> colors = [];
-    if (json['colors'] != null && json['colors'] is List) {
-      colors = List<String>.from(json['colors']);
-    }
-
-    // Get seller
-    Seller? seller;
-    if (json['seller'] != null && json['seller'] is Map<String, dynamic>) {
-      seller = Seller.fromJson(json['seller']);
-    }
-
-    // Get product images
-    List<String> productImages = [];
-    if (json['productImages'] != null && json['productImages'] is List) {
-      for (var item in json['productImages']) {
-        if (item is Map && item['imageUrl'] is String) {
-          final url = item['imageUrl'] as String;
-          if (url.isNotEmpty) productImages.add(url);
-        } else if (item is String && item.isNotEmpty) {
-          // old format fallback
-          productImages.add(item);
+    // ───── product images (from pImageList) ─────
+    List<ProductImage> productImages = [];
+    if (json['pImageList'] is List) {
+      for (var item in json['pImageList']) {
+        if (item is Map<String, dynamic>) {
+          final url = item['imageUrl']?.toString() ?? '';
+          if (url.isNotEmpty) {
+            productImages.add(
+              ProductImage(
+                id: item['id'] ?? 0,
+                productId: item['productId'] ?? productId,
+                imageUrl: url,
+                sortOrder: item['sortOrder'] ?? 0,
+              ),
+            );
+          }
         }
       }
     }
 
-    // Only add imageUrl if productImages is truly empty
-    if (productImages.isEmpty && imageUrl.isNotEmpty) {
-      productImages = [imageUrl];
+    // ───── variants (from pVariantList) ─────
+    List<ProductVariant> variants = [];
+    if (json['pVariantList'] is List) {
+      for (var item in json['pVariantList']) {
+        if (item is Map<String, dynamic>) {
+          variants.add(ProductVariant.fromJson(item));
+        }
+      }
     }
-    final location = json['location']?.toString() ?? '';
-    final condition = json['condition']?.toString() ?? '';
-    // REMOVE duplicates
-    productImages = productImages.toSet().toList();
 
     return Product(
       productId: productId,
@@ -347,15 +387,14 @@ class ApiService extends ChangeNotifier {
       productName: productName,
       price: price,
       category: category,
-      location: location,
-      condition: condition,
+      location: json['location']?.toString() ?? '',
+      condition: json['condition']?.toString() ?? '',
       image: imageUrl,
-      // rating: (json['rating'] ?? 4.5).toDouble(),
-      // ratingCount: json['ratingCount'] ?? 0,
-      description: json['description'] ?? '',
-      seller: seller,
+      description: json['description']?.toString() ?? '',
+      userId: userId,
       productImages: productImages,
-      colors: colors,
+      variants: variants,
+      colors: const [],
     );
   }
 
@@ -458,65 +497,102 @@ class ApiService extends ChangeNotifier {
     }
   }
 
-  Future<Product> _getProductByIdFromApi(int id) async {
+  // Future<Product> _getProductByIdFromApi(int id) async {
+  //   print("productId $id");
+  //   try {
+  //     // final url = Uri.parse('$baseUrl/products/$id');
+  //     final url = Uri.parse(
+  //       'https://www.capital-sys.net/CKMMallAPI/api/Product/GetProductByProductID/$id',
+  //     );
+  //     print('📡 Fetching product: $url');
 
+  //     final response = await http
+  //         .get(url, headers: {'Content-Type': 'application/json'})
+  //         .timeout(const Duration(seconds: 30)); //  Reduced from 8 to 5 seconds
+
+  //     print('📡 Response: ${response.statusCode}');
+  //     print('📡 Body: ${response.body}');
+  //     if (response.statusCode == 200) {
+  //       final data = json.decode(response.body);
+
+  //       List<dynamic> items = [];
+  //       if (data is Map<String, dynamic> && data['data'] is List) {
+  //         items = data['data'];
+  //       } else if (data is List) {
+  //         items = data;
+  //       } else if (data is Map<String, dynamic>) {
+  //         items = [data];
+  //       }
+
+  //       if (items.isEmpty) throw Exception('No product found');
+
+  //       // Parse the FIRST item as the main product
+  //       final mainJson = items.first as Map<String, dynamic>;
+  //       final product = _parseProductFromJson(mainJson);
+
+  //       //  Parse ALL items as variants
+  //       final variants = items
+  //           .map(
+  //             (item) => ProductVariant.fromJson(item as Map<String, dynamic>),
+  //           )
+  //           .toList();
+  //       return Product(
+  //         productId: product.productId,
+  //         productCode: product.productCode,
+  //         productName: product.productName,
+  //         price: product.price,
+  //         category: product.category,
+  //         location: product.location,
+  //         condition: product.condition,
+  //         image: product.image,
+  //         description: product.description,
+  //         userId: product.userId,
+  //         productImages: product.productImages,
+  //         variants: variants, //  attach here
+  //         colors: product.colors,
+  //       );
+  //     } else {
+  //       throw Exception('HTTP ${response.statusCode}');
+  //     }
+  //   } catch (e) {
+  //     print(' Product detail error: $e');
+  //     rethrow;
+  //   }
+  // }
+  Future<Product> _getProductByIdFromApi(int id) async {
+    print("productId $id");
     try {
-      // final url = Uri.parse('$baseUrl/products/$id');
-      final url = Uri.parse('https://www.capital-sys.net/CKMMallAPI/api/Product/GetProductByProductID/$id');
+      final url = Uri.parse(
+        'https://www.capital-sys.net/CKMMallAPI/api/Product/GetProductByProductID/$id',
+      );
       print('📡 Fetching product: $url');
 
       final response = await http
           .get(url, headers: {'Content-Type': 'application/json'})
-          .timeout(
-            const Duration(seconds: 30),
-          ); //  Reduced from 8 to 5 seconds
+          .timeout(const Duration(seconds: 30));
 
       print('📡 Response: ${response.statusCode}');
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        List<dynamic> items = [];
-        if (data is Map<String, dynamic> && data['data'] is List) {
-          items = data['data'];
-        } else if (data is List) {
-          items = data;
-        } else if (data is Map<String, dynamic>) {
-          items = [data];
-        }
-
-        if (items.isEmpty) throw Exception('No product found');
-
-        // Parse the FIRST item as the main product
-        final mainJson = items.first as Map<String, dynamic>;
-        final product = _parseProductFromJson(mainJson);
-
-        //  Parse ALL items as variants
-        final variants = items
-            .map(
-              (item) => ProductVariant.fromJson(item as Map<String, dynamic>),
-            )
-            .toList();
-        return Product(
-          productId: product.productId,
-          productCode: product.productCode,
-          productName: product.productName,
-          price: product.price,
-          category: product.category,
-          location: product.location,
-          condition: product.condition,
-          image: product.image,
-          description: product.description,
-          seller: product.seller,
-          productImages: product.productImages,
-          variants: variants, //  attach here
-          colors: product.colors,
-        );
-      } else {
+      if (response.statusCode != 200) {
         throw Exception('HTTP ${response.statusCode}');
       }
+
+      final data = json.decode(response.body);
+
+      // 🔥 Handle both: single object or list
+      Map<String, dynamic> mainJson;
+      if (data is Map<String, dynamic>) {
+        mainJson = data;
+      } else if (data is List && data.isNotEmpty) {
+        mainJson = data.first as Map<String, dynamic>;
+      } else {
+        throw Exception('No product found');
+      }
+
+      // 🔥 Parse the single product — variants + images come from within
+      return _parseProductFromJson(mainJson);
     } catch (e) {
-      print(' Product detail error: $e');
+      print('❌ Product detail error: $e');
       rethrow;
     }
   }
@@ -531,17 +607,15 @@ class ApiService extends ChangeNotifier {
       _currentCategory = categoryId;
       _selectedCategory = categoryId;
 
-      if (categoryId == 0) {
-        //  Apply color variation only for mock/all data
-        _filteredProducts = getProductsWithColorVariations(_allProducts);
-      } else {
-        final products = await _getProductsByCategoryFromApi(categoryId);
+      final products = await _getProductsByCategoryFromApi(categoryId);
 
-        //  For API data, DON'T expand color variations
-        // Use products directly since API already returns proper products
-        _filteredProducts = products;
-        print('Loaded ${products.length} products for category: $categoryId');
-      }
+      //  For API data, DON'T expand color variations
+      // Use products directly since API already returns proper products
+      _filteredProducts = products;
+      print('Loaded ${products.length} products for category: $categoryId');
+      // for(int i=0;i<=products.length;i++){
+      print(products);
+      // }
     } catch (e) {
       _errorMessage = 'Error loading products by category: $e';
       print(' Error: $e');
@@ -610,6 +684,7 @@ class ApiService extends ChangeNotifier {
 
     try {
       _trendingProducts = await _fetchTrendingProducts();
+      // print("_trendingProducts : $_trendingProducts");
     } catch (e) {
       _trendingProducts = [];
     } finally {
@@ -617,10 +692,13 @@ class ApiService extends ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   Future<List<Product>> _fetchTrendingProducts() async {
     try {
-      final url = Uri.parse('$baseUrl/products/trending');
+      // final url = Uri.parse('$baseUrl/products/trending');
+      final url = Uri.parse(
+        'https://www.capital-sys.net/CKMMallAPI/api/trending/GetTrendingProducts',
+      );
       final response = await http
           .get(url, headers: {'Content-Type': 'application/json'})
           .timeout(const Duration(seconds: 15));
@@ -698,7 +776,7 @@ class ApiService extends ChangeNotifier {
               // rating: product.rating,
               // ratingCount: product.ratingCount,
               description: product.description,
-              seller: product.seller,
+              userId: product.userId,
               productImages: product.productImages,
               colors: [color],
             ),

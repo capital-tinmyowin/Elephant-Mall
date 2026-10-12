@@ -49,7 +49,7 @@ class _CategoryPageState extends State<CategoryPage> {
     super.initState();
     _apiService = ApiService();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _apiService.loadProducts();
+      // _apiService.loadProducts();
       _apiService.loadTrendingProducts();
       _apiService.loadCategories();
     });
@@ -147,58 +147,58 @@ class _CategoryPageState extends State<CategoryPage> {
       // Get trending products from the service
       final trending = productController.trendingProducts;
       
-      if (trending.isEmpty) {
-        return const SizedBox.shrink();
-      }
+      // // if (trending.isEmpty) {
+      // //   return const SizedBox.shrink();
+      // // }
 
-      final fashionTrending = trending
-          .where(
-            (p) =>
-                p.category == "Blouses" ||
-                p.category == "Jeans" ||
-                p.category == "Bags" ||
-                p.category == "Shoes" ||
-                p.category == "T-Shirts",
-          )
-          .take(5)
-          .toList();
+      // // final fashionTrending = trending
+      // //     .where(
+      // //       (p) =>
+      // //           p.category == "Blouses" ||
+      // //           p.category == "Jeans" ||
+      // //           p.category == "Bags" ||
+      // //           p.category == "Shoes" ||
+      // //           p.category == "T-Shirts",
+      // //     )
+      // //     .take(5)
+      // //     .toList();
 
-      final electronicsTrending = trending
-          .where(
-            (p) =>
-                p.category == "Electronics" ||
-                p.category == "Power Banks" ||
-                p.category == "Headphones",
-          )
-          .take(5)
-          .toList();
+      // // final electronicsTrending = trending
+      // //     .where(
+      // //       (p) =>
+      // //           p.category == "Electronics" ||
+      // //           p.category == "Power Banks" ||
+      // //           p.category == "Headphones",
+      // //     )
+      // //     .take(5)
+      // //     .toList();
 
       final bool isMobile = MediaQuery.of(context).size.width < 768;
 
-      if (fashionTrending.isEmpty && electronicsTrending.isEmpty) {
-        return const SizedBox.shrink();
-      }
+      // if (fashionTrending.isEmpty && electronicsTrending.isEmpty) {
+      //   return const SizedBox.shrink();
+      // }
 
       if (isMobile) {
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (fashionTrending.isNotEmpty)
+            if (trending.isNotEmpty)
               Expanded(
                 child: _buildTrendingSlider(
                   title: 'New Arrivals',
-                  products: fashionTrending,
+                  products: trending,
                   sliderId: 'fashion_mobile',
                   isCompact: true,
                 ),
               ),
-            if (fashionTrending.isNotEmpty && electronicsTrending.isNotEmpty)
+            // if (fashionTrending.isNotEmpty && electronicsTrending.isNotEmpty)
               const SizedBox(width: 8),
-            if (electronicsTrending.isNotEmpty)
+            if (trending.isNotEmpty)
               Expanded(
                 child: _buildTrendingSlider(
                   title: 'Trending Now',
-                  products: electronicsTrending,
+                  products: trending,
                   sliderId: 'electronics_mobile',
                   isCompact: true,
                 ),
@@ -210,17 +210,17 @@ class _CategoryPageState extends State<CategoryPage> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (fashionTrending.isNotEmpty)
+          if (trending.isNotEmpty)
             _buildTrendingSlider(
               title: ' New Arrivals',
-              products: fashionTrending,
+              products: trending,
               sliderId: 'fashion_mobile',
             ),
           const SizedBox(height: 20),
-          if (electronicsTrending.isNotEmpty)
+          if (trending.isNotEmpty)
             _buildTrendingSlider(
               title: ' Trending Now In Category',
-              products: electronicsTrending,
+              products: trending,
               sliderId: 'electronics_mobile',
             ),
         ],
@@ -701,51 +701,51 @@ class _CategoryPageState extends State<CategoryPage> {
       final trending = productController.trendingProducts;
       
       // If no trending products, show nothing
-      if (trending.isEmpty) {
-        return const SizedBox.shrink();
-      }
+      // if (trending.isEmpty) {
+      //   return const SizedBox.shrink();
+      // }
 
-      // Split trending products into fashion and electronics
-      final fashionTrending = trending
-          .where(
-            (p) =>
-                p.category == "Blouses" ||
-                p.category == "Jeans" ||
-                p.category == "Bags" ||
-                p.category == "Shoes" ||
-                p.category == "T-Shirts",
-          )
-          .take(5)
-          .toList();
+      // // Split trending products into fashion and electronics
+      // final fashionTrending = trending
+      //     .where(
+      //       (p) =>
+      //           p.category == "Blouses" ||
+      //           p.category == "Jeans" ||
+      //           p.category == "Bags" ||
+      //           p.category == "Shoes" ||
+      //           p.category == "T-Shirts",
+      //     )
+      //     .take(5)
+      //     .toList();
 
-      final electronicsTrending = trending
-          .where(
-            (p) =>
-                p.category == "Electronics" ||
-                p.category == "Power Banks" ||
-                p.category == "Headphones",
-          )
-          .take(5)
-          .toList();
+      // final electronicsTrending = trending
+      //     .where(
+      //       (p) =>
+      //           p.category == "Electronics" ||
+      //           p.category == "Power Banks" ||
+      //           p.category == "Headphones",
+      //     )
+      //     .take(5)
+      //     .toList();
 
-      // If no filtered trending products, show nothing
-      if (fashionTrending.isEmpty && electronicsTrending.isEmpty) {
-        return const SizedBox.shrink();
-      }
+      // // If no filtered trending products, show nothing
+      // if (fashionTrending.isEmpty && electronicsTrending.isEmpty) {
+      //   return const SizedBox.shrink();
+      // }
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (fashionTrending.isNotEmpty)
+          if (trending.isNotEmpty)
             _buildTrendingSlider(
               title: ' New Arrivals',
-              products: fashionTrending,
+              products: trending,
               sliderId: 'fashion',
             ),
-          if (electronicsTrending.isNotEmpty)
+          if (trending.isNotEmpty)
             _buildTrendingSlider(
               title: ' Trending Now In Category',
-              products: electronicsTrending,
+              products: trending,
               sliderId: 'electronics',
             ),
         ],
