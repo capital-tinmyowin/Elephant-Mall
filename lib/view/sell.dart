@@ -29,6 +29,53 @@ class SellPage extends StatefulWidget {
   State<SellPage> createState() => _SellPageState();
 }
 
+class ThousandsSeparatorInputFormatter extends TextInputFormatter {
+  static const separator = ',';
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // Keep only digits
+    String newText = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+
+    if (newText.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+
+    final formatted = _formatNumber(newText);
+
+    // Keep cursor in a sensible place
+    int selectionIndex =
+        formatted.length - (newValue.text.length - newValue.selection.end);
+    selectionIndex = selectionIndex.clamp(0, formatted.length);
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: selectionIndex),
+    );
+  }
+
+  String _formatNumber(String value) {
+    final buffer = StringBuffer();
+    for (int i = 0; i < value.length; i++) {
+      if (i > 0 && (value.length - i) % 3 == 0) {
+        buffer.write(separator);
+      }
+      buffer.write(value[i]);
+    }
+    return buffer.toString();
+  }
+}
+
+/// Helper to parse price that may contain commas
+double? parsePrice(String text) {
+  if (text.trim().isEmpty) return null;
+  final cleaned = text.replaceAll(',', '');
+  return double.tryParse(cleaned);
+}
+
 class _VariantDialog extends StatefulWidget {
   final ProductVariant? existingVariant;
   final bool isEdit;
@@ -203,16 +250,12 @@ class _VariantDialogState extends State<_VariantDialog> {
                   Expanded(
                     child: TextFormField(
                       controller: variantpriceController,
-
+                      textAlign: TextAlign.right,
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
 
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(
-                          RegExp(r'^\d*\.?\d{0,2}$'),
-                        ),
-                      ],
+                      inputFormatters: [ThousandsSeparatorInputFormatter()],
 
                       decoration: const InputDecoration(
                         labelText: "Price",
@@ -247,18 +290,13 @@ class _VariantDialogState extends State<_VariantDialog> {
                       children: [
                         TextFormField(
                           controller: variantdiscountPriceController,
-
                           enabled: enableDiscountPrice,
-
+                          textAlign: TextAlign.right,
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
 
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                              RegExp(r'^\d*\.?\d{0,2}$'),
-                            ),
-                          ],
+                          inputFormatters: [ThousandsSeparatorInputFormatter()],
 
                           decoration: const InputDecoration(
                             labelText: "Discount Price",
@@ -646,11 +684,13 @@ class _SellPageState extends State<SellPage> {
 
   Future<void> loadBuyerContactMethods() async {
     try {
-      setState(() {
-        isLoadingBuyerMethods = true;
-      });
+      setState(() => isLoadingBuyerMethods = true);
 
-      final methods = await productService.getBuyerContactMethods();
+      final authService = Provider.of<AuthService>(context, listen: false);
+
+      final methods = await productService.getBuyerContactMethods(
+        authService: authService,
+      );
 
       if (!mounted) return;
 
@@ -660,10 +700,7 @@ class _SellPageState extends State<SellPage> {
       });
     } catch (e) {
       if (!mounted) return;
-
-      setState(() {
-        isLoadingBuyerMethods = false;
-      });
+      setState(() => isLoadingBuyerMethods = false);
 
       if (_isUnauthorizedError(e)) {
         await _showLoginRequiredDialog();
@@ -691,19 +728,27 @@ class _SellPageState extends State<SellPage> {
     });
 
     try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+
       final detail = await productService.getBuyerContactDetail(
-        method.methodId,
+        authService: authService,
+        groupId: method.methodId,
       );
 
       if (!mounted) return;
 
       setState(() {
-        locationController.text = detail.location;
+        // Bind only the fields that come from the API
         phoneController.text = detail.phoneNumber;
         telegramController.text = detail.telegram;
         viberController.text = detail.viber;
         messengerController.text = detail.messenger;
 
+        // Show optional fields only when they have a value
+        telegramVisible = detail.telegram.isNotEmpty;
+        viberVisible = detail.viber.isNotEmpty;
+
+        // Location is NOT touched – user types it manually
         isLoadingBuyerDetail = false;
       });
     } catch (e) {
@@ -1787,14 +1832,19 @@ class _SellPageState extends State<SellPage> {
 
                   const SizedBox(height: 6),
 
-                  TextField(
+                  TextFormField(
+                    // changed to TextFormField for consistency
                     controller: priceController,
+                    textAlign: TextAlign.right,
                     keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: _input(
-                      "Enter Price",
-                      errorText: priceError,
+                    inputFormatters: [ThousandsSeparatorInputFormatter()],
+                    decoration: InputDecoration(
+                      labelText: "Price", // ← left-aligned label (like variant)
                       suffixText: "Ks",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      errorText: priceError,
                     ),
                   ),
                 ],
@@ -1819,14 +1869,18 @@ class _SellPageState extends State<SellPage> {
 
                   const SizedBox(height: 6),
 
-                  TextField(
+                  TextFormField(
                     controller: discountPriceController,
                     enabled: enableDiscountPrice,
+                    textAlign: TextAlign.right,
                     keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: _input(
-                      "Enter Discount Price",
+                    inputFormatters: [ThousandsSeparatorInputFormatter()],
+                    decoration: InputDecoration(
+                      labelText: "Discount Price",
                       suffixText: "Ks",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   ),
 
@@ -1976,7 +2030,7 @@ class _SellPageState extends State<SellPage> {
         const SizedBox(height: 10),
 
         const Text(
-          "Buyer Contact Method",
+          "Business Contact",
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -2009,7 +2063,7 @@ class _SellPageState extends State<SellPage> {
                         isExpanded: true,
 
                         hint: const Text(
-                          "Select Buyer Contact Method",
+                          "Select Business Contact Method",
                           overflow: TextOverflow.ellipsis,
                         ),
 
@@ -2563,9 +2617,12 @@ class _SellPageState extends State<SellPage> {
                           productName: titleController.text.trim(),
                           description: descriptionController.text.trim(),
                           location: locationController.text.trim(),
-                          price:
-                              double.tryParse(priceController.text.trim()) ?? 0,
-                          discountPrice: discountPrice,
+                          price: (parsePrice(priceController.text) ?? 0)
+                              .toString(),
+                          discountPrice: enableDiscountPrice
+                              ? (parsePrice(discountPriceController.text) ?? 0)
+                                    .toString()
+                              : null,
                           quantity:
                               int.tryParse(qtyController.text.trim()) ?? 0,
                           condition: conditionController.text.trim(),

@@ -157,7 +157,6 @@ class _CommonHeaderState extends State<CommonHeader> {
                     IconButton(
                       icon: const Icon(Icons.favorite_border, size: 28),
                       onPressed: () {
-                        // Open Favorite
                         if (!isLoggedIn) {
                           _showLoginRequiredDialog(context);
                           return;
@@ -480,10 +479,28 @@ class _CommonHeaderState extends State<CommonHeader> {
             ),
             _buildLogoutMenuItem(
               icon: Icons.shopping_bag_outlined,
-              title: 'My Orders',
+              title: 'My Listings',
               onTap: () {
                 Navigator.pop(context);
-                // Navigate to orders
+                if (user == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Please login first.")),
+                  );
+                  return;
+                }
+                Navigator.push(
+                  context,
+
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        SellerStorePage(
+                          sellerId: user.id,
+                          sellerName: user.username,
+                        ),
+                    transitionDuration: Duration.zero,
+                    reverseTransitionDuration: Duration.zero,
+                  ),
+                );
               },
             ),
             const Divider(),

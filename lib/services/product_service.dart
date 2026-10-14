@@ -124,84 +124,161 @@ class ProductService {
   };
 
   // GET BUYER CONTACT METHODS
-
-  Future<List<BuyerContactMethod>> getBuyerContactMethods() async {
-    // GET BUYER CONTACT DETAIL BY METHOD ID
-    // SAMPLE DATA
-
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    return _buyerContactMethods;
-
-    /*
-    // REAL API EXAMPLE
-
+  Future<List<BuyerContactMethod>> getBuyerContactMethods({
+    required AuthService authService,
+  }) async {
     final url = Uri.parse(
-      'https://www.capital-sys.net/CKMMallAPI/api/buyer/contact-methods',
+      'https://www.capital-sys.net/CKMMallAPI/api/User/contact-groupId',
     );
 
-    final response = await http.get(
-      url,
-      headers: {
-        'Accept': 'application/json',
-      },
-    );
+    try {
+      http.Response response;
 
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Failed to load buyer contact methods: ${response.statusCode}',
-      );
+      //WEB
+      if (kIsWeb) {
+        final client = BrowserClient();
+        client.withCredentials = true;
+
+        try {
+          response = await client.get(
+            url,
+            headers: {'Accept': 'application/json'},
+          );
+        } finally {
+          client.close();
+        }
+      }
+      // ANDROID / iOS
+      else {
+        final headers = <String, String>{'Accept': 'application/json'};
+
+        if (authService.authCookie != null &&
+            authService.authCookie!.isNotEmpty) {
+          headers['Cookie'] = authService.authCookie!;
+          debugPrint('CONTACT-GROUP AUTH: cookie attached');
+        } else {
+          debugPrint('CONTACT-GROUP AUTH: no cookie found');
+        }
+
+        final client = http.Client();
+        try {
+          response = await client.get(url, headers: headers);
+        } finally {
+          client.close();
+        }
+      }
+
+      //Handle response
+      if (response.statusCode == 401) {
+        throw Exception('Unauthorized (401)');
+      }
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Failed to load contact groups: ${response.statusCode} - ${response.body}',
+        );
+      }
+
+      final List<dynamic> ids = jsonDecode(response.body);
+
+      // Map [1,2,3,...] → BuyerContactMethod list
+      return ids.map<BuyerContactMethod>((rawId) {
+        final methodId = int.tryParse(rawId.toString()) ?? 0;
+        return BuyerContactMethod(
+          methodId: methodId,
+          methodName: methodId.toString(),
+          userId: 0,
+        );
+      }).toList();
+    } catch (e, st) {
+      debugPrint('getBuyerContactMethods error: $e');
+      debugPrint(st.toString());
+      rethrow;
     }
-
-    final List<dynamic> jsonData = jsonDecode(response.body);
-
-    return jsonData
-        .map<BuyerContactMethod>(
-          (json) => BuyerContactMethod.fromJson(json),
-        )
-        .toList();
-    */
   }
 
-  Future<BuyerContactDetail> getBuyerContactDetail(int methodId) async {
-    // ----------------------------------------------------------
-    // SAMPLE DATA
-    // ----------------------------------------------------------
-
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    final detail = _buyerContactDetails[methodId];
-
-    if (detail == null) {
-      throw Exception('Buyer contact method not found.');
-    }
-
-    return detail;
-
-    /*
-    // REAL API EXAMPLE
-
+  Future<BuyerContactDetail> getBuyerContactDetail({
+    required AuthService authService,
+    required int groupId,
+  }) async {
     final url = Uri.parse(
-      'https://www.capital-sys.net/CKMMallAPI/api/buyer/contact-method/$methodId',
+      'https://www.capital-sys.net/CKMMallAPI/api/User/getcontactinfoByGroupId/$groupId',
     );
 
-    final response = await http.get(
-      url,
-      headers: {
-        'Accept': 'application/json',
-      },
-    );
+    try {
+      http.Response response;
 
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Failed to load buyer contact detail: ${response.statusCode}',
+      if (kIsWeb) {
+        final client = BrowserClient();
+        client.withCredentials = true;
+        try {
+          response = await client.get(
+            url,
+            headers: {'Accept': 'application/json'},
+          );
+        } finally {
+          client.close();
+        }
+      } else {
+        final headers = <String, String>{'Accept': 'application/json'};
+
+        if (authService.authCookie != null &&
+            authService.authCookie!.isNotEmpty) {
+          headers['Cookie'] = authService.authCookie!;
+        }
+
+        final client = http.Client();
+        try {
+          response = await client.get(url, headers: headers);
+        } finally {
+          client.close();
+        }
+      }
+
+      if (response.statusCode == 401) {
+        throw Exception('Unauthorized (401)');
+      }
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to load contact info: ${response.statusCode}');
+      }
+
+      final List<dynamic> list = jsonDecode(response.body);
+
+      // Take the first non-empty value for each type
+      String phone = '';
+      String telegram = '';
+      String viber = '';
+      String messenger = '';
+
+      for (final item in list) {
+        final type = (item['type']?.toString() ?? '').trim().toLowerCase();
+        final value = item['value']?.toString().trim() ?? '';
+
+        if (value.isEmpty) continue;
+
+        if (type == 'phone' && phone.isEmpty) {
+          phone = value;
+        } else if (type == 'telegram' && telegram.isEmpty) {
+          telegram = value;
+        } else if (type == 'viber' && viber.isEmpty) {
+          viber = value;
+        } else if (type == 'messenger' && messenger.isEmpty) {
+          messenger = value;
+        }
+      }
+
+      return BuyerContactDetail(
+        phoneNumber: phone,
+        telegram: telegram,
+        viber: viber,
+        messenger: messenger,
+        location: '', // not provided by API – user types it manually
       );
+    } catch (e) {
+      debugPrint('getBuyerContactDetail error: $e');
+      rethrow;
     }
-
-    final Map<String, dynamic> jsonData = jsonDecode(response.body);
-
-    return BuyerContactDetail.fromJson(jsonData);
-    */
   }
 
   // FIND SELL PRODUCT BY PRODUCT CODE
@@ -241,8 +318,8 @@ class ProductService {
     required String productName,
     required String description,
     required String location,
-    required double price,
-    required double? discountPrice,
+    required String price,
+    required String? discountPrice,
     required int quantity,
     required String condition,
     required String status,
@@ -267,8 +344,8 @@ class ProductService {
         'productId': 0,
         'variantID': '',
         'quantity': variant.quantity,
-        'price': variant.price,
-        'discountPrice': variant.discountPrice ?? 0,
+        'price': variant.price.toString(),
+        'discountPrice': (variant.discountPrice ?? 0).toString(),
         'variantName': variant.variantName,
       };
     }).toList();
@@ -281,7 +358,7 @@ class ProductService {
       'description': description,
       'location': location,
       'price': price,
-      'discountPrice': discountPrice ?? 0,
+      'discountPrice': discountPrice ?? '0',
       'condition': condition,
       'status': status,
       'businessContactGroupId': businessContactGroupId,
