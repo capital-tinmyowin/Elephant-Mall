@@ -155,7 +155,7 @@ Widget buildHero() {
           children: [
             // SINGLE BANNER IMAGE
             Image.asset(
-              'assets/home1.png',
+              'assets/YangonSummerSunsetStyle.png',
               fit: BoxFit.cover,
               alignment: const Alignment(0, -0.3),
               errorBuilder: (context, error, stackTrace) {
@@ -175,56 +175,56 @@ Widget buildHero() {
             ),
     
             // TEXT
-            Positioned(
-              left: isMobile ? 15 : 40,
-              top: isMobile ? 15 : 40,
-              right: 10,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'YANGON SUMMER HEATWAVE SAVINGS!',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: isMobile ? 14 : 28,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+            // Positioned(
+            //   left: isMobile ? 15 : 40,
+            //   top: isMobile ? 15 : 40,
+            //   right: 10,
+            //   child: Column(
+            //     crossAxisAlignment: CrossAxisAlignment.start,
+            //     children: [
+            //       Text(
+            //         'YANGON SUMMER HEATWAVE SAVINGS!',
+            //         maxLines: 1,
+            //         overflow: TextOverflow.ellipsis,
+            //         style: TextStyle(
+            //           color: Colors.white,
+            //           fontSize: isMobile ? 14 : 28,
+            //           fontWeight: FontWeight.bold,
+            //         ),
+            //       ),
     
-                  const SizedBox(height: 8),
+            //       const SizedBox(height: 8),
     
-                  Text(
-                    'Cool styles for Yangon’s hottest days.',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: isMobile ? 11 : 16,
-                    ),
-                  ),
+            //       Text(
+            //         'Cool styles for Yangon’s hottest days.',
+            //         maxLines: 2,
+            //         overflow: TextOverflow.ellipsis,
+            //         style: TextStyle(
+            //           color: Colors.white,
+            //           fontSize: isMobile ? 11 : 16,
+            //         ),
+            //       ),
     
-                  const SizedBox(height: 15),
+            //       const SizedBox(height: 15),
     
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    onPressed: () {},
-                    child: const Text(
-                      'SHOP NOW',
-                      style: TextStyle(
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            //       ElevatedButton(
+            //         style: ElevatedButton.styleFrom(
+            //           backgroundColor: Colors.orange,
+            //           shape: RoundedRectangleBorder(
+            //             borderRadius: BorderRadius.circular(20),
+            //           ),
+            //         ),
+            //         onPressed: () {},
+            //         child: const Text(
+            //           'SHOP NOW',
+            //           style: TextStyle(
+            //             color: Colors.white,
+            //           ),
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ),
           ],
         ),
       ),
