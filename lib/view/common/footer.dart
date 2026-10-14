@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../home.dart';   
+import '../home.dart';
 
 class CommonFooter extends StatelessWidget {
   const CommonFooter({super.key});
@@ -8,8 +8,11 @@ class CommonFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Colors.grey.shade300, width: 1)),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -19,7 +22,7 @@ class CommonFooter extends StatelessWidget {
             children: _buildNavLinks(context),
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 5),
 
           const Text(
             'CKM Mall  ·  Yangon, Myanmar',
@@ -31,15 +34,12 @@ class CommonFooter extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 5),
 
           const Text(
             'Copyright © 2026 CKMMall. All Rights Reserved.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              color: Color(0xFFB0A090),
-            ),
+            style: TextStyle(fontSize: 13, color: Color(0xFFB0A090)),
           ),
         ],
       ),
@@ -89,10 +89,7 @@ class CommonFooter extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 10),
             child: Text(
               '|',
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF333333),
-              ),
+              style: TextStyle(fontSize: 14, color: Color(0xFF333333)),
             ),
           ),
         );

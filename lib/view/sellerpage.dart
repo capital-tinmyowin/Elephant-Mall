@@ -920,7 +920,7 @@ class _SellerStorePageState extends State<SellerStorePage> {
             mainAxisSpacing: spacing,
 
             // Reduce empty space below buttons
-            childAspectRatio: mobile ? 1.08 : 0.95,
+            childAspectRatio: mobile ? 1.05 : 0.90,
           ),
           itemBuilder: (context, index) {
             return buildProductCard(products[index], mobile);
@@ -949,7 +949,7 @@ class _SellerStorePageState extends State<SellerStorePage> {
           // PRODUCT IMAGE + EDIT BUTTON
           // ======================================================
           SizedBox(
-            height: mobile ? 80 : 150,
+            height: mobile ? 75 : 145,
             width: double.infinity,
             child: Stack(
               children: [
@@ -1028,99 +1028,68 @@ class _SellerStorePageState extends State<SellerStorePage> {
             ),
           ),
 
-          // ======================================================
-          // BUTTONS
-          // ======================================================
           Padding(
-            padding: const EdgeInsets.fromLTRB(4, 3, 4, 0),
+            padding: const EdgeInsets.fromLTRB(6, 4, 6, 6),
             child: Row(
               children: [
+                //  VIEW DETAILS
                 Expanded(
                   child: SizedBox(
-                    height: mobile ? 18 : 27,
+                    height: mobile ? 22 : 28,
                     child: ElevatedButton(
-                      onPressed: favouriteLoadingIds.contains(product.productId)
-                          ? null
-                          : () {
-                              toggleFavourite(product);
-                            },
+                      onPressed: () => openProduct(product),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            favouriteProductIds.contains(product.productId)
-                            ? const Color(0xffC62828)
-                            : const Color(0xffE88A17),
-                        disabledBackgroundColor:
-                            favouriteProductIds.contains(product.productId)
-                            ? const Color(0xffC62828)
-                            : const Color(0xffE88A17),
+                        backgroundColor: const Color(0xffF28C00),
                         foregroundColor: Colors.white,
-                        disabledForegroundColor: Colors.white,
                         elevation: 0,
                         padding: EdgeInsets.zero,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                      ),
-                      child: favouriteLoadingIds.contains(product.productId)
-                          ? SizedBox(
-                              width: mobile ? 10 : 14,
-                              height: mobile ? 10 : 14,
-                              child: const CircularProgressIndicator(
-                                strokeWidth: 1.5,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                          : Text(
-                              favouriteProductIds.contains(product.productId)
-                                  ? 'Remove Favorite'
-                                  : 'Add to Favorite',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: mobile ? 7 : 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(width: 3),
-
-                // =================================================
-                // VIEW DETAILS
-                // =================================================
-                Expanded(
-                  child: SizedBox(
-                    height: mobile ? 18 : 27,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        openProduct(product);
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.black87,
-                        backgroundColor: Colors.white,
-                        padding: EdgeInsets.zero,
-                        side: BorderSide(
-                          color: Colors.grey.shade400,
-                          width: 0.8,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(3),
+                          borderRadius: BorderRadius.circular(20), // pill shape
                         ),
                       ),
                       child: Text(
                         'View Details',
-                        maxLines: 1,
-                        overflow: TextOverflow.clip,
                         style: TextStyle(
-                          fontSize: mobile ? 7 : 10,
-                          fontWeight: FontWeight.w500,
+                          fontSize: mobile ? 9 : 11,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
+                  ),
+                ),
+
+                const SizedBox(width: 6),
+
+                // -------- HEART (favourite) --------
+                GestureDetector(
+                  onTap: favouriteLoadingIds.contains(product.productId)
+                      ? null
+                      : () => toggleFavourite(product),
+                  child: SizedBox(
+                    width: mobile ? 26 : 32,
+                    height: mobile ? 26 : 32,
+                    child: favouriteLoadingIds.contains(product.productId)
+                        ? Padding(
+                            padding: const EdgeInsets.all(6),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 1.8,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                favouriteProductIds.contains(product.productId)
+                                    ? Colors.red
+                                    : Colors.grey.shade600,
+                              ),
+                            ),
+                          )
+                        : Icon(
+                            favouriteProductIds.contains(product.productId)
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            size: mobile ? 18 : 22,
+                            color:
+                                favouriteProductIds.contains(product.productId)
+                                ? Colors.red
+                                : Colors.grey.shade600,
+                          ),
                   ),
                 ),
               ],
@@ -1492,7 +1461,7 @@ class _SellerStorePageState extends State<SellerStorePage> {
         ],
       ),
     );
-  } 
+  }
 
   Widget buildEmptyProducts() {
     return SizedBox(
@@ -1540,7 +1509,14 @@ class _SellerStorePageState extends State<SellerStorePage> {
   Future<void> toggleFavourite(Product product) async {
     final productId = product.productId;
 
+    debugPrint('========== TOGGLE FAVOURITE ==========');
+    debugPrint('Product Name : ${product.productName}');
+    debugPrint('Product ID   : $productId');
+    debugPrint('Current favs : $favouriteProductIds');
+    debugPrint('======================================');
+
     if (productId == null) {
+      debugPrint('❌ productId is NULL — cannot toggle');
       return;
     }
 
