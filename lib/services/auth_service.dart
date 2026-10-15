@@ -33,6 +33,21 @@ class AuthService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  final Set<int> _favoriteProductIds = {};
+  Set<int> get favoriteProductIds => _favoriteProductIds;
+
+  bool isFavorite(int productId) => _favoriteProductIds.contains(productId);
+
+  void _addFavoriteId(int id) {
+    _favoriteProductIds.add(id);
+    notifyListeners();
+  }
+
+  void _removeFavoriteId(int id) {
+    _favoriteProductIds.remove(id);
+    notifyListeners();
+  }
+
   // ============= REGISTER =============
   Future<bool> register(
     String fullName,
@@ -80,6 +95,7 @@ class AuthService extends ChangeNotifier {
           );
           _isLoading = false;
           notifyListeners();
+          await getUserFavorites();
           return true;
         } else {
           _errorMessage = message.isNotEmpty ? message : 'Registration failed';
@@ -147,6 +163,8 @@ class AuthService extends ChangeNotifier {
           );
           _isLoading = false;
           notifyListeners();
+          // 🔥 Pre-load favourites so the button state is correct on any screen
+          await getUserFavorites();
           return true;
         } else {
           _errorMessage = 'Login failed';
@@ -312,6 +330,8 @@ class AuthService extends ChangeNotifier {
       print('Add favorite body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        _favoriteProductIds.add(productId); // 🔥 update cache
+        notifyListeners();
         return true;
       }
 
@@ -334,6 +354,71 @@ class AuthService extends ChangeNotifier {
           ? 'Failed to add favorite : $backendMsg (${response.statusCode})'
           : 'Failed to add favorite (${response.statusCode})';
 
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _errorMessage = 'Network error: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> removeFavorite(int productId) async {
+    if (_currentUser == null) {
+      _errorMessage = 'Please login first';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      final uri = Uri.parse('$_baseUrl/UserAction/removeFavourite/$productId');
+      final headers = <String, String>{};
+      if (!kIsWeb && _authCookie != null) {
+        headers['Cookie'] = _authCookie!;
+      }
+
+      debugPrint('========== REMOVE FAVOURITE REQUEST ==========');
+      debugPrint('URL: $uri');
+      debugPrint('Method: POST');
+      debugPrint('Headers: $headers');
+      debugPrint('kIsWeb: $kIsWeb');
+      debugPrint('authCookie: $_authCookie');
+      debugPrint('==============================================');
+
+      final response = await _client
+          .post(uri, headers: headers)
+          .timeout(const Duration(seconds: 15));
+
+      debugPrint('========== REMOVE FAVOURITE RESPONSE ==========');
+      debugPrint('Status: ${response.statusCode}');
+      debugPrint('Headers: ${response.headers}');
+      debugPrint('Body: ${response.body}');
+      debugPrint('===============================================');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _favoriteProductIds.remove(productId);
+        notifyListeners();
+        return true;
+      }
+
+      // Extract the backend's actual error message
+      String backendMsg = '';
+      try {
+        final body = json.decode(response.body);
+        if (body is Map<String, dynamic>) {
+          backendMsg =
+              (body['message'] ??
+                      body['title'] ??
+                      body['error'] ??
+                      body['detail'] ??
+                      '')
+                  .toString();
+        }
+      } catch (_) {}
+
+      _errorMessage = backendMsg.isNotEmpty
+          ? '$backendMsg (${response.statusCode})'
+          : 'Remove failed (${response.statusCode})';
       notifyListeners();
       return false;
     } catch (e) {

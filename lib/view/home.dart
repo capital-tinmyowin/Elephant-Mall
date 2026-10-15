@@ -1,4 +1,10 @@
 import 'dart:async';
+import 'package:elephant_mall/models/product.dart';
+import 'package:elephant_mall/view/category_detail.dart';
+import 'package:elephant_mall/view/new_in.dart';
+import 'package:elephant_mall/view/sale.dart';
+import 'package:elephant_mall/widgets/app_image.dart';
+
 import '../models/Category.dart';
 import '../models/banner.dart';
 import 'package:elephant_mall/services/home_service.dart';
@@ -139,126 +145,146 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-Widget buildHero() {
-  final width = MediaQuery.of(context).size.width;
-  final isMobile = width < 600;
+  Widget buildHero() {
+    final width = MediaQuery.of(context).size.width;
+    final isMobile = width < 600;
 
-  return Padding(
-    padding: const EdgeInsets.only(top: 10),
-    child: SizedBox(
-      height: isMobile ? 150 : 250,
-      width: double.infinity,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // SINGLE BANNER IMAGE
-            Image.asset(
-              'assets/YangonSummerSunsetStyle.png',
-              fit: BoxFit.cover,
-              alignment: const Alignment(0, -0.3),
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  color: Colors.grey.shade300,
-                  child: const Icon(
-                    Icons.image_not_supported,
-                    size: 40,
-                  ),
-                );
-              },
-            ),
-    
-            // DARK OVERLAY
-            Container(
-              color: Colors.black.withValues(alpha: 0.25),
-            ),
-    
-            // TEXT
-            // Positioned(
-            //   left: isMobile ? 15 : 40,
-            //   top: isMobile ? 15 : 40,
-            //   right: 10,
-            //   child: Column(
-            //     crossAxisAlignment: CrossAxisAlignment.start,
-            //     children: [
-            //       Text(
-            //         'YANGON SUMMER HEATWAVE SAVINGS!',
-            //         maxLines: 1,
-            //         overflow: TextOverflow.ellipsis,
-            //         style: TextStyle(
-            //           color: Colors.white,
-            //           fontSize: isMobile ? 14 : 28,
-            //           fontWeight: FontWeight.bold,
-            //         ),
-            //       ),
-    
-            //       const SizedBox(height: 8),
-    
-            //       Text(
-            //         'Cool styles for Yangon’s hottest days.',
-            //         maxLines: 2,
-            //         overflow: TextOverflow.ellipsis,
-            //         style: TextStyle(
-            //           color: Colors.white,
-            //           fontSize: isMobile ? 11 : 16,
-            //         ),
-            //       ),
-    
-            //       const SizedBox(height: 15),
-    
-            //       ElevatedButton(
-            //         style: ElevatedButton.styleFrom(
-            //           backgroundColor: Colors.orange,
-            //           shape: RoundedRectangleBorder(
-            //             borderRadius: BorderRadius.circular(20),
-            //           ),
-            //         ),
-            //         onPressed: () {},
-            //         child: const Text(
-            //           'SHOP NOW',
-            //           style: TextStyle(
-            //             color: Colors.white,
-            //           ),
-            //         ),
-            //       ),
-            //     ],
-            //   ),
-            // ),
-          ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: SizedBox(
+        height: isMobile ? 150 : 250,
+        width: double.infinity,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // SINGLE BANNER IMAGE
+              Image.asset(
+                'assets/YangonSummerSunsetStyle.png',
+                fit: BoxFit.cover,
+                alignment: const Alignment(0, -0.3),
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.grey.shade300,
+                    child: const Icon(Icons.image_not_supported, size: 40),
+                  );
+                },
+              ),
+
+              // DARK OVERLAY
+              Container(color: Colors.black.withValues(alpha: 0.25)),
+
+              // TEXT
+              // Positioned(
+              //   left: isMobile ? 15 : 40,
+              //   top: isMobile ? 15 : 40,
+              //   right: 10,
+              //   child: Column(
+              //     crossAxisAlignment: CrossAxisAlignment.start,
+              //     children: [
+              //       Text(
+              //         'YANGON SUMMER HEATWAVE SAVINGS!',
+              //         maxLines: 1,
+              //         overflow: TextOverflow.ellipsis,
+              //         style: TextStyle(
+              //           color: Colors.white,
+              //           fontSize: isMobile ? 14 : 28,
+              //           fontWeight: FontWeight.bold,
+              //         ),
+              //       ),
+
+              //       const SizedBox(height: 8),
+
+              //       Text(
+              //         'Cool styles for Yangon’s hottest days.',
+              //         maxLines: 2,
+              //         overflow: TextOverflow.ellipsis,
+              //         style: TextStyle(
+              //           color: Colors.white,
+              //           fontSize: isMobile ? 11 : 16,
+              //         ),
+              //       ),
+
+              //       const SizedBox(height: 15),
+
+              //       ElevatedButton(
+              //         style: ElevatedButton.styleFrom(
+              //           backgroundColor: Colors.orange,
+              //           shape: RoundedRectangleBorder(
+              //             borderRadius: BorderRadius.circular(20),
+              //           ),
+              //         ),
+              //         onPressed: () {},
+              //         child: const Text(
+              //           'SHOP NOW',
+              //           style: TextStyle(
+              //             color: Colors.white,
+              //           ),
+              //         ),
+              //       ),
+              //     ],
+              //   ),
+              // ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget buildPromotions() {
     if (promos.isEmpty) return const SizedBox();
 
+    // Hardcode which promo goes to which page. Update these indices if you add more promos.
+    // promo[0] = "Summer Sale 50% OFF"   -> /sale
+    // promo[1] = "New Fashion Collection" -> /new-in
+    final destinations = <Widget>[const NewInPage(), const SalePage()];
+
     return Row(
       spacing: 10,
-      children: promos
-          .take(2)
-          .map((item) => Expanded(child: promo(item)))
-          .toList(),
+      children: List.generate(promos.take(2).length, (i) {
+        return Expanded(
+          child: promo(promos[i], destinations[i % destinations.length]),
+        );
+      }),
     );
   }
 
-  Widget promo(Promo item) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Image.asset(
-        item.imagePath,
-        height: 110,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            height: 110,
-            color: Colors.grey.shade300,
-            child: const Icon(Icons.image_not_supported, size: 40),
-          );
-        },
+  Widget promo(Promo item, Widget destination) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                destination,
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
+          ),
+        );
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Stack(
+          children: [
+            Image.asset(
+              item.imagePath,
+              height: 110,
+              width: double.infinity,
+              fit: BoxFit.fill,
+              errorBuilder: (context, error, stackTrace) => Container(
+                height: 110,
+                color: Colors.grey.shade300,
+                child: const Icon(Icons.image_not_supported, size: 40),
+              ),
+            ),
+            // Optional overlay so the card looks tappable
+            Positioned.fill(
+              child: Container(color: Colors.black.withValues(alpha: 0.05)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -352,45 +378,66 @@ Widget buildHero() {
                           ),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(12),
+                            // onTap: () {
+                            //   Navigator.push(
+                            //     context,
+                            //     PageRouteBuilder(
+                            //       pageBuilder:
+                            //           (
+                            //             context,
+                            //             animation,
+                            //             secondaryAnimation,
+                            //           ) => ProductDetailPage(
+                            //             productId: item.categoryId,
+                            //           ),
+                            //       transitionDuration: Duration.zero,
+                            //       reverseTransitionDuration: Duration.zero,
+                            //     ),
+                            //   );
+                            // },
                             onTap: () {
                               Navigator.push(
                                 context,
-                                PageRouteBuilder(
-                                  pageBuilder:
-                                      (
-                                        context,
-                                        animation,
-                                        secondaryAnimation,
-                                      ) => ProductDetailPage(
-                                        productId: item.categoryId,
-                                      ),
-                                  transitionDuration: Duration.zero,
-                                  reverseTransitionDuration: Duration.zero,
+                                MaterialPageRoute(
+                                  builder: (context) => CategoryDetailPage(
+                                    categoryId: item.categoryId,
+                                    categoryName: item.categoryName,
+                                  ),
                                 ),
                               );
                             },
-                            child: Image.asset(
-                              item.photoPath,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Icon(
-                                  Icons.image_not_supported,
-                                  size: 30,
-                                );
-                              },
+                            child: AppImage(
+                              imageUrl: item.photoPath,
+                              height: 90,
+                              width: 80,
+                              fit: BoxFit.cover,
+                              borderRadius: 12,
                             ),
                           ),
                         ),
 
                         const SizedBox(height: 5),
-                        Text(
-                          item.categoryName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xff6c8855),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CategoryDetailPage(
+                                  categoryId: item.categoryId,
+                                  categoryName: item.categoryName,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            item.categoryName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xff6c8855),
+                            ),
                           ),
                         ),
                       ],
@@ -436,6 +483,27 @@ Widget buildHero() {
     );
   }
 
+  String _resolveProductImage(String raw) {
+    if (raw.isEmpty) {
+      return 'https://picsum.photos/seed/home/400/400';
+    }
+    if (raw.startsWith('http://') || raw.startsWith('https://')) {
+      // gstatic, googleusercontent, picsum are CORS-friendly
+      if (raw.contains('gstatic.com') ||
+          raw.contains('picsum.photos') ||
+          raw.contains('googleusercontent.com')) {
+        return raw;
+      }
+      // Everything else → placeholder (replace with your backend proxy URL if you have one)
+      return 'https://picsum.photos/seed/${raw.hashCode.abs()}/400/400';
+    }
+
+    // Bare filename like "PI_1_1_260930192330493.jpg" — prefix with your backend's image host.
+    // Change this prefix once you confirm the folder on the server (e.g. /Uploads/, /Images/).
+    const prefix = 'https://www.capital-sys.net/CKMMallAPI/Uploads/';
+    return '$prefix$raw';
+  }
+
   Widget buildProducts() {
     if (products.isEmpty) {
       return const SizedBox();
@@ -452,29 +520,45 @@ Widget buildHero() {
       ),
       itemBuilder: (context, index) {
         final p = products[index];
+        final isFav = _favoriteProductIds.contains(p.productId);
+
         return Card(
           elevation: 2,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Product Image
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(8),
-                ),
-                child: Image.asset(
-                  p.imagePath,
-                  height: 120,
-                  width: double.infinity,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const SizedBox(
-                      height: 120,
-                      child: Center(
-                        child: Icon(Icons.image_not_supported, size: 40),
-                      ),
-                    );
-                  },
+              // ClipRRect(
+              //   borderRadius: const BorderRadius.vertical(
+              //     top: Radius.circular(8),
+              //   ),
+              //   child: Image.asset(
+              //     p.imagePath,
+              //     height: 120,
+              //     width: double.infinity,
+              //     fit: BoxFit.contain,
+              //     errorBuilder: (context, error, stackTrace) {
+              //       return const SizedBox(
+              //         height: 120,
+              //         child: Center(
+              //           child: Icon(Icons.image_not_supported, size: 40),
+              //         ),
+              //       );
+              //     },
+              //   ),
+              // ),
+              Center(
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(8),
+                  ),
+                  child: AppImage(
+                    imageUrl: p.image,
+                    height: 120,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    borderRadius: 12,
+                  ),
                 ),
               ),
               Padding(
@@ -546,7 +630,7 @@ Widget buildHero() {
                                 pageBuilder:
                                     (context, animation, secondaryAnimation) =>
                                         ProductDetailPage(
-                                          productId: p.productCode,
+                                          productId: p.productId,
                                         ),
                                 transitionDuration: Duration.zero,
                                 reverseTransitionDuration: Duration.zero,
@@ -571,20 +655,20 @@ Widget buildHero() {
                         padding: EdgeInsets.zero,
                         splashRadius: 18,
                         icon: Icon(
-                          _favoriteProductIds.contains(p.productCode)
+                          _favoriteProductIds.contains(p.productId)
                               ? Icons.favorite
                               : Icons.favorite_border,
                           size: 20,
-                          color: _favoriteProductIds.contains(p.productCode)
+                          color: _favoriteProductIds.contains(p.productId)
                               ? Colors.red
                               : Colors.grey.shade700,
                         ),
                         onPressed: () {
                           setState(() {
-                            if (_favoriteProductIds.contains(p.productCode)) {
-                              _favoriteProductIds.remove(p.productCode);
+                            if (_favoriteProductIds.contains(p.productId)) {
+                              _favoriteProductIds.remove(p.productId);
                             } else {
-                              _favoriteProductIds.add(p.productCode);
+                              _favoriteProductIds.add(p.productId);
                             }
                           });
                         },

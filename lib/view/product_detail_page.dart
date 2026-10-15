@@ -39,8 +39,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
       if (json != null) {
         _apiService.setProductFromJson(json);
+        final product = _apiService.selectedProduct;
+        final uid = product?.userId;
+        if (uid != null) {
+          await _apiService.loadSellerProducts(uid);
+        }
       }
-      setState(() {});
+
+      if (mounted) setState(() {});
     });
   }
 
@@ -72,7 +78,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 ],
               );
             }
-            _sellerProducts = _getSellerProducts(product, productController);
+            // _sellerProducts = _getSellerProducts(product, productController);
+            _sellerProducts = productController.sellerProducts
+                .where((p) => p.productId != product.productId)
+                .take(8)
+                .toList();
             print(product.productId);
             return Column(
               children: [
@@ -186,7 +196,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       children: [
         _buildProductInfo(product),
         const SizedBox(height: 16),
-        _buildProductGallery(product),
+        Center(child: _buildProductGallery(product)),
         const SizedBox(height: 16),
         _buildActionButtons(product),
         const SizedBox(height: 16),
@@ -563,10 +573,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           ),
         ),
         // Value 1
-        Expanded(child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          child: Text(value1),
-        )),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            child: Text(value1),
+          ),
+        ),
         // Label 2
         Container(
           width: 100,
@@ -578,16 +590,19 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           ),
         ),
         // Value 2
-        Expanded(child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          child: Text(value2),
-        )),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            child: Text(value2),
+          ),
+        ),
       ],
     );
   }
 
   // ============= ACTION BUTTONS =============
   Widget _buildActionButtons(Product product) {
+    final auth = Provider.of<AuthService>(context, listen: false);
     return Row(
       children: [
         Expanded(
@@ -616,31 +631,52 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Consumer<ApiService>(
-            builder: (context, cartController, child) {
-              final inCart = cartController.isInCart(product.productId);
+          child: Consumer<AuthService>(
+            builder: (context, authService, child) {
+              final isFav = authService.isFavorite(product.productId);
+              final isLoggedIn = authService.isLoggedIn;
               return ElevatedButton(
-                onPressed: () {
-                  if (inCart) {
-                    cartController.removeItem(product.productId);
+                onPressed: () async {
+                  if (!isLoggedIn) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Removed from favourites'),
-                        duration: Duration(seconds: 1),
+                        content: Text('Please sign in to save favourites'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                    return;
+                  }
+
+                  if (isFav) {
+                    final ok = await authService.removeFavorite(
+                      product.productId,
+                    );
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          ok ? 'Removed from favourites' : 'Could not remove',
+                        ),
+                        duration: const Duration(seconds: 1),
                       ),
                     );
                   } else {
-                    cartController.addItem(product);
+                    final ok = await authService.addFavorite(product.productId);
+                    if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Added to favourites 🛒'),
-                        duration: Duration(seconds: 2),
+                      SnackBar(
+                        content: Text(
+                          ok
+                              ? 'Added to favourites ❤️'
+                              : authService.errorMessage ?? 'Could not add',
+                        ),
+                        duration: const Duration(seconds: 2),
                       ),
                     );
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: inCart
+                  backgroundColor: isFav
                       ? Colors.grey
                       : const Color(0xFFFFA500),
                   foregroundColor: Colors.white,
@@ -649,7 +685,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: Text(inCart ? 'Added to Favourite' : 'Add to Favourite'),
+                child: Text(isFav ? 'Added to Favourite' : 'Add to Favourite'),
               );
             },
           ),
@@ -986,7 +1022,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                             fontWeight: FontWeight.w600,
                           ),
                           textAlign: TextAlign.center,
-                          maxLines: 2,
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -1010,90 +1046,5 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         ],
       ),
     );
-  }
-  //  Get products from same seller
-  // List<Product> _getSellerProducts(Product currentProduct, ApiService productController) {
-  //   if (currentProduct.seller == null) return [];
-
-  //   try {
-  //     List<Product> allProducts = [];
-
-  //     //  Check if we're using mock data or real API
-  //     print('useMockDataStatic: ${ApiService.useMockDataStatic}');
-  //     if (ApiService.useMockDataStatic) {
-  //       // Use mock data
-  //       print(' Using mock data for seller products');
-  //       allProducts = MockApiService.getMockProducts();
-  //     } else {
-  //       // Use real data from API
-  //       print(' Using real API data for seller products');
-  //       allProducts = productController.allProducts;
-
-  //       // If allProducts is empty, wait and retry
-  //       if (allProducts.isEmpty) {
-  //        print(' No products loaded, trying to load from backend...');
-  //       // Try to load products if not loaded
-  //       productController.loadProducts();
-  //       allProducts = productController.allProducts;
-
-  //       // If still empty, use mock as fallback
-  //       if (allProducts.isEmpty) {
-  //         allProducts = MockApiService.getMockProducts();
-  //       }
-  //     }
-  //     }
-
-  //     // Filter products by same seller (excluding current product)
-  //     final filtered = allProducts
-  //         .where(
-  //           (p) =>
-  //               p.seller?.name == currentProduct.seller?.name &&
-  //               p.productId != currentProduct.productId,
-  //         )
-  //         .take(8)
-  //         .toList();
-
-  //     print('Found ${filtered.length} products from seller: ${currentProduct.seller?.name}');
-  //     return filtered;
-
-  //   } catch (e) {
-  //     // Fallback to mock data if anything fails
-  //     print('Error getting seller products: $e');
-  //     final allProducts = MockApiService.getMockProducts();
-  //     return allProducts
-  //         .where(
-  //           (p) =>
-  //               p.seller?.name == currentProduct.seller?.name &&
-  //               p.productId != currentProduct.productId,
-  //         )
-  //         .take(8)
-  //         .toList();
-  //   }
-  // }
-  List<Product> _getSellerProducts(
-    Product currentProduct,
-    ApiService productController,
-  ) {
-    if (currentProduct.userId == null) {
-      print('❌ currentProduct.userID is null');
-      return [];
-    }
-
-    final allProducts = productController.allProducts;
-    print('📋 allProducts count: ${allProducts.length}');
-    print('👤 current userId: id=${currentProduct.userId}');
-    print('🔍 current productId: ${currentProduct.productId}');
-
-    final filtered = allProducts
-        .where(
-          (p) =>
-              p.userId == currentProduct.userId && // 🔥 match by userId
-              p.productId != currentProduct.productId,
-        )
-        .take(8)
-        .toList();
-
-    print('Found ${filtered.length} products from user');
-    return filtered;
   }
 }
