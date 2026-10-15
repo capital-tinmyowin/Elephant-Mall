@@ -15,15 +15,8 @@ class ApiService extends ChangeNotifier {
 
   final Map<int, int> _categoryCounts = {};
   Map<int, int> get categoryCounts => _categoryCounts;
-  // static const String baseUrl = 'https://www.capital-sys.net/CKMMallAPI/api';
-  // Static variable for mock data flag
-  // static bool useMockDataStatic = false;
-  // static bool _apiAvailable = true;
-
-  // Instance variable for mock data flag
-  // bool _useMockData = false;
-  // Getter for useMockData
-  // bool get useMockData => _useMockData;
+  List<Product> sellerProducts = [];
+  int? _sellerUserId;
 
   // ============= CART STATE =============
   List<CartItem> _cartItems = [];
@@ -435,7 +428,7 @@ class ApiService extends ChangeNotifier {
           .map(_parseCategoryFromJson)
           .toList();
       _sortedCategories = _sortCategoriesByOrder(_categories);
-      
+
       for (final cat in list) {
         if (cat is! Map) continue;
         final id = cat['id'] ?? cat['categoryId'];
@@ -443,7 +436,9 @@ class ApiService extends ChangeNotifier {
 
         // Fetch products for this category, count them
         try {
-          final prodUrl = Uri.parse('https://www.capital-sys.net/CKMMallAPI/api/category/categoryproduct/$id');
+          final prodUrl = Uri.parse(
+            'https://www.capital-sys.net/CKMMallAPI/api/category/categoryproduct/$id',
+          );
           final prodRes = await http
               .get(prodUrl, headers: {'Content-Type': 'application/json'})
               .timeout(const Duration(seconds: 10));
@@ -566,68 +561,6 @@ class ApiService extends ChangeNotifier {
     }
   }
 
-  // Future<Product> _getProductByIdFromApi(int id) async {
-  //   print("productId $id");
-  //   try {
-  //     // final url = Uri.parse('$baseUrl/products/$id');
-  //     final url = Uri.parse(
-  //       'https://www.capital-sys.net/CKMMallAPI/api/Product/GetProductByProductID/$id',
-  //     );
-  //     print('📡 Fetching product: $url');
-
-  //     final response = await http
-  //         .get(url, headers: {'Content-Type': 'application/json'})
-  //         .timeout(const Duration(seconds: 30)); //  Reduced from 8 to 5 seconds
-
-  //     print('📡 Response: ${response.statusCode}');
-  //     print('📡 Body: ${response.body}');
-  //     if (response.statusCode == 200) {
-  //       final data = json.decode(response.body);
-
-  //       List<dynamic> items = [];
-  //       if (data is Map<String, dynamic> && data['data'] is List) {
-  //         items = data['data'];
-  //       } else if (data is List) {
-  //         items = data;
-  //       } else if (data is Map<String, dynamic>) {
-  //         items = [data];
-  //       }
-
-  //       if (items.isEmpty) throw Exception('No product found');
-
-  //       // Parse the FIRST item as the main product
-  //       final mainJson = items.first as Map<String, dynamic>;
-  //       final product = _parseProductFromJson(mainJson);
-
-  //       //  Parse ALL items as variants
-  //       final variants = items
-  //           .map(
-  //             (item) => ProductVariant.fromJson(item as Map<String, dynamic>),
-  //           )
-  //           .toList();
-  //       return Product(
-  //         productId: product.productId,
-  //         productCode: product.productCode,
-  //         productName: product.productName,
-  //         price: product.price,
-  //         category: product.category,
-  //         location: product.location,
-  //         condition: product.condition,
-  //         image: product.image,
-  //         description: product.description,
-  //         userId: product.userId,
-  //         productImages: product.productImages,
-  //         variants: variants, //  attach here
-  //         colors: product.colors,
-  //       );
-  //     } else {
-  //       throw Exception('HTTP ${response.statusCode}');
-  //     }
-  //   } catch (e) {
-  //     print(' Product detail error: $e');
-  //     rethrow;
-  //   }
-  // }
   Future<Product> _getProductByIdFromApi(int id) async {
     print("productId $id");
     try {
@@ -794,6 +727,63 @@ class ApiService extends ChangeNotifier {
     }
   }
 
+  // ============= GET New Arrival PRODUCTS =============
+  List<Product> _newProducts = [];
+  bool _isNewLoading = false;
+
+  List<Product> get newProducts => _newProducts;
+  bool get isNewLoading => _isNewLoading;
+
+  // Load trending products from backend or mock
+  Future<void> loadNewProducts() async {
+    if (_isNewLoading) return;
+
+    _isNewLoading = true;
+    notifyListeners();
+
+    try {
+      _newProducts = await _fetchNewProducts();
+      print("_newProducts : $_newProducts");
+    } catch (e) {
+      _newProducts = [];
+    } finally {
+      _isNewLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<List<Product>> _fetchNewProducts() async {
+    try {
+      // final url = Uri.parse('$baseUrl/products/trending');
+      final url = Uri.parse(
+        'https://www.capital-sys.net/CKMMallAPI/api/productshowcase/GetNewProductList',
+      );
+      final response = await http
+          .get(url, headers: {'Content-Type': 'application/json'})
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        List<dynamic> productsData = [];
+        if (data is Map<String, dynamic> && data['data'] is List) {
+          productsData = data['data'];
+        } else if (data is List) {
+          productsData = data;
+        } else {
+          throw Exception('Unexpected format');
+        }
+
+        return productsData.map((j) => _parseProductFromJson(j)).toList();
+      } else {
+        throw Exception('HTTP ${response.statusCode}');
+      }
+    } catch (e) {
+      print(' New Product error: $e');
+      return []; //  no mock
+    }
+  }
+
   // ============= SORTING =============
   List<Category> _sortCategoriesByOrder(List<Category> categories) {
     final orderMap = <String, int>{};
@@ -899,4 +889,89 @@ class ApiService extends ChangeNotifier {
     };
     return colorMap[color.toLowerCase()] ?? color;
   }
+
+  Future<void> loadSellerProducts(int userId) async {
+    // If already loaded for this user, skip
+    if (_sellerUserId == userId && sellerProducts.isNotEmpty) return;
+
+    notifyListeners();
+
+    try {
+      final url = Uri.parse(
+        'https://www.capital-sys.net/CKMMallAPI/api/Product/GetProductByUserId/$userId',
+      );
+
+      final response = await http
+          .get(url, headers: {'Content-Type': 'application/json'})
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode != 200) {
+        debugPrint('Seller products status: ${response.statusCode}');
+        sellerProducts = [];
+        return;
+      }
+
+      final dynamic data = json.decode(response.body);
+      List<dynamic> list = [];
+      if (data is List) {
+        list = data;
+      } else if (data is Map<String, dynamic> && data['data'] is List) {
+        list = data['data'];
+      }
+
+      // Parse each row. The shape matches Product.fromJson,
+      // but we must filter out the currently-viewed product when rendering.
+      sellerProducts = list
+          .whereType<Map<String, dynamic>>()
+          .map((j) => _parseSellerProduct(j))
+          .toList();
+
+      _sellerUserId = userId;
+      debugPrint('Loaded ${sellerProducts.length} seller products');
+    } catch (e) {
+      debugPrint('Seller products error: $e');
+      sellerProducts = [];
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Product _parseSellerProduct(Map<String, dynamic> json) {
+    // productId
+    int productId = 0;
+    final rawId = json['productId'] ?? json['id'];
+    if (rawId is int)
+      productId = rawId;
+    else if (rawId is String)
+      productId = int.tryParse(rawId) ?? 0;
+
+    // price: can be num or String
+    double price = 0;
+    final rawPrice = json['price'];
+    if (rawPrice is num)
+      price = rawPrice.toDouble();
+    else if (rawPrice is String) {
+      price = double.tryParse(rawPrice.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0;
+    }
+
+    // imageUrl
+    final rawImg = json['imageUrl'] ?? json['ImageUrl'] ?? json['image'] ?? '';
+    final image = rawImg is String ? rawImg : '';
+
+    final name = (json['productName'] ?? json['name'] ?? '').toString();
+    final category = (json['categoryName'] ?? '').toString();
+
+    return Product(
+      productId: productId,
+      productCode: productId.toString(),
+      productName: name,
+      price: price,
+      category: category,
+      image: image,
+      description: null,
+      userId: null,
+    );
+  }
+
+  
 }

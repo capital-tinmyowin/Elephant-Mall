@@ -51,6 +51,7 @@ class _CategoryPageState extends State<CategoryPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // _apiService.loadProducts();
       _apiService.loadTrendingProducts();
+      _apiService.loadNewProducts();
       _apiService.loadCategories();
     });
   }
@@ -240,7 +241,7 @@ class _CategoryPageState extends State<CategoryPage> {
     builder: (context, productController, child) {
       // Get trending products from the service
       final trending = productController.trendingProducts;
-      
+      final news = productController.newProducts;
       // // if (trending.isEmpty) {
       // //   return const SizedBox.shrink();
       // // }
@@ -277,11 +278,11 @@ class _CategoryPageState extends State<CategoryPage> {
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (trending.isNotEmpty)
+            if (news.isNotEmpty)
               Expanded(
                 child: _buildTrendingSlider(
                   title: 'New Arrivals',
-                  products: trending,
+                  products: news,
                   sliderId: 'fashion_mobile',
                   isCompact: true,
                 ),
@@ -304,10 +305,10 @@ class _CategoryPageState extends State<CategoryPage> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (trending.isNotEmpty)
+          if (news.isNotEmpty)
             _buildTrendingSlider(
               title: ' New Arrivals',
-              products: trending,
+              products: news,
               sliderId: 'fashion_mobile',
             ),
           const SizedBox(height: 20),
@@ -793,7 +794,7 @@ class _CategoryPageState extends State<CategoryPage> {
     builder: (context, productController, child) {
       // Get trending products from the service
       final trending = productController.trendingProducts;
-      
+      final news = productController.newProducts;
       // If no trending products, show nothing
       // if (trending.isEmpty) {
       //   return const SizedBox.shrink();
@@ -830,10 +831,10 @@ class _CategoryPageState extends State<CategoryPage> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (trending.isNotEmpty)
+          if (news.isNotEmpty)
             _buildTrendingSlider(
               title: ' New Arrivals',
-              products: trending,
+              products: news,
               sliderId: 'fashion',
             ),
           if (trending.isNotEmpty)
@@ -858,7 +859,8 @@ class _CategoryPageState extends State<CategoryPage> {
     final controller = _getController(sliderId);
 
     return Container(
-      width: MediaQuery.of(context).size.width,
+      // width: MediaQuery.of(context).size.width,
+      width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),

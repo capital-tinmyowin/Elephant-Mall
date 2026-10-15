@@ -35,42 +35,42 @@ class BannerModel {
   }
 }
 
-class Product {
-  final int productCode;
-  final String productName;
-  final String description;
-  final double price;
-  final String imagePath; 
-  final double rating;
-  final int categoryId;
-  final bool isActive;
+// class Product {
+//   final int productCode;
+//   final String productName;
+//   final String description;
+//   final double price;
+//   final String imagePath; 
+//   final double rating;
+//   final int categoryId;
+//   final bool isActive;
 
-  Product({
-    required this.productCode,
-    required this.productName,
-    required this.description,
-    required this.price,
-    required this.imagePath,   
-    required this.rating,
-    required this.categoryId,
-    required this.isActive,
-  });
+//   Product({
+//     required this.productCode,
+//     required this.productName,
+//     required this.description,
+//     required this.price,
+//     required this.imagePath,   
+//     required this.rating,
+//     required this.categoryId,
+//     required this.isActive,
+//   });
 
-  factory Product.fromJson(Map<String, dynamic> json) {
-    return Product(
-      productCode: json["productCode"],
-      productName: json["productName"] ?? "",
-      description: json["description"] ?? "",
-      price: (json["price"] as num).toDouble(),
-      imagePath: json["imagePath"] ?? "",    
-      rating: (json["rating"] as num).toDouble(),
-      categoryId: json["categoryId"] ?? 0,
-      isActive: json["isActive"] ?? true,
-    );
-  }
+//   factory Product.fromJson(Map<String, dynamic> json) {
+//     return Product(
+//       productCode: json["productCode"],
+//       productName: json["productName"] ?? "",
+//       description: json["description"] ?? "",
+//       price: (json["price"] as num).toDouble(),
+//       imagePath: json["imagePath"] ?? "",    
+//       rating: (json["rating"] as num).toDouble(),
+//       categoryId: json["categoryId"] ?? 0,
+//       isActive: json["isActive"] ?? true,
+//     );
+//   }
 
-  @override
-  String toString() {
-    return 'Product(productCode:$productCode, productName:$productName, imagePath:$imagePath,rating:$rating)';
-  }
-}
+//   @override
+//   String toString() {
+//     return 'Product(productCode:$productCode, productName:$productName, imagePath:$imagePath,rating:$rating)';
+//   }
+// }
