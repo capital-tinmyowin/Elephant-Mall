@@ -18,15 +18,17 @@ class NewInPage extends StatefulWidget {
 }
 
 class _NewInPageState extends State<NewInPage> {
-  String selectedCategory = "All Categories";
-  String selectedPrice = "All Prices";
-  String selectedSort = "Newest";
-
-  final NewInService _newInService = NewInService();
+  String selectedCategoryId = ''; // '' = All Categories
+  String selectedPrice = 'All Prices';
+  String selectedSort = 'Newest';
 
   List<NewInModel> allProducts = [];
+  List<CategoryOption> categories = [];
 
-  List<String> categories = [];
+  static const int pageSize = 10;
+  int _currentPage = 1;
+
+  final NewInService _newInService = NewInService();
 
   bool isLoading = true;
   bool isCategoryLoading = true;
@@ -41,23 +43,16 @@ class _NewInPageState extends State<NewInPage> {
     _loadCategories();
   }
 
-  List<String> get categoryDropdownItems {
-    return ["All Categories", ...categories];
-  }
-
   Future<void> _loadCategories() async {
     try {
       final result = await _newInService.getCategories();
-
       if (!mounted) return;
-
       setState(() {
         categories = result;
         isCategoryLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
-
       setState(() {
         isCategoryLoading = false;
         categoryErrorMessage = e.toString();
@@ -82,7 +77,13 @@ class _NewInPageState extends State<NewInPage> {
         allProducts = products;
         isLoading = false;
         errorMessage = null;
+        _currentPage = 1;
       });
+      debugPrint(
+        'allProducts=${allProducts.length} '
+        'filtered=${filteredProducts.length} '
+        'paged=${pagedProducts.length}',
+      );
     } catch (e) {
       if (!mounted) return;
 
@@ -93,6 +94,43 @@ class _NewInPageState extends State<NewInPage> {
     }
   }
 
+  Widget _buildCategoryDropdown() {
+    final items = <DropdownMenuItem<String>>[
+      const DropdownMenuItem(value: '', child: Text('All Categories')),
+      ...categories.map(
+        (c) => DropdownMenuItem(
+          value: c.id,
+          child: Text(c.name, overflow: TextOverflow.ellipsis),
+        ),
+      ),
+    ];
+
+    return Container(
+      height: 32,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xffD8D8D8)),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: selectedCategoryId,
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down, size: 16),
+          style: const TextStyle(fontSize: 11, color: Colors.black87),
+          items: items,
+          onChanged: (value) {
+            setState(() {
+              selectedCategoryId = value ?? '';
+              _currentPage = 1;
+            });
+          },
+        ),
+      ),
+    );
+  }
+
   // RESPONSIVE
 
   bool isMobile(BuildContext context) {
@@ -100,39 +138,49 @@ class _NewInPageState extends State<NewInPage> {
   }
 
   // FILTER PRODUCTS
-
   List<NewInModel> get filteredProducts {
     List<NewInModel> result = List.from(allProducts);
 
-    // Category
-    if (selectedCategory != "All Categories") {
-      result = result
-          .where((product) => product.category == selectedCategory)
-          .toList();
+    // Category by id
+    if (selectedCategoryId.isNotEmpty) {
+      result = result.where((p) => p.categoryId == selectedCategoryId).toList();
     }
 
-    // Price
-    if (selectedPrice == "Under 50") {
-      result = result.where((product) => product.price < 50).toList();
-    } else if (selectedPrice == "50 - 100") {
+    // Price (Kyat)
+    if (selectedPrice == 'Under 50,000') {
+      result = result.where((p) => p.price < 50000).toList();
+    } else if (selectedPrice == '50,000 - 100,000') {
       result = result
-          .where((product) => product.price >= 50 && product.price <= 100)
+          .where((p) => p.price >= 50000 && p.price <= 100000)
           .toList();
-    } else if (selectedPrice == "Over 100") {
-      result = result.where((product) => product.price > 100).toList();
+    } else if (selectedPrice == 'Over 100,000') {
+      result = result.where((p) => p.price > 100000).toList();
     }
 
-    // Sort
-    if (selectedSort == "Price: Low to High") {
+    // Sort (no Rating)
+    if (selectedSort == 'Price: Low to High') {
       result.sort((a, b) => a.price.compareTo(b.price));
-    } else if (selectedSort == "Price: High to Low") {
+    } else if (selectedSort == 'Price: High to Low') {
       result.sort((a, b) => b.price.compareTo(a.price));
+    } else {
+      result.sort((a, b) => b.productId.compareTo(a.productId)); // Newest
     }
-    // else if (selectedSort == "Rating") {
-    //   result.sort((a, b) => b.rating.compareTo(a.rating));
-    // }
 
     return result;
+  }
+
+  int get totalPages {
+    final total = filteredProducts.length;
+    if (total == 0) return 1;
+    return (total / pageSize).ceil();
+  }
+
+  List<NewInModel> get pagedProducts {
+    final list = filteredProducts;
+    final start = (_currentPage - 1) * pageSize;
+    if (start >= list.length) return [];
+    final end = (start + pageSize).clamp(0, list.length);
+    return list.sublist(start, end);
   }
 
   Future<void> _showLoginRequiredDialog() async {
@@ -217,7 +265,7 @@ class _NewInPageState extends State<NewInPage> {
 
       if (success) {
         setState(() {
-          product.favourite = 1; 
+          product.favourite = 1;
         });
 
         // ScaffoldMessenger.of(context).showSnackBar(
@@ -249,51 +297,161 @@ class _NewInPageState extends State<NewInPage> {
     }
   }
 
-  Widget _buildProductError() {
-    return SizedBox(
-      width: double.infinity,
-      height: 240,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.cloud_off_outlined, size: 45, color: Colors.grey),
-            const SizedBox(height: 12),
-            const Text(
-              'Failed to load products',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
+  Widget _buildPagination() {
+    final total = totalPages;
+    if (filteredProducts.isEmpty || total <= 1) {
+      return const SizedBox.shrink();
+    }
+
+    final pages = _visiblePageNumbers(current: _currentPage, total: total);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // <
+          _pageArrow(
+            icon: Icons.chevron_left,
+            enabled: _currentPage > 1,
+            onTap: () => setState(() => _currentPage--),
+          ),
+          const SizedBox(width: 4),
+
+          // 1 2 3 ... 90
+          ...pages.map((page) {
+            if (page == null) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  '...',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black54,
+                  ),
+                ),
+              );
+            }
+
+            final isSelected = page == _currentPage;
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(6),
+                onTap: () {
+                  if (page != _currentPage) {
+                    setState(() => _currentPage = page);
+                  }
+                },
+                child: Container(
+                  width: 40,
+                  height: 32,
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFFF28C00)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFFF28C00)
+                          : Colors.grey.shade300,
+                    ),
+                  ),
+                  child: Text(
+                    '$page',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Please check your connection and try again.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.black54),
-            ),
-            const SizedBox(height: 14),
-            ElevatedButton.icon(
-              onPressed: isLoading ? null : _loadProducts,
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Retry'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xffF28C00),
-                foregroundColor: Colors.white,
-                elevation: 0,
-              ),
-            ),
-          ],
+            );
+          }),
+
+          const SizedBox(width: 4),
+
+          // >
+          _pageArrow(
+            icon: Icons.chevron_right,
+            enabled: _currentPage < total,
+            onTap: () => setState(() => _currentPage++),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _pageArrow({
+    required IconData icon,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(6),
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 32,
+        height: 32,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: enabled ? Colors.grey.shade400 : Colors.grey.shade200,
+          ),
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color: enabled ? Colors.black87 : Colors.grey.shade400,
         ),
       ),
     );
   }
 
+  /// Builds [1, 2, 3, null, 90] where null = "..."
+  List<int?> _visiblePageNumbers({required int current, required int total}) {
+    if (total <= 7) {
+      return List<int?>.generate(total, (i) => i + 1);
+    }
+
+    final Set<int> set = {1, total, current};
+
+    for (int i = current - 1; i <= current + 1; i++) {
+      if (i >= 1 && i <= total) set.add(i);
+    }
+
+    // Near start: show 1 2 3 4 ... last
+    if (current <= 3) {
+      set.addAll([1, 2, 3, 4]);
+    }
+    // Near end: show 1 ... last-3 last-2 last-1 last
+    if (current >= total - 2) {
+      set.addAll([total - 3, total - 2, total - 1, total]);
+    }
+
+    final sorted = set.where((p) => p >= 1 && p <= total).toList()..sort();
+
+    final List<int?> result = [];
+    int? prev;
+    for (final p in sorted) {
+      if (prev != null && p - prev > 1) {
+        result.add(null); // ellipsis
+      }
+      result.add(p);
+      prev = p;
+    }
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     final mobileView = isMobile(context);
-    final products = filteredProducts;
+    final products = pagedProducts;
 
     return Scaffold(
       backgroundColor: const Color(0xffFFFFFF),
@@ -339,10 +497,14 @@ class _NewInPageState extends State<NewInPage> {
                             height: 240,
                           )
                         else if (errorMessage != null)
-                          _buildProductError()
+                          CommonError(
+                            height: 240,
+                            onRetry: isLoading ? null : _loadProducts,
+                            isRetryEnabled: !isLoading,
+                          )
                         else
                           _buildProductGrid(products, mobileView),
-
+                        _buildPagination(),
                         const SizedBox(height: 10),
                       ],
                     ),
@@ -536,19 +698,7 @@ class _NewInPageState extends State<NewInPage> {
         children: [
           Row(
             children: [
-              Expanded(
-                child: _buildDropdown(
-                  value: selectedCategory,
-                  items: categoryDropdownItems,
-                  onChanged: (value) {
-                    if (value == null) return;
-
-                    setState(() {
-                      selectedCategory = value;
-                    });
-                  },
-                ),
-              ),
+              Expanded(child: _buildCategoryDropdown()),
 
               const SizedBox(width: 8),
 
@@ -556,14 +706,15 @@ class _NewInPageState extends State<NewInPage> {
                 child: _buildDropdown(
                   value: selectedPrice,
                   items: const [
-                    "All Prices",
-                    "Under 50",
-                    "50 - 100",
-                    "Over 100",
+                    'All Prices',
+                    'Under 50,000',
+                    '50,000 - 100,000',
+                    'Over 100,000',
                   ],
                   onChanged: (value) {
                     setState(() {
                       selectedPrice = value!;
+                      _currentPage = 1;
                     });
                   },
                 ),
@@ -575,15 +726,11 @@ class _NewInPageState extends State<NewInPage> {
 
           _buildDropdown(
             value: selectedSort,
-            items: const [
-              "Newest",
-              "Price: Low to High",
-              "Price: High to Low",
-              "Rating",
-            ],
+            items: const ['Newest', 'Price: Low to High', 'Price: High to Low'],
             onChanged: (value) {
               setState(() {
                 selectedSort = value!;
+                _currentPage = 1;
               });
             },
           ),
@@ -593,20 +740,7 @@ class _NewInPageState extends State<NewInPage> {
 
     return Row(
       children: [
-        SizedBox(
-          width: 180,
-          child: _buildDropdown(
-            value: selectedCategory,
-            items: categoryDropdownItems,
-            onChanged: (value) {
-              if (value == null) return;
-
-              setState(() {
-                selectedCategory = value;
-              });
-            },
-          ),
-        ),
+        SizedBox(width: 180, child: _buildCategoryDropdown()),
 
         const SizedBox(width: 10),
 

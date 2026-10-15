@@ -56,3 +56,75 @@ class CommonLoading extends StatelessWidget {
     return Center(child: content);
   }
 }
+
+class CommonError extends StatelessWidget {
+  final double? height;
+  final String title;
+  final String message;
+  final String retryLabel;
+  final VoidCallback? onRetry;
+  final bool isRetryEnabled;
+  final IconData icon;
+  final double iconSize;
+
+  const CommonError({
+    super.key,
+    this.height = 240,
+    this.title = 'Failed to load',
+    this.message = 'Please check your connection and try again.',
+    this.retryLabel = 'Retry',
+    this.onRetry,
+    this.isRetryEnabled = true,
+    this.icon = Icons.cloud_off_outlined,
+    this.iconSize = 45,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: iconSize, color: Colors.grey),
+        const SizedBox(height: 12),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 12, color: Colors.black54),
+        ),
+        if (onRetry != null) ...[
+          const SizedBox(height: 14),
+          ElevatedButton.icon(
+            onPressed: isRetryEnabled ? onRetry : null,
+            icon: const Icon(Icons.refresh, size: 18),
+            label: Text(retryLabel),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xffF28C00),
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+          ),
+        ],
+      ],
+    );
+
+    if (height != null) {
+      return SizedBox(
+        width: double.infinity,
+        height: height,
+        child: Center(child: content),
+      );
+    }
+
+    return Center(child: content);
+  }
+}

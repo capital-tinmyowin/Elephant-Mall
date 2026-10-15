@@ -170,15 +170,10 @@ class _SellerStorePageState extends State<SellerStorePage> {
 
       final result = await _service.fetchSellerProducts(sellerId.toString());
 
-      // ==========================================================
       // SORT BY PRODUCT ID - BIGGEST FIRST
-      // ==========================================================
-
       result.sort((a, b) => (b.productId ?? 0).compareTo(a.productId ?? 0));
 
-      // ==========================================================
       // LOAD EXISTING FAVOURITES
-      // ==========================================================
 
       final existingFavouriteIds = <int>{};
 
@@ -408,47 +403,6 @@ class _SellerStorePageState extends State<SellerStorePage> {
     );
   }
 
-  Widget buildProductError() {
-    return SizedBox(
-      width: double.infinity,
-      height: 250,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.cloud_off_outlined, size: 45, color: Colors.grey),
-            const SizedBox(height: 12),
-            const Text(
-              'Failed to load products',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Please check your connection and try again.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.black54),
-            ),
-            const SizedBox(height: 14),
-            ElevatedButton.icon(
-              onPressed: loading ? null : loadProducts,
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Retry'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xffF28C00),
-                foregroundColor: Colors.white,
-                elevation: 0,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final mobile = isMobile(context);
@@ -495,7 +449,11 @@ class _SellerStorePageState extends State<SellerStorePage> {
                             message: 'Loading products...',
                           )
                         else if (errorMessage != null)
-                          buildProductError()
+                          CommonError(
+                            height: 250,
+                            onRetry: loading ? null : loadProducts,
+                            isRetryEnabled: !loading,
+                          )
                         else if (products.isEmpty)
                           buildEmptyProducts()
                         else ...[
@@ -1531,7 +1489,7 @@ class _SellerStorePageState extends State<SellerStorePage> {
     debugPrint('======================================');
 
     if (productId == null) {
-      debugPrint('❌ productId is NULL — cannot toggle');
+      debugPrint(' productId is NULL — cannot toggle');
       return;
     }
 

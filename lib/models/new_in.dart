@@ -2,6 +2,7 @@ class NewInModel {
   final int productId;
   final String productName;
   final String category;
+  final String categoryId;
   final double rating;
   final int reviewCount;
   final double price;
@@ -12,6 +13,7 @@ class NewInModel {
     required this.productId,
     required this.productName,
     required this.category,
+    required this.categoryId,
     required this.price,
     required this.rating,
     required this.reviewCount,
@@ -24,6 +26,7 @@ class NewInModel {
       productId: int.tryParse(json['productId']?.toString() ?? '') ?? 0,
       productName: json['productName']?.toString() ?? '',
       category: json['category']?.toString() ?? '',
+      categoryId: json['categoryId']?.toString() ?? '',
       price:
           double.tryParse(
             json['price']?.toString().replaceAll(',', '') ?? '',
