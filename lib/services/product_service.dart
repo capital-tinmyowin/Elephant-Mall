@@ -7,6 +7,7 @@ import 'package:http/browser_client.dart' show BrowserClient;
 import '../models/Category.dart';
 import '../models/product_variant.dart';
 import '../models/sell_product_model.dart';
+import '../models/business_contact.dart';
 import '../services/auth_service.dart';
 
 class ProductApiResponse {
@@ -221,12 +222,10 @@ class ProductService {
         }
       } else {
         final headers = <String, String>{'Accept': 'application/json'};
-
         if (authService.authCookie != null &&
             authService.authCookie!.isNotEmpty) {
           headers['Cookie'] = authService.authCookie!;
         }
-
         final client = http.Client();
         try {
           response = await client.get(url, headers: headers);
@@ -238,42 +237,33 @@ class ProductService {
       if (response.statusCode == 401) {
         throw Exception('Unauthorized (401)');
       }
-
       if (response.statusCode != 200) {
         throw Exception('Failed to load contact info: ${response.statusCode}');
       }
 
       final List<dynamic> list = jsonDecode(response.body);
 
-      // Take the first non-empty value for each type
-      String phone = '';
-      String telegram = '';
-      String viber = '';
-      String messenger = '';
+      final contacts = list
+          .map((e) => BusinessContact.fromJson(Map<String, dynamic>.from(e)))
+          .where((c) => c.value.isNotEmpty)
+          .toList();
 
-      for (final item in list) {
-        final type = (item['type']?.toString() ?? '').trim().toLowerCase();
-        final value = item['value']?.toString().trim() ?? '';
-
-        if (value.isEmpty) continue;
-
-        if (type == 'phone' && phone.isEmpty) {
-          phone = value;
-        } else if (type == 'telegram' && telegram.isEmpty) {
-          telegram = value;
-        } else if (type == 'viber' && viber.isEmpty) {
-          viber = value;
-        } else if (type == 'messenger' && messenger.isEmpty) {
-          messenger = value;
-        }
+      String pick(String type) {
+        final matches = contacts
+            .where((c) => c.typeKey == type.toLowerCase())
+            .toList();
+        if (matches.isEmpty) return '';
+        final primary = matches.where((c) => c.isPrimary);
+        if (primary.isNotEmpty) return primary.first.value;
+        return matches.first.value;
       }
 
       return BuyerContactDetail(
-        phoneNumber: phone,
-        telegram: telegram,
-        viber: viber,
-        messenger: messenger,
-        location: '', // not provided by API – user types it manually
+        phoneNumber: pick('Phone'),
+        telegram: pick('Telegram'),
+        viber: pick('Viber'),
+        messenger: pick('Messenger'),
+        location: '', // API does not return location
       );
     } catch (e) {
       debugPrint('getBuyerContactDetail error: $e');

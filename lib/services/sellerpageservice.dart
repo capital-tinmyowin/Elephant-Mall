@@ -151,10 +151,7 @@ class SellerPageService {
     try {
       http.Response response;
 
-      // ==========================================================
       // WEB
-      // ==========================================================
-
       if (kIsWeb) {
         final client = BrowserClient();
 
@@ -169,9 +166,7 @@ class SellerPageService {
           client.close();
         }
       }
-      // ==========================================================
       // ANDROID / IOS
-      // ==========================================================
       else {
         final headers = <String, String>{'Accept': 'application/json'};
 
@@ -199,9 +194,7 @@ class SellerPageService {
     }
   }
 
-  // ============================================================
   // REMOVE FROM FAVOURITE
-  // ============================================================
 
   Future<bool> removeFavourite({
     required AuthService authService,

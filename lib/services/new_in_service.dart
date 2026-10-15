@@ -8,10 +8,14 @@ import '../models/new_in.dart';
 import 'package:http/http.dart' as http;
 import '../services/auth_service.dart';
 
+class CategoryOption {
+  final String id;
+  final String name;
+  CategoryOption({required this.id, required this.name});
+}
+
 class NewInService {
-  // ------------------------------------------------------------
   // MOCK API RESPONSE
-  // ------------------------------------------------------------
   static const String _mockJson = '''
   [
     {
@@ -117,9 +121,7 @@ class NewInService {
   ]
   ''';
 
-  // ------------------------------------------------------------
   // GET NEW IN PRODUCTS
-  // ------------------------------------------------------------
 
   static const String _newInUrl =
       'https://www.capital-sys.net/CKMMallAPI/api/productshowcase/GetNewProductList';
@@ -128,9 +130,7 @@ class NewInService {
     try {
       http.Response response;
 
-      // ============================================================
       // WEB
-      // ============================================================
       if (kIsWeb) {
         final client = BrowserClient();
         client.withCredentials = true; // send login cookie
@@ -144,9 +144,7 @@ class NewInService {
           client.close();
         }
       }
-      // ============================================================
       // ANDROID / iOS
-      // ============================================================
       else {
         final headers = <String, String>{'Accept': 'application/json'};
 
@@ -164,17 +162,27 @@ class NewInService {
         }
       }
 
-      print('========== NEW IN API ==========');
-      print('URL: $_newInUrl');
-      print('Status Code: ${response.statusCode}');
-      print('Response: ${response.body}');
-      print('================================');
+      debugPrint('Status: ${response.statusCode}');
+      debugPrint('Body length: ${response.body.length}');
+      debugPrint(
+        'Body start: ${response.body.substring(0, response.body.length.clamp(0, 300))}',
+      );
+
+      final decoded = jsonDecode(response.body);
+      debugPrint('Decoded type: ${decoded.runtimeType}');
+
+      if (decoded is! List) {
+        throw Exception('Expected List, got ${decoded.runtimeType}: $decoded');
+      }
+
+      final List<dynamic> jsonData = decoded;
+      print('Item count: ${jsonData.length}');
 
       if (response.statusCode != 200) {
         throw Exception('Failed to load new products: ${response.statusCode}');
       }
 
-      final List<dynamic> jsonData = jsonDecode(response.body);
+      // final List<dynamic> jsonData = jsonDecode(response.body);
 
       return jsonData
           .map((json) => NewInModel.fromJson(json as Map<String, dynamic>))
@@ -191,33 +199,28 @@ class NewInService {
   static const String _categoryUrl =
       'https://www.capital-sys.net/CKMMallAPI/api/category/all';
 
-  Future<List<String>> getCategories() async {
-    try {
-      final response = await http.get(
-        Uri.parse(_categoryUrl),
-        headers: {'Accept': 'application/json'},
-      );
-
-      if (response.statusCode != 200) {
-        throw Exception('Failed to load categories: ${response.statusCode}');
-      }
-
-      final List<dynamic> jsonData = jsonDecode(response.body);
-
-      final categories = jsonData
-          .map<String>((json) => json['name'].toString())
-          .where((name) => name.toLowerCase() != 'root')
-          .toList();
-
-      return categories;
-    } catch (e, stackTrace) {
-      // print("========== CATEGORY ERROR ==========");
-      // print("Error: $e");
-      // print("StackTrace: $stackTrace");
-      // print("====================================");
-
-      rethrow;
+  Future<List<CategoryOption>> getCategories() async {
+    final response = await http.get(
+      Uri.parse(_categoryUrl),
+      headers: {'Accept': 'application/json'},
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load categories: ${response.statusCode}');
     }
+    final List<dynamic> jsonData = jsonDecode(response.body);
+
+    return jsonData
+        .map((json) {
+          final id =
+              json['categoryId']?.toString() ?? json['id']?.toString() ?? '';
+          final name =
+              json['categoryName']?.toString() ??
+              json['name']?.toString() ??
+              '';
+          return CategoryOption(id: id, name: name);
+        })
+        .where((c) => c.name.toLowerCase() != 'root' && c.id.isNotEmpty)
+        .toList();
   }
 
   static const String _addFavBaseUrl =
@@ -236,9 +239,7 @@ class NewInService {
     try {
       http.Response response;
 
-      // ============================================================
       // WEB
-      // ============================================================
       if (kIsWeb) {
         final client = BrowserClient();
         client.withCredentials = true; // browser will send the login cookie
@@ -255,9 +256,7 @@ class NewInService {
           client.close();
         }
       }
-      // ============================================================
       // ANDROID / iOS
-      // ============================================================
       else {
         final headers = <String, String>{
           'Accept': 'application/json',

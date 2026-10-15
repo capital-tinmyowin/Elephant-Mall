@@ -485,6 +485,12 @@ class _SellPageState extends State<SellPage> {
     }
   }
 
+  bool get _contactsReadOnly {
+    // Selected existing group → read-only
+    // New buyer method (or no selection) → editable
+    return selectedBuyerContactMethod != null && !isNewBuyerMethod;
+  }
+
   Future<void> _showLoginRequiredDialog() async {
     if (!mounted) return;
 
@@ -810,6 +816,26 @@ class _SellPageState extends State<SellPage> {
             )
           : const Center(child: Icon(Icons.image, color: Colors.grey)),
     );
+  }
+
+  void _onNewBuyerMethodChanged(bool newValue) {
+    setState(() {
+      isNewBuyerMethod = newValue;
+
+      if (newValue) {
+        selectedBuyerContactMethod = null;
+
+        phoneController.clear();
+        telegramController.clear();
+        viberController.clear();
+        messengerController.clear();
+        // Keep location as user types it manually
+
+        telegramVisible = false;
+        viberVisible = false;
+        isLoadingBuyerDetail = false;
+      }
+    });
   }
 
   Future<void> pickImageFromButton() async {
@@ -2104,44 +2130,66 @@ class _SellPageState extends State<SellPage> {
               children: [
                 Checkbox(
                   value: isNewBuyerMethod,
-                  onChanged: (value) {
-                    final newValue = value ?? false;
-
-                    setState(() {
-                      isNewBuyerMethod = newValue;
-
-                      if (newValue) {
-                        // CLEAR SELECTED BUYER CONTACT METHOD
-                        selectedBuyerContactMethod = null;
-
-                        // CLEAR CONTACT INFORMATION
-                        locationController.clear();
-                        phoneController.clear();
-                        telegramController.clear();
-                        viberController.clear();
-                        messengerController.clear();
-
-                        // RESET OPTIONAL CONTACT CHECKBOXES
-                        telegramVisible = false;
-                        viberVisible = false;
-
-                        // Detail loading is no longer needed
-                        isLoadingBuyerDetail = false;
-                      }
-                    });
-                  },
+                  onChanged: (value) =>
+                      _onNewBuyerMethodChanged(value ?? false),
                 ),
-
-                const Text(
-                  "New Buyer Method",
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                GestureDetector(
+                  onTap: () => _onNewBuyerMethodChanged(!isNewBuyerMethod),
+                  child: const Text(
+                    "New Contact Method",
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
                   ),
                 ),
               ],
             ),
+
+            // Row(
+            //   mainAxisSize: MainAxisSize.min,
+            //   children: [
+            //     Checkbox(
+            //       value: isNewBuyerMethod,
+            //       onChanged: (value) {
+            //         final newValue = value ?? false;
+
+            //         setState(() {
+            //           isNewBuyerMethod = newValue;
+
+            //           if (newValue) {
+            //             // CLEAR SELECTED BUYER CONTACT METHOD
+            //             selectedBuyerContactMethod = null;
+
+            //             // CLEAR CONTACT INFORMATION
+            //             locationController.clear();
+            //             phoneController.clear();
+            //             telegramController.clear();
+            //             viberController.clear();
+            //             messengerController.clear();
+
+            //             // RESET OPTIONAL CONTACT CHECKBOXES
+            //             telegramVisible = false;
+            //             viberVisible = false;
+
+            //             // Detail loading is no longer needed
+            //             isLoadingBuyerDetail = false;
+            //           }
+            //         });
+            //       },
+            //     ),
+
+            //     const Text(
+            //       "New Buyer Method",
+            //       style: TextStyle(
+            //         fontSize: 15,
+            //         fontWeight: FontWeight.w600,
+            //         color: Colors.black,
+            //       ),
+            //     ),
+            //   ],
+            // ),
           ],
         ),
 
@@ -2158,13 +2206,12 @@ class _SellPageState extends State<SellPage> {
         const SizedBox(height: 6),
         TextField(
           controller: phoneController,
+          enabled: !_contactsReadOnly,
           keyboardType: TextInputType.phone,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           onChanged: (value) {
             if (value.trim().isNotEmpty && phoneError != null) {
-              setState(() {
-                phoneError = null;
-              });
+              setState(() => phoneError = null);
             }
           },
           decoration: _input("Phone Number", errorText: phoneError),
@@ -2207,6 +2254,7 @@ class _SellPageState extends State<SellPage> {
                 Expanded(
                   child: TextField(
                     controller: telegramController,
+                    enabled: !_contactsReadOnly,
                     decoration: _input("Telegram Username"),
                   ),
                 ),
@@ -2292,6 +2340,7 @@ class _SellPageState extends State<SellPage> {
                 Expanded(
                   child: TextField(
                     controller: viberController,
+                    enabled: !_contactsReadOnly,
                     keyboardType: TextInputType.phone,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: _input("Viber Number"),
@@ -2382,6 +2431,7 @@ class _SellPageState extends State<SellPage> {
                 Expanded(
                   child: TextField(
                     controller: messengerController,
+                    enabled: !_contactsReadOnly,
                     decoration: _input(
                       "Messenger Link",
                       errorText: messengerError,
@@ -2516,6 +2566,42 @@ class _SellPageState extends State<SellPage> {
                       });
                       return;
                     }
+                    // ---- Business contact group + payload ----
+                    final int groupId =
+                        isNewBuyerMethod || selectedBuyerContactMethod == null
+                        ? 0
+                        : selectedBuyerContactMethod!.methodId;
+
+                    final List<Map<String, dynamic>> businessContacts = [
+                      if (phoneController.text.trim().isNotEmpty)
+                        {
+                          'type': 'Phone',
+                          'value': phoneController.text.trim(),
+                          'isPrimary': false,
+                          'groupId': groupId,
+                        },
+                      if (telegramController.text.trim().isNotEmpty)
+                        {
+                          'type': 'Telegram',
+                          'value': telegramController.text.trim(),
+                          'isPrimary': true,
+                          'groupId': groupId,
+                        },
+                      if (viberController.text.trim().isNotEmpty)
+                        {
+                          'type': 'Viber',
+                          'value': viberController.text.trim(),
+                          'isPrimary': false,
+                          'groupId': groupId,
+                        },
+                      if (messengerController.text.trim().isNotEmpty)
+                        {
+                          'type': 'Messenger',
+                          'value': messengerController.text.trim(),
+                          'isPrimary': false,
+                          'groupId': groupId,
+                        },
+                    ];
                     final double? discountPrice =
                         enableDiscountPrice &&
                             discountPriceController.text.trim().isNotEmpty
@@ -2565,45 +2651,11 @@ class _SellPageState extends State<SellPage> {
                               int.tryParse(qtyController.text.trim()) ?? 0,
                           condition: conditionController.text.trim(),
                           status: isActive ? 'Active' : 'Inactive',
-                          businessContactGroupId: 1,
+                          businessContactGroupId: groupId,
                           categoryIds: selectedCategoryIds,
                           variants: variants,
                           images: [],
-                          businessContacts: [
-                            if (telegramVisible &&
-                                telegramController.text.trim().isNotEmpty)
-                              {
-                                'type': 'Telegram',
-                                'value': telegramController.text.trim(),
-                                'isPrimary': true,
-                                'groupId': 2,
-                              },
-
-                            if (viberVisible &&
-                                viberController.text.trim().isNotEmpty)
-                              {
-                                'type': 'Viber',
-                                'value': viberController.text.trim(),
-                                'isPrimary': false,
-                                'groupId': 2,
-                              },
-
-                            if (phoneController.text.trim().isNotEmpty)
-                              {
-                                'type': 'Phone',
-                                'value': phoneController.text.trim(),
-                                'isPrimary': false,
-                                'groupId': 2,
-                              },
-
-                            if (messengerController.text.trim().isNotEmpty)
-                              {
-                                'type': 'Messenger',
-                                'value': messengerController.text.trim(),
-                                'isPrimary': false,
-                                'groupId': 2,
-                              },
-                          ],
+                          businessContacts: businessContacts,
                         );
 
                         requestSuccess = apiResponse.success;
@@ -2627,46 +2679,12 @@ class _SellPageState extends State<SellPage> {
                               int.tryParse(qtyController.text.trim()) ?? 0,
                           condition: conditionController.text.trim(),
                           status: isActive ? 'Active' : 'Inactive',
-                          businessContactGroupId: 1,
+                          businessContactGroupId: groupId,
                           categoryIds: selectedCategoryIds,
                           variants: variants,
                           images: [],
                           imageBytes: images,
-                          businessContacts: [
-                            if (telegramVisible &&
-                                telegramController.text.trim().isNotEmpty)
-                              {
-                                'type': 'Telegram',
-                                'value': telegramController.text.trim(),
-                                'isPrimary': true,
-                                'groupId': 2,
-                              },
-
-                            if (viberVisible &&
-                                viberController.text.trim().isNotEmpty)
-                              {
-                                'type': 'Viber',
-                                'value': viberController.text.trim(),
-                                'isPrimary': false,
-                                'groupId': 2,
-                              },
-
-                            if (phoneController.text.trim().isNotEmpty)
-                              {
-                                'type': 'Phone',
-                                'value': phoneController.text.trim(),
-                                'isPrimary': false,
-                                'groupId': 2,
-                              },
-
-                            if (messengerController.text.trim().isNotEmpty)
-                              {
-                                'type': 'Messenger',
-                                'value': messengerController.text.trim(),
-                                'isPrimary': false,
-                                'groupId': 2,
-                              },
-                          ],
+                          businessContacts: businessContacts,
                         );
 
                         requestSuccess = apiResponse?.success == true;
