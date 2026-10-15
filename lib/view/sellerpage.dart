@@ -1037,7 +1037,22 @@ class _SellerStorePageState extends State<SellerStorePage> {
                   child: SizedBox(
                     height: mobile ? 22 : 28,
                     child: ElevatedButton(
-                      onPressed: () => openProduct(product),
+                      onPressed: () {
+                        if (product.productId != null) {
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) =>
+                                      ProductDetailPage(
+                                        productId: product.productId!,
+                                      ),
+                              transitionDuration: Duration.zero,
+                              reverseTransitionDuration: Duration.zero,
+                            ),
+                          );
+                        }
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xffF28C00),
                         foregroundColor: Colors.white,
