@@ -6,6 +6,7 @@ import 'package:elephant_mall/view/common/header.dart';
 import 'package:elephant_mall/view/login.dart';
 import 'package:elephant_mall/view/product_detail_page.dart';
 import 'package:elephant_mall/widgets/app_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
@@ -31,6 +32,7 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
   int _currentPage = 1; // Start from 1
   final int _itemsPerPage = 12; // 10 items per page
   bool _isLoadingMore = false;
+  late Set<int> _lastFavoriteIds;
 
   final List<String> _sortOptions = [
     'Recently Added',
@@ -50,11 +52,24 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
   @override
   void initState() {
     super.initState();
+    final auth = Provider.of<AuthService>(context, listen: false);
+    _lastFavoriteIds = Set.from(auth.favoriteProductIds);
+    auth.addListener(_onAuthChanged);
     _loadFavorites();
+  }
+
+  void _onAuthChanged() {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    if (!setEquals(auth.favoriteProductIds, _lastFavoriteIds)) {
+      _lastFavoriteIds = Set.from(auth.favoriteProductIds);
+      _loadFavorites();
+    }
   }
 
   @override
   void dispose() {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    auth.removeListener(_onAuthChanged);
     super.dispose();
   }
 
@@ -180,12 +195,12 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
                     const SizedBox(height: 16),
                     _buildContent(isMobile),
                     const SizedBox(height: 40),
-                    if (!isMobile) const CommonFooter(),
                   ],
                 ),
               ),
             ),
           ),
+          if (!isMobile) const CommonFooter(),
           if (isMobile) const CommonBottomBar(currentIndex: 3),
         ],
       ),
@@ -772,17 +787,24 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
                           size: isMobile ? 16 : 18,
                           color: Colors.red,
                         ),
-                        onPressed: () {
-                          // Handle remove from favorites
-                          setState(() {
-                            _favorites.removeWhere(
-                              (f) => f.productId == product.productCode,
-                            );
-                          });
+                        onPressed: () async {
+                          final auth = Provider.of<AuthService>(
+                            context,
+                            listen: false,
+                          );
+                          final ok = await auth.removeFavorite(
+                            product.productId,
+                          );
+                          if (!context.mounted) return;
+                          if (ok) {
+                            await auth.getUserFavorites(); // 🔥 refetch list
+                          }
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                '${product.productName} removed from favorites',
+                                ok
+                                    ? '${product.productName} removed from favourites'
+                                    : 'Could not remove',
                               ),
                               duration: const Duration(seconds: 1),
                             ),
@@ -1148,124 +1170,161 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
   }
 
   Widget _buildPagination() {
-    final bool isMobile = MediaQuery.of(context).size.width < 768;
     final filteredFavorites = _getFilteredFavorites();
-    final totalItems = filteredFavorites.length;
-    final totalPages = (totalItems / _itemsPerPage).ceil();
+    final total = (filteredFavorites.length / _itemsPerPage).ceil();
 
-    if (totalPages <= 1) return const SizedBox.shrink();
+    if (filteredFavorites.isEmpty || total <= 1) {
+      return const SizedBox.shrink();
+    }
 
-    // Calculate current page items range
-    final startIndex = (_currentPage - 1) * _itemsPerPage + 1;
-    final endIndex = (_currentPage * _itemsPerPage) > totalItems
-        ? totalItems
-        : _currentPage * _itemsPerPage;
+    final pages = _visiblePageNumbers(current: _currentPage, total: total);
 
-    return Column(
-      children: [
-        // Page info
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text(
-            'Showing $startIndex-$endIndex of $totalItems items',
-            style: TextStyle(
-              fontSize: isMobile ? 12 : 14,
-              color: Colors.grey[600],
-            ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _pageArrow(
+            icon: Icons.chevron_left,
+            enabled: _currentPage > 1,
+            onTap: () {
+              setState(() {
+                _currentPage--;
+                _loadPageItems();
+              });
+            },
           ),
-        ),
+          const SizedBox(width: 4),
 
-        // Page numbers
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Previous button
-            IconButton(
-              onPressed: _currentPage > 1
-                  ? () {
-                      setState(() {
-                        _currentPage--;
-                        _loadPageItems();
-                      });
-                    }
-                  : null,
-              icon: const Icon(Icons.chevron_left),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32),
-              color: _currentPage > 1 ? Colors.black87 : Colors.grey[400],
-            ),
-
-            // Page numbers
-            ...List.generate(totalPages > 5 ? 5 : totalPages, (index) {
-              int pageNumber;
-              if (totalPages <= 5) {
-                pageNumber = index + 1;
-              } else {
-                // Show pages around current page
-                if (_currentPage <= 3) {
-                  pageNumber = index + 1;
-                } else if (_currentPage >= totalPages - 2) {
-                  pageNumber = totalPages - 4 + index;
-                } else {
-                  pageNumber = _currentPage - 2 + index;
-                }
-              }
-
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _currentPage = pageNumber;
-                    _loadPageItems();
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  margin: const EdgeInsets.symmetric(horizontal: 2),
-                  decoration: BoxDecoration(
-                    color: _currentPage == pageNumber
-                        ? const Color(0xFFC77C2E)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    pageNumber.toString(),
-                    style: TextStyle(
-                      color: _currentPage == pageNumber
-                          ? Colors.white
-                          : Colors.black87,
-                      fontWeight: _currentPage == pageNumber
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                    ),
+          ...pages.map((page) {
+            if (page == null) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  '...',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black54,
                   ),
                 ),
               );
-            }),
+            }
 
-            // Next button
-            IconButton(
-              onPressed: _currentPage < totalPages
-                  ? () {
-                      setState(() {
-                        _currentPage++;
-                        _loadPageItems();
-                      });
-                    }
-                  : null,
-              icon: const Icon(Icons.chevron_right),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32),
-              color: _currentPage < totalPages
-                  ? Colors.black87
-                  : Colors.grey[400],
-            ),
-          ],
-        ),
-      ],
+            final isSelected = page == _currentPage;
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(6),
+                onTap: () {
+                  if (page != _currentPage) {
+                    setState(() {
+                      _currentPage = page;
+                      _loadPageItems();
+                    });
+                  }
+                },
+                child: Container(
+                  width: 40,
+                  height: 32,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFFF28C00)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFFF28C00)
+                          : Colors.grey.shade300,
+                    ),
+                  ),
+                  child: Text(
+                    '$page',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+
+          const SizedBox(width: 4),
+          _pageArrow(
+            icon: Icons.chevron_right,
+            enabled: _currentPage < total,
+            onTap: () {
+              setState(() {
+                _currentPage++;
+                _loadPageItems();
+              });
+            },
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _pageArrow({
+    required IconData icon,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(6),
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 32,
+        height: 32,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: enabled ? Colors.grey.shade400 : Colors.grey.shade200,
+          ),
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color: enabled ? Colors.black87 : Colors.grey.shade400,
+        ),
+      ),
+    );
+  }
+
+  List<int?> _visiblePageNumbers({required int current, required int total}) {
+    if (total <= 7) {
+      return List<int?>.generate(total, (i) => i + 1);
+    }
+
+    final Set<int> set = {1, total, current};
+
+    for (int i = current - 1; i <= current + 1; i++) {
+      if (i >= 1 && i <= total) set.add(i);
+    }
+
+    if (current <= 3) {
+      set.addAll([1, 2, 3, 4]);
+    }
+    if (current >= total - 2) {
+      set.addAll([total - 3, total - 2, total - 1, total]);
+    }
+
+    final sorted = set.where((p) => p >= 1 && p <= total).toList()..sort();
+
+    final List<int?> result = [];
+    int? prev;
+    for (final p in sorted) {
+      if (prev != null && p - prev > 1) {
+        result.add(null);
+      }
+      result.add(p);
+      prev = p;
+    }
+    return result;
   }
 
   // s Get filtered favorites based on search and category

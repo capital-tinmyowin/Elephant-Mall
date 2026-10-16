@@ -300,6 +300,8 @@ class ApiService extends ChangeNotifier {
           ? json['userId']
           : int.tryParse(json['userId'].toString());
     }
+    final userName =
+        json['userName']?.toString() ?? json['username']?.toString() ?? '';
 
     // ───── name ─────
     final productName =
@@ -397,6 +399,7 @@ class ApiService extends ChangeNotifier {
       image: imageUrl,
       description: json['description']?.toString() ?? '',
       userId: userId,
+      userName: userName,
       productImages: productImages,
       variants: variants,
       colors: const [],
