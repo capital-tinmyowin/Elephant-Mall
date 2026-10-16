@@ -4,6 +4,13 @@ import '../models/sale.dart';
 import '../services/sale_service.dart';
 import 'common/header.dart';
 import 'common/footer.dart';
+import 'package:intl/intl.dart';
+import '../services/new_in_service.dart';
+
+import 'package:provider/provider.dart';
+import '../services/auth_service.dart';
+import 'login.dart';
+import 'product_detail_page.dart';
 
 class SalePage extends StatefulWidget {
   const SalePage({super.key});
@@ -13,108 +20,246 @@ class SalePage extends StatefulWidget {
 }
 
 class _SalePageState extends State<SalePage> {
-  String selectedCategory = "All Categories";
-  String selectedDiscount = "Discount %";
-  String selectedPrice = "Price Range";
-  String selectedSort = "Biggest Savings";
-
-  final SaleService _saleService = SaleService();
+  String selectedCategoryId = ''; // '' = All
+  String selectedDiscount = 'Discount %';
+  String selectedPrice = 'Price Range';
+  String selectedSort = 'Biggest Savings';
 
   List<SaleModel> allProducts = [];
+  static const int pageSize = 10;
+  int _currentPage = 1;
 
   bool isLoading = true;
   String? errorMessage;
+
+  List<CategoryOption> categories = [];
+  bool isCategoryLoading = false;
+
+  final SaleService _saleService = SaleService();
 
   @override
   void initState() {
     super.initState();
     _loadProducts();
+    _loadCategories();
   }
 
-  // LOAD PRODUCTS
-
-  Future<void> _loadProducts() async {
+  Future<void> _loadCategories() async {
+    setState(() => isCategoryLoading = true);
     try {
-      final products = await _saleService.getSaleProducts();
+      final result = await NewInService().getCategories();
+      // final result = await _saleService.getCategories();
 
       if (!mounted) return;
-
       setState(() {
-        allProducts = products;
-        isLoading = false;
+        categories = result;
+        isCategoryLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
+      setState(() => isCategoryLoading = false);
+      debugPrint('Category load error: $e');
+    }
+  }
 
+  List<SaleModel> get filteredProducts {
+    List<SaleModel> result = List.from(allProducts);
+
+    if (selectedCategoryId.isNotEmpty) {
+      result = result.where((p) => p.categoryId == selectedCategoryId).toList();
+    }
+
+    if (selectedDiscount == '20%+') {
+      result = result.where((p) => p.discount >= 20).toList();
+    } else if (selectedDiscount == '30%+') {
+      result = result.where((p) => p.discount >= 30).toList();
+    } else if (selectedDiscount == '40%+') {
+      result = result.where((p) => p.discount >= 40).toList();
+    }
+
+    if (selectedPrice == 'Under 50,000') {
+      result = result.where((p) => p.salePrice < 50000).toList();
+    } else if (selectedPrice == '50,000 - 100,000') {
+      result = result
+          .where((p) => p.salePrice >= 50000 && p.salePrice <= 100000)
+          .toList();
+    } else if (selectedPrice == 'Over 100,000') {
+      result = result.where((p) => p.salePrice > 100000).toList();
+    }
+
+    if (selectedSort == 'Biggest Savings') {
+      result.sort(
+        (a, b) => (b.originalPrice - b.salePrice).compareTo(
+          a.originalPrice - a.salePrice,
+        ),
+      );
+    } else if (selectedSort == 'Discount: High to Low') {
+      result.sort((a, b) => b.discount.compareTo(a.discount));
+    } else if (selectedSort == 'Price: Low to High') {
+      result.sort((a, b) => a.salePrice.compareTo(b.salePrice));
+    } else if (selectedSort == 'Price: High to Low') {
+      result.sort((a, b) => b.salePrice.compareTo(a.salePrice));
+    }
+
+    return result;
+  }
+
+  int get totalPages {
+    final total = filteredProducts.length;
+    if (total == 0) return 1;
+    return (total / pageSize).ceil();
+  }
+
+  List<SaleModel> get pagedProducts {
+    final list = filteredProducts;
+    final start = (_currentPage - 1) * pageSize;
+    if (start >= list.length) return [];
+    final end = (start + pageSize).clamp(0, list.length);
+    return list.sublist(start, end);
+  }
+
+  Future<void> _loadProducts() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+    try {
+      final products = await _saleService.getSaleProducts(
+        // authService: Provider.of<AuthService>(context, listen: false),
+      );
+      if (!mounted) return;
+      setState(() {
+        allProducts = products;
+        isLoading = false;
+        _currentPage = 1;
+      });
+    } catch (e) {
+      if (!mounted) return;
       setState(() {
         isLoading = false;
         errorMessage = e.toString();
       });
     }
   }
-
   // RESPONSIVE
 
   bool isMobile(BuildContext context) {
     return MediaQuery.of(context).size.width < 800;
   }
 
-  // FILTER PRODUCTS
+  bool _isUnauthorizedError(Object error) {
+    final m = error.toString().toLowerCase();
+    return m.contains('401') ||
+        m.contains('unauthorized') ||
+        m.contains('please login');
+  }
 
-  List<SaleModel> get filteredProducts {
-    List<SaleModel> result = List.from(allProducts);
+  Future<void> _showLoginRequiredDialog() async {
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xfffdfaf4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.lock_outline, color: Color(0xFFC77C2E), size: 28),
+              SizedBox(width: 10),
+              Text(
+                'Login Required',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Your session has expired or you are not logged in.\n\n'
+            'Please login to continue.',
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFC77C2E),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                if (!mounted) return;
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginPage()),
+                );
+              },
+              child: const Text(
+                'Login',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
-    // CATEGORY
+  Future<void> _toggleFavourite(SaleModel product) async {
+    final authService = Provider.of<AuthService>(context, listen: false);
 
-    if (selectedCategory != "All Categories") {
-      result = result
-          .where((product) => product.category == selectedCategory)
-          .toList();
+    if (authService.currentUser == null) {
+      await _showLoginRequiredDialog();
+      return;
     }
 
-    // DISCOUNT
+    final productId = product.productId;
+    if (productId == 0) return;
 
-    if (selectedDiscount == "20%+") {
-      result = result.where((product) => product.discount >= 20).toList();
-    } else if (selectedDiscount == "30%+") {
-      result = result.where((product) => product.discount >= 30).toList();
-    } else if (selectedDiscount == "40%+") {
-      result = result.where((product) => product.discount >= 40).toList();
-    }
+    final isFav = product.favourite == 1;
 
-    // PRICE
+    try {
+      final success = isFav
+          ? await _saleService.removeFavourite(
+              authService: authService,
+              productId: productId,
+            )
+          : await _saleService.addFavourite(
+              authService: authService,
+              productId: productId,
+            );
 
-    if (selectedPrice == "Under 30") {
-      result = result.where((product) => product.salePrice < 30).toList();
-    } else if (selectedPrice == "30 - 60") {
-      result = result
-          .where(
-            (product) => product.salePrice >= 30 && product.salePrice <= 60,
-          )
-          .toList();
-    } else if (selectedPrice == "Over 60") {
-      result = result.where((product) => product.salePrice > 60).toList();
-    }
+      if (!mounted) return;
 
-    // SORT
-
-    if (selectedSort == "Biggest Savings") {
-      result.sort(
-        (a, b) => (b.originalPrice - b.salePrice).compareTo(
-          a.originalPrice - a.salePrice,
+      if (success) {
+        setState(() {
+          product.favourite = isFav ? 0 : 1;
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isFav ? 'Could not remove favourite' : 'Could not add favourite',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      if (_isUnauthorizedError(e)) {
+        await _showLoginRequiredDialog();
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
         ),
       );
-    } else if (selectedSort == "Discount: High to Low") {
-      result.sort((a, b) => b.discount.compareTo(a.discount));
-    } else if (selectedSort == "Price: Low to High") {
-      result.sort((a, b) => a.salePrice.compareTo(b.salePrice));
-    } else if (selectedSort == "Price: High to Low") {
-      result.sort((a, b) => b.salePrice.compareTo(a.salePrice));
-    } else if (selectedSort == "Rating") {
-      result.sort((a, b) => b.rating.compareTo(a.rating));
     }
-
-    return result;
   }
 
   // BUILD
@@ -127,18 +272,7 @@ class _SalePageState extends State<SalePage> {
     //   return const Scaffold(body: Center(child: CircularProgressIndicator()));
     // }
 
-    if (errorMessage != null) {
-      return Scaffold(
-        body: Center(
-          child: Text(
-            "Failed to load sale products",
-            style: const TextStyle(color: Colors.red),
-          ),
-        ),
-      );
-    }
-
-    final products = filteredProducts;
+    final products = pagedProducts;
 
     return Scaffold(
       backgroundColor: const Color(0xffFFFFFF),
@@ -172,15 +306,42 @@ class _SalePageState extends State<SalePage> {
 
                         const SizedBox(height: 8),
 
-                        _buildProductCount(products.length),
-
-                        const SizedBox(height: 5),
-
-                        _buildProductGrid(products, mobileView),
-
-                        const SizedBox(height: 20),
-
-                        _buildSaleCategories(mobileView),
+                        if (isLoading)
+                          const Padding(
+                            padding: EdgeInsets.all(40),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFFF28C00),
+                              ),
+                            ),
+                          )
+                        else if (errorMessage != null)
+                          Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Center(
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'Failed to load sale products',
+                                    style: const TextStyle(color: Colors.red),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  ElevatedButton(
+                                    onPressed: _loadProducts,
+                                    child: const Text('Retry'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else ...[
+                          _buildProductCount(filteredProducts.length),
+                          const SizedBox(height: 5),
+                          _buildProductGrid(products, mobileView),
+                          _buildPagination(),
+                          const SizedBox(height: 20),
+                          // _buildSaleCategories(mobileView),
+                        ],
                       ],
                     ),
                   ),
@@ -240,7 +401,8 @@ class _SalePageState extends State<SalePage> {
               //     letterSpacing: 6,
               //   ),
               // ),
-              Text("YANGON SUMMER",
+              Text(
+                "YANGON SUMMER",
                 style: TextStyle(
                   color: const Color(0xFF4A4A4A),
                   fontSize: mobileView ? 24 : 32,
@@ -249,7 +411,8 @@ class _SalePageState extends State<SalePage> {
                   height: 1.0,
                 ),
               ),
-              Text("SALE",
+              Text(
+                "SALE",
                 style: TextStyle(
                   color: const Color(0xFFF28C00),
                   fontSize: mobileView ? 30 : 72,
@@ -287,7 +450,8 @@ class _SalePageState extends State<SalePage> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text("SHOP NOW",
+                      Text(
+                        "SHOP NOW",
                         style: TextStyle(
                           fontSize: mobileView ? 11 : 14,
                           fontWeight: FontWeight.w700,
@@ -312,6 +476,47 @@ class _SalePageState extends State<SalePage> {
   }
 
   // FILTER ROW
+  Widget _buildCategoryDropdown() {
+    final ids = categories.map((c) => c.id).toSet();
+    final value = selectedCategoryId.isEmpty || ids.contains(selectedCategoryId)
+        ? selectedCategoryId
+        : '';
+
+    final items = <DropdownMenuItem<String>>[
+      const DropdownMenuItem(value: '', child: Text('All Categories')),
+      ...categories.map(
+        (c) => DropdownMenuItem(
+          value: c.id,
+          child: Text(c.name, overflow: TextOverflow.ellipsis),
+        ),
+      ),
+    ];
+
+    return Container(
+      height: 32,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xffD8D8D8)),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down, size: 16),
+          style: const TextStyle(fontSize: 11, color: Colors.black87),
+          items: items,
+          onChanged: (v) {
+            setState(() {
+              selectedCategoryId = v ?? '';
+              _currentPage = 1;
+            });
+          },
+        ),
+      ),
+    );
+  }
 
   Widget _buildFilterRow(bool mobileView) {
     if (mobileView) {
@@ -319,24 +524,7 @@ class _SalePageState extends State<SalePage> {
         children: [
           Row(
             children: [
-              Expanded(
-                child: _buildDropdown(
-                  value: selectedCategory,
-                  items: const [
-                    "All Categories",
-                    "Shoes",
-                    "Clothing",
-                    "Bags",
-                    "Accessories",
-                    "Jewelry",
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      selectedCategory = value!;
-                    });
-                  },
-                ),
-              ),
+              Expanded(child: _buildCategoryDropdown()),
 
               const SizedBox(width: 8),
 
@@ -362,14 +550,15 @@ class _SalePageState extends State<SalePage> {
                 child: _buildDropdown(
                   value: selectedPrice,
                   items: const [
-                    "Price Range",
-                    "Under 30",
-                    "30 - 60",
-                    "Over 60",
+                    'Price Range',
+                    'Under 50,000',
+                    '50,000 - 100,000',
+                    'Over 100,000',
                   ],
                   onChanged: (value) {
                     setState(() {
                       selectedPrice = value!;
+                      _currentPage = 1;
                     });
                   },
                 ),
@@ -381,15 +570,15 @@ class _SalePageState extends State<SalePage> {
                 child: _buildDropdown(
                   value: selectedSort,
                   items: const [
-                    "Biggest Savings",
-                    "Discount: High to Low",
-                    "Price: Low to High",
-                    "Price: High to Low",
-                    "Rating",
+                    'Biggest Savings',
+                    'Discount: High to Low',
+                    'Price: Low to High',
+                    'Price: High to Low',
                   ],
                   onChanged: (value) {
                     setState(() {
                       selectedSort = value!;
+                      _currentPage = 1;
                     });
                   },
                 ),
@@ -401,28 +590,9 @@ class _SalePageState extends State<SalePage> {
     }
 
     // DESKTOP
-
     return Row(
       children: [
-        SizedBox(
-          width: 180,
-          child: _buildDropdown(
-            value: selectedCategory,
-            items: const [
-              "All Categories",
-              "Shoes",
-              "Clothing",
-              "Bags",
-              "Accessories",
-              "Jewelry",
-            ],
-            onChanged: (value) {
-              setState(() {
-                selectedCategory = value!;
-              });
-            },
-          ),
-        ),
+        SizedBox(width: 180, child: _buildCategoryDropdown()),
 
         const SizedBox(width: 10),
 
@@ -430,10 +600,11 @@ class _SalePageState extends State<SalePage> {
           width: 150,
           child: _buildDropdown(
             value: selectedDiscount,
-            items: const ["Discount %", "20%+", "30%+", "40%+"],
+            items: const ['Discount %', '20%+', '30%+', '40%+'],
             onChanged: (value) {
               setState(() {
                 selectedDiscount = value!;
+                _currentPage = 1;
               });
             },
           ),
@@ -445,10 +616,16 @@ class _SalePageState extends State<SalePage> {
           width: 150,
           child: _buildDropdown(
             value: selectedPrice,
-            items: const ["Price Range", "Under 30", "30 - 60", "Over 60"],
+            items: const [
+              'Price Range',
+              'Under 50,000',
+              '50,000 - 100,000',
+              'Over 100,000',
+            ],
             onChanged: (value) {
               setState(() {
                 selectedPrice = value!;
+                _currentPage = 1;
               });
             },
           ),
@@ -461,15 +638,15 @@ class _SalePageState extends State<SalePage> {
           child: _buildDropdown(
             value: selectedSort,
             items: const [
-              "Biggest Savings",
-              "Discount: High to Low",
-              "Price: Low to High",
-              "Price: High to Low",
-              "Rating",
+              'Biggest Savings',
+              'Discount: High to Low',
+              'Price: Low to High',
+              'Price: High to Low',
             ],
             onChanged: (value) {
               setState(() {
                 selectedSort = value!;
+                _currentPage = 1;
               });
             },
           ),
@@ -515,11 +692,15 @@ class _SalePageState extends State<SalePage> {
 
   // PRODUCT COUNT
 
-  Widget _buildProductCount(int count) {
+  Widget _buildProductCount(int filteredCount) {
+    final total = filteredCount;
+    final start = total == 0 ? 0 : ((_currentPage - 1) * pageSize) + 1;
+    final end = (start + pageSize - 1).clamp(0, total);
+
     return Align(
       alignment: Alignment.centerRight,
       child: Text(
-        "Showing 1–$count of ${allProducts.length} results",
+        total == 0 ? 'No results' : 'Showing $start–$end of $total results',
         style: const TextStyle(fontSize: 15, color: Colors.black54),
       ),
     );
@@ -582,67 +763,41 @@ class _SalePageState extends State<SalePage> {
                     padding: const EdgeInsets.all(8),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(5),
-                      child: Image.asset(
-                        product.imagePath,
+                      child: Image.network(
+                        product.imageUrl,
                         fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: const Color(0xffF4F4F4),
-                            child: const Center(
-                              child: Icon(
-                                Icons.image_not_supported,
-                                color: Colors.grey,
-                                size: 30,
-                              ),
+                        errorBuilder: (_, __, ___) => Container(
+                          color: const Color(0xffF4F4F4),
+                          child: const Center(
+                            child: Icon(
+                              Icons.image_not_supported,
+                              color: Colors.grey,
+                              size: 30,
                             ),
-                          );
-                        },
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
 
                 // DISCOUNT BADGE
-                Positioned(
-                  top: 5,
-                  left: 5,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 5,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xffE85B0A),
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    child: Text(
-                      "-${product.discount}%",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-
-                // NEW BADGE
-                if (product.isNew)
+                if (product.discount > 0)
                   Positioned(
                     top: 5,
                     left: 5,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
+                        horizontal: 5,
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
                         color: const Color(0xffE85B0A),
                         borderRadius: BorderRadius.circular(5),
                       ),
-                      child: const Text(
-                        "SALE",
-                        style: TextStyle(
+                      child: Text(
+                        '-${product.discount}%',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
@@ -650,17 +805,19 @@ class _SalePageState extends State<SalePage> {
                       ),
                     ),
                   ),
-
                 // FAVORITE
                 Positioned(
                   top: 4,
                   right: 4,
                   child: InkWell(
-                    onTap: () {},
-                    child: const Icon(
-                      Icons.favorite_border,
+                    onTap: () => _toggleFavourite(product),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Icon(
+                      product.favourite == 1
+                          ? Icons.favorite
+                          : Icons.favorite_border,
                       size: 22,
-                      color: Colors.grey,
+                      color: product.favourite == 1 ? Colors.red : Colors.grey,
                     ),
                   ),
                 ),
@@ -691,18 +848,16 @@ class _SalePageState extends State<SalePage> {
             child: Row(
               children: [
                 Text(
-                  "\$${product.originalPrice.toStringAsFixed(2)}",
+                  '${NumberFormat('#,##0').format(product.originalPrice)} Ks',
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     color: Colors.grey,
                     decoration: TextDecoration.lineThrough,
                   ),
                 ),
-
                 const SizedBox(width: 5),
-
                 Text(
-                  "\$${product.salePrice.toStringAsFixed(2)}",
+                  '${NumberFormat('#,##0').format(product.salePrice)} Ks',
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
@@ -757,8 +912,17 @@ class _SalePageState extends State<SalePage> {
               height: 28,
               child: ElevatedButton(
                 onPressed: () {
-                  // TODO:
-                  // Navigate to Product Detail
+                  if (product.productId != 0) {
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) =>
+                            ProductDetailPage(productId: product.productId),
+                        transitionDuration: Duration.zero,
+                        reverseTransitionDuration: Duration.zero,
+                      ),
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xffF28C00),
@@ -780,142 +944,271 @@ class _SalePageState extends State<SalePage> {
     );
   }
 
-  // SALE CATEGORY STRIP
+  Widget _buildPagination() {
+    final total = totalPages;
+    if (filteredProducts.isEmpty || total <= 1) {
+      return const SizedBox.shrink();
+    }
 
-  Widget _buildSaleCategories(bool mobileView) {
-    final categories = [
-      {
-        "title": "Fashion Sale",
-        "subtitle": "Up to 50% Off",
-        "icon": Icons.checkroom,
-      },
-      {
-        "title": "Accessories Sale",
-        "subtitle": "Up to 50% Off",
-        "icon": Icons.watch,
-      },
-      {
-        "title": "Bags Sale",
-        "subtitle": "Up to 50% Off",
-        "icon": Icons.shopping_bag,
-      },
-      {
-        "title": "Shoes Sale",
-        "subtitle": "Up to 50% Off",
-        "icon": Icons.directions_run,
-      },
-      {
-        "title": "Clearance",
-        "subtitle": "Extra Discounts",
-        "icon": Icons.local_offer,
-      },
-    ];
+    final pages = _visiblePageNumbers(current: _currentPage, total: total);
 
-    Widget _buildSaleCategoryCard(
-      Map<String, Object> category, {
-      required double width,
-      required double height,
-    }) {
-      return Container(
-        width: width,
-        height: height,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: const Color(0xffE1E1E1)),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            // ICON
-            Container(
-              width: 42,
-              height: 42,
-              decoration: const BoxDecoration(
-                color: Color(0xffEEF6EE),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                category["icon"] as IconData,
-                size: 22,
-                color: const Color(0xff3A7D44),
-              ),
-            ),
-
-            const SizedBox(width: 8),
-
-            // TEXT
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    category["title"] as String,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _pageArrow(
+            icon: Icons.chevron_left,
+            enabled: _currentPage > 1,
+            onTap: () => setState(() => _currentPage--),
+          ),
+          const SizedBox(width: 4),
+          ...pages.map((page) {
+            if (page == null) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  '...',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+              );
+            }
+            final selected = page == _currentPage;
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(6),
+                onTap: () {
+                  if (page != _currentPage) {
+                    setState(() => _currentPage = page);
+                  }
+                },
+                child: Container(
+                  height: 32,
+                  constraints: const BoxConstraints(minWidth: 32),
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? const Color(0xFFF28C00)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: selected
+                          ? const Color(0xFFF28C00)
+                          : Colors.grey.shade300,
                     ),
                   ),
-                  Text(
-                    category["subtitle"] as String,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 9, color: Colors.grey),
+                  child: Text(
+                    '$page',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: selected ? Colors.white : Colors.black87,
+                    ),
                   ),
-                ],
+                ),
               ),
-            ),
-
-            const Icon(Icons.chevron_right, size: 18),
-          ],
-        ),
-      );
-    }
-
-    // MOBILE
-
-    if (mobileView) {
-      return SizedBox(
-        height: 85,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: categories.length,
-          separatorBuilder: (_, _) => const SizedBox(width: 8),
-          itemBuilder: (context, index) {
-            return _buildSaleCategoryCard(
-              categories[index],
-              width: 180,
-              height: 85,
             );
-          },
-        ),
-      );
-    }
-
-    // DESKTOP
-
-    return SizedBox(
-      height: 70,
-      width: double.infinity,
-      child: Row(
-        children: List.generate(categories.length, (index) {
-          return Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(
-                right: index == categories.length - 1 ? 0 : 8,
-              ),
-              child: _buildSaleCategoryCard(
-                categories[index],
-                width: double.infinity,
-                height: 70,
-              ),
-            ),
-          );
-        }),
+          }),
+          const SizedBox(width: 4),
+          _pageArrow(
+            icon: Icons.chevron_right,
+            enabled: _currentPage < total,
+            onTap: () => setState(() => _currentPage++),
+          ),
+        ],
       ),
     );
   }
+
+  Widget _pageArrow({
+    required IconData icon,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(6),
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 32,
+        height: 32,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: enabled ? Colors.grey.shade400 : Colors.grey.shade200,
+          ),
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color: enabled ? Colors.black87 : Colors.grey.shade400,
+        ),
+      ),
+    );
+  }
+
+  List<int?> _visiblePageNumbers({required int current, required int total}) {
+    if (total <= 7) {
+      return List<int?>.generate(total, (i) => i + 1);
+    }
+
+    final set = <int>{1, total, current};
+    for (int i = current - 1; i <= current + 1; i++) {
+      if (i >= 1 && i <= total) set.add(i);
+    }
+    if (current <= 3) set.addAll([1, 2, 3, 4]);
+    if (current >= total - 2) {
+      set.addAll([total - 3, total - 2, total - 1, total]);
+    }
+
+    final sorted = set.where((p) => p >= 1 && p <= total).toList()..sort();
+    final result = <int?>[];
+    int? prev;
+    for (final p in sorted) {
+      if (prev != null && p - prev > 1) result.add(null);
+      result.add(p);
+      prev = p;
+    }
+    return result;
+  }
+
+  // // SALE CATEGORY STRIP
+  // Widget _buildSaleCategories(bool mobileView) {
+  //   final categories = [
+  //     {
+  //       "title": "Fashion Sale",
+  //       "subtitle": "Up to 50% Off",
+  //       "icon": Icons.checkroom,
+  //     },
+  //     {
+  //       "title": "Accessories Sale",
+  //       "subtitle": "Up to 50% Off",
+  //       "icon": Icons.watch,
+  //     },
+  //     {
+  //       "title": "Bags Sale",
+  //       "subtitle": "Up to 50% Off",
+  //       "icon": Icons.shopping_bag,
+  //     },
+  //     {
+  //       "title": "Shoes Sale",
+  //       "subtitle": "Up to 50% Off",
+  //       "icon": Icons.directions_run,
+  //     },
+  //     {
+  //       "title": "Clearance",
+  //       "subtitle": "Extra Discounts",
+  //       "icon": Icons.local_offer,
+  //     },
+  //   ];
+
+  //   Widget _buildSaleCategoryCard(
+  //     Map<String, Object> category, {
+  //     required double width,
+  //     required double height,
+  //   }) {
+  //     return Container(
+  //       width: width,
+  //       height: height,
+  //       padding: const EdgeInsets.symmetric(horizontal: 10),
+  //       decoration: BoxDecoration(
+  //         color: Colors.white,
+  //         border: Border.all(color: const Color(0xffE1E1E1)),
+  //         borderRadius: BorderRadius.circular(8),
+  //       ),
+  //       child: Row(
+  //         children: [
+  //           // ICON
+  //           Container(
+  //             width: 42,
+  //             height: 42,
+  //             decoration: const BoxDecoration(
+  //               color: Color(0xffEEF6EE),
+  //               shape: BoxShape.circle,
+  //             ),
+  //             child: Icon(
+  //               category["icon"] as IconData,
+  //               size: 22,
+  //               color: const Color(0xff3A7D44),
+  //             ),
+  //           ),
+
+  //           const SizedBox(width: 8),
+
+  //           // TEXT
+  //           Expanded(
+  //             child: Column(
+  //               mainAxisAlignment: MainAxisAlignment.center,
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 Text(
+  //                   category["title"] as String,
+  //                   maxLines: 1,
+  //                   overflow: TextOverflow.ellipsis,
+  //                   style: const TextStyle(
+  //                     fontSize: 11,
+  //                     fontWeight: FontWeight.bold,
+  //                   ),
+  //                 ),
+  //                 Text(
+  //                   category["subtitle"] as String,
+  //                   maxLines: 1,
+  //                   overflow: TextOverflow.ellipsis,
+  //                   style: const TextStyle(fontSize: 9, color: Colors.grey),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+
+  //           const Icon(Icons.chevron_right, size: 18),
+  //         ],
+  //       ),
+  //     );
+  //   }
+
+  //   // MOBILE
+
+  //   if (mobileView) {
+  //     return SizedBox(
+  //       height: 85,
+  //       child: ListView.separated(
+  //         scrollDirection: Axis.horizontal,
+  //         itemCount: categories.length,
+  //         separatorBuilder: (_, _) => const SizedBox(width: 8),
+  //         itemBuilder: (context, index) {
+  //           return _buildSaleCategoryCard(
+  //             categories[index],
+  //             width: 180,
+  //             height: 85,
+  //           );
+  //         },
+  //       ),
+  //     );
+  //   }
+
+  //   // DESKTOP
+
+  //   return SizedBox(
+  //     height: 70,
+  //     width: double.infinity,
+  //     child: Row(
+  //       children: List.generate(categories.length, (index) {
+  //         return Expanded(
+  //           child: Padding(
+  //             padding: EdgeInsets.only(
+  //               right: index == categories.length - 1 ? 0 : 8,
+  //             ),
+  //             child: _buildSaleCategoryCard(
+  //               categories[index],
+  //               width: double.infinity,
+  //               height: 70,
+  //             ),
+  //           ),
+  //         );
+  //       }),
+  //     ),
+  //   );
+  // }
 }
