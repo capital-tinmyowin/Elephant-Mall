@@ -301,4 +301,59 @@ class NewInService {
       rethrow;
     }
   }
+
+  static const String _removeFavBaseUrl =
+      'https://www.capital-sys.net/CKMMallAPI/api/UserAction/removeFavourite';
+
+  /// DELETE /api/UserAction/removeFavourite/{productId}
+  Future<bool> removeFavourite({
+    required AuthService authService,
+    required int productId,
+  }) async {
+    final url = Uri.parse('$_removeFavBaseUrl/$productId');
+
+    print('========== REMOVE FAV API ==========');
+    print('URL: $url');
+
+    try {
+      http.Response response;
+
+      if (kIsWeb) {
+        final client = BrowserClient()..withCredentials = true;
+        try {
+          response = await client.delete(
+            url,
+            headers: {'Accept': 'application/json'},
+          );
+        } finally {
+          client.close();
+        }
+      } else {
+        final headers = <String, String>{'Accept': 'application/json'};
+        if (authService.authCookie != null &&
+            authService.authCookie!.isNotEmpty) {
+          headers['Cookie'] = authService.authCookie!;
+        }
+        response = await http.delete(url, headers: headers);
+      }
+
+      print('Status Code: ${response.statusCode}');
+      print('Response: ${response.body}');
+
+      if (response.statusCode == 401) {
+        throw Exception('Please login or sign up first.');
+      }
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return true;
+      }
+
+      throw Exception('Failed to remove favourite: ${response.statusCode}');
+    } catch (e, stackTrace) {
+      print('========== REMOVE FAV API ERROR ==========');
+      print(e);
+      print(stackTrace);
+      rethrow;
+    }
+  }
 }

@@ -9,6 +9,7 @@ import 'common/loading_widget.dart';
 import '../services/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'login.dart';
+import 'product_detail_page.dart';
 
 class NewInPage extends StatefulWidget {
   const NewInPage({super.key});
@@ -243,44 +244,35 @@ class _NewInPageState extends State<NewInPage> {
   Future<void> _toggleFavourite(NewInModel product) async {
     final authService = Provider.of<AuthService>(context, listen: false);
 
-    final currentUser = authService.currentUser;
-    if (currentUser == null) {
+    if (authService.currentUser == null) {
       await _showLoginRequiredDialog();
       return;
     }
 
-    // Already favourited → do nothing for now
-    if (product.favourite == 1) {
-      // ← compare with 1
-      return;
-    }
+    final isFav = product.favourite == 1;
 
     try {
-      final success = await _newInService.addFavourite(
-        authService: authService,
-        productId: product.productId,
-      );
+      final success = isFav
+          ? await _newInService.removeFavourite(
+              authService: authService,
+              productId: product.productId,
+            )
+          : await _newInService.addFavourite(
+              authService: authService,
+              productId: product.productId,
+            );
 
       if (!mounted) return;
 
       if (success) {
         setState(() {
-          product.favourite = 1;
+          product.favourite = isFav ? 0 : 1;
         });
-
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   const SnackBar(
-        //     content: Text('Added to favourites'),
-        //     backgroundColor: Colors.green,
-        //     duration: Duration(seconds: 2),
-        //   ),
-        // );
       }
     } catch (e) {
       if (!mounted) return;
 
       final message = e.toString().toLowerCase();
-
       if (message.contains('401') ||
           message.contains('unauthorized') ||
           message.contains('please login')) {
@@ -1043,8 +1035,17 @@ class _NewInPageState extends State<NewInPage> {
               height: 28,
               child: OutlinedButton(
                 onPressed: () {
-                  // TODO:
-                  // Navigate to product details page
+                  if (product.productId != 0) {
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) =>
+                            ProductDetailPage(productId: product.productId),
+                        transitionDuration: Duration.zero,
+                        reverseTransitionDuration: Duration.zero,
+                      ),
+                    );
+                  }
                 },
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Colors.orange),
