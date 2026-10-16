@@ -386,7 +386,7 @@ class AuthService extends ChangeNotifier {
       debugPrint('==============================================');
 
       final response = await _client
-          .post(uri, headers: headers)
+          .delete(uri, headers: headers)
           .timeout(const Duration(seconds: 15));
 
       debugPrint('========== REMOVE FAVOURITE RESPONSE ==========');

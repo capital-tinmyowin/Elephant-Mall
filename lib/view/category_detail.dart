@@ -1,6 +1,7 @@
 import 'package:elephant_mall/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../services/Category_service.dart';
@@ -36,6 +37,18 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   bool _isGridView = true;
   late int _currentCategoryId;
   late String _currentCategoryName;
+  int get totalPages {
+    final total = _sortedProducts(
+      Provider.of<ApiService>(
+        context,
+        listen: false,
+      ).getProductsWithColorVariations(
+        Provider.of<ApiService>(context, listen: false).products,
+      ),
+    ).length;
+    if (total == 0) return 1;
+    return (total / _itemsPerPage).ceil();
+  }
 
   final List<String> _sortOptions = [
     'Newest First',
@@ -847,32 +860,32 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   //   );
   // }
   Widget _buildCategoryItem(int categoryId, String name, int count) {
-  final isSelected = _currentCategoryName == name;
+    final isSelected = _currentCategoryName == name;
 
-  return GestureDetector(
-    onTap: () => _switchCategory(categoryId, name),
-    child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            name,
-            style: TextStyle(
-              fontSize: 14,
-              color: isSelected ? const Color(0xFF2B6E3B) : Colors.black87,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+    return GestureDetector(
+      onTap: () => _switchCategory(categoryId, name),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              name,
+              style: TextStyle(
+                fontSize: 14,
+                color: isSelected ? const Color(0xFF2B6E3B) : Colors.black87,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
             ),
-          ),
-          Text(
-            count.toString(),
-            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-          ),
-        ],
+            Text(
+              count.toString(),
+              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   // ============= MOBILE FILTERS =============
   Widget _buildMobileFilters() {
@@ -1180,14 +1193,14 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
         // Calculate pagination
         final int totalProducts = allProducts.length;
         final int totalPages = (totalProducts / _itemsPerPage).ceil();
-
+        final int safePage = _currentPage.clamp(1, totalPages == 0 ? 1 : totalPages);
         // Ensure current page is valid
         if (_currentPage > totalPages) {
           _currentPage = totalPages;
         }
 
         // Get products for current page
-        final int startIndex = (_currentPage - 1) * _itemsPerPage;
+        final int startIndex = (safePage - 1) * _itemsPerPage;
         final int endIndex = startIndex + _itemsPerPage > totalProducts
             ? totalProducts
             : startIndex + _itemsPerPage;
@@ -1335,7 +1348,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                     Row(
                       children: [
                         Text(
-                          '\$${product.price.toStringAsFixed(2)}',
+                          '${NumberFormat('#,##0').format(product.price)} MMK',
                           style: TextStyle(
                             fontSize: isMobile ? 16 : 18,
                             fontWeight: FontWeight.bold,
@@ -1517,7 +1530,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                   Row(
                     children: [
                       Text(
-                        '\$${product.price.toStringAsFixed(2)}',
+                        '${NumberFormat('#,##0').format(product.price)}MMK',
                         style: TextStyle(
                           fontSize: isMobile ? 13 : 15,
                           fontWeight: FontWeight.bold,
@@ -1527,7 +1540,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                       const SizedBox(width: 1),
                       if (product.productId % 2 == 0)
                         Text(
-                          '\$${(product.price * 1.15).toStringAsFixed(2)}',
+                          '${NumberFormat('#,##0').format(product.price * 1.15)}MMK',
                           style: TextStyle(
                             fontSize: isMobile ? 10 : 12,
                             decoration: TextDecoration.lineThrough,
@@ -1583,109 +1596,155 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
 
   // ============= PAGINATION =============
   Widget _buildPagination() {
-    final bool isMobile = MediaQuery.of(context).size.width < 768;
-
     return Consumer<ApiService>(
       builder: (context, productController, child) {
-        // final totalProducts = productController
-        //     .getProductsWithColorVariations(productController.products)
-        //     .length;
         final totalProducts = _sortedProducts(
           productController.getProductsWithColorVariations(
             productController.products,
           ),
         ).length;
-        final totalPages = (totalProducts / _itemsPerPage).ceil();
+        final total = (totalProducts / _itemsPerPage).ceil();
 
-        // Calculate current page items
-        final int startIndex = (_currentPage - 1) * _itemsPerPage + 1;
-        final int endIndex = (_currentPage * _itemsPerPage) > totalProducts
-            ? totalProducts
-            : _currentPage * _itemsPerPage;
+        if (totalProducts == 0 || total <= 1) {
+          return const SizedBox.shrink();
+        }
 
-        return Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Row(
-                  children: [
-                    // Previous button
-                    IconButton(
-                      onPressed: _currentPage > 1
-                          ? () {
-                              setState(() {
-                                _currentPage--;
-                              });
-                            }
-                          : null,
-                      icon: const Icon(Icons.chevron_left),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 32),
-                      color: _currentPage > 1
-                          ? Colors.black87
-                          : Colors.grey[400],
+        final pages = _visiblePageNumbers(current: _currentPage, total: total);
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _pageArrow(
+                icon: Icons.chevron_left,
+                enabled: _currentPage > 1,
+                onTap: () => setState(() => _currentPage--),
+              ),
+              const SizedBox(width: 4),
+
+              ...pages.map((page) {
+                if (page == null) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      '...',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black54,
+                      ),
                     ),
+                  );
+                }
 
-                    // Page numbers
-                    ...List.generate(totalPages > 5 ? 5 : totalPages, (index) {
-                      int pageNumber = index + 1;
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _currentPage = pageNumber;
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
-                          ),
-                          margin: const EdgeInsets.symmetric(horizontal: 2),
-                          decoration: BoxDecoration(
-                            color: _currentPage == pageNumber
-                                ? const Color(0xFFC77C2E)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            pageNumber.toString(),
-                            style: TextStyle(
-                              color: _currentPage == pageNumber
-                                  ? Colors.white
-                                  : Colors.black87,
-                              fontWeight: _currentPage == pageNumber
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
-                          ),
+                final isSelected = page == _currentPage;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(6),
+                    onTap: () {
+                      if (page != _currentPage) {
+                        setState(() => _currentPage = page);
+                      }
+                    },
+                    child: Container(
+                      width: 40,
+                      height: 32,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFFF28C00)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: isSelected
+                              ? const Color(0xFFF28C00)
+                              : Colors.grey.shade300,
                         ),
-                      );
-                    }),
-
-                    // Next button
-                    IconButton(
-                      onPressed: _currentPage < totalPages
-                          ? () {
-                              setState(() {
-                                _currentPage++;
-                              });
-                            }
-                          : null,
-                      icon: const Icon(Icons.chevron_right),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 32),
-                      color: _currentPage < totalPages
-                          ? Colors.black87
-                          : Colors.grey[400],
+                      ),
+                      child: Text(
+                        '$page',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isSelected ? Colors.white : Colors.black87,
+                        ),
+                      ),
                     ),
-                  ],
-                ),
-              ],
-            ),
-          ],
+                  ),
+                );
+              }),
+
+              const SizedBox(width: 4),
+              _pageArrow(
+                icon: Icons.chevron_right,
+                enabled: _currentPage < total,
+                onTap: () => setState(() => _currentPage++),
+              ),
+            ],
+          ),
         );
       },
     );
+  }
+
+  Widget _pageArrow({
+    required IconData icon,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(6),
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 32,
+        height: 32,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: enabled ? Colors.grey.shade400 : Colors.grey.shade200,
+          ),
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color: enabled ? Colors.black87 : Colors.grey.shade400,
+        ),
+      ),
+    );
+  }
+
+  List<int?> _visiblePageNumbers({required int current, required int total}) {
+    if (total <= 7) {
+      return List<int?>.generate(total, (i) => i + 1);
+    }
+
+    final Set<int> set = {1, total, current};
+
+    for (int i = current - 1; i <= current + 1; i++) {
+      if (i >= 1 && i <= total) set.add(i);
+    }
+
+    if (current <= 3) {
+      set.addAll([1, 2, 3, 4]);
+    }
+    if (current >= total - 2) {
+      set.addAll([total - 3, total - 2, total - 1, total]);
+    }
+
+    final sorted = set.where((p) => p >= 1 && p <= total).toList()..sort();
+
+    final List<int?> result = [];
+    int? prev;
+    for (final p in sorted) {
+      if (prev != null && p - prev > 1) {
+        result.add(null);
+      }
+      result.add(p);
+      prev = p;
+    }
+    return result;
   }
 }

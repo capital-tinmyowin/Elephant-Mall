@@ -5,6 +5,7 @@ import 'package:elephant_mall/view/category_detail.dart';
 import 'package:elephant_mall/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../services/Category_service.dart';
@@ -314,7 +315,7 @@ class _CategoryPageState extends State<CategoryPage> {
           const SizedBox(height: 20),
           if (trending.isNotEmpty)
             _buildTrendingSlider(
-              title: ' Trending Now In Category',
+              title: ' Trending Now In Product',
               products: trending,
               sliderId: 'electronics_mobile',
             ),
@@ -839,7 +840,7 @@ class _CategoryPageState extends State<CategoryPage> {
             ),
           if (trending.isNotEmpty)
             _buildTrendingSlider(
-              title: ' Trending Now In Category',
+              title: ' Trending Now In Product',
               products: trending,
               sliderId: 'electronics',
             ),
@@ -1064,7 +1065,7 @@ class _CategoryPageState extends State<CategoryPage> {
               softWrap: true,
             ),
             Text(
-              '\MMK${product.price.toStringAsFixed(2)}',
+              '\MMK${NumberFormat('#,##0').format(product.price)}',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,

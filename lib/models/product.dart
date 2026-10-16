@@ -2,6 +2,22 @@ import 'package:elephant_mall/models/productImage.dart';
 import 'package:elephant_mall/models/product_variant.dart';
 import '../services/Category_service.dart';
 
+String _normalizeImageUrl(String raw) {
+  if (raw.isEmpty) return '';
+  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+
+  // Look for an http(s) inside the string (the backend sometimes
+  // prepends a Windows path in front of a real URL)
+  final httpsIdx = raw.indexOf('https://');
+  final httpIdx = raw.indexOf('http://');
+  final idx = httpsIdx >= 0 ? httpsIdx : httpIdx;
+  if (idx >= 0) return raw.substring(idx);
+
+  // Bare filename — prefix with the real image host
+  const prefix = 'https://www.capital-sys.net/CKMMallImages/Products/';
+  return '$prefix$raw';
+}
+
 class Product {
   final int productId;
   final String productCode;
@@ -16,6 +32,7 @@ class Product {
   // final int ratingCount;
   final String? description;
   final int? userId; //  Must be Seller? not String?
+  final String? userName;
   final List<ProductImage>? productImages;
   final List<ProductVariant>? variants;
   final List<String> colors;
@@ -35,6 +52,7 @@ class Product {
     // this.ratingCount = 0,
     this.description,
     this.userId,
+    this.userName,
     this.productImages,
     this.variants,
     this.colors = const [],
@@ -115,8 +133,9 @@ class Product {
       if (single.isNotEmpty) categories.add(single);
     }
     String category = json['category'] ?? json['categoryName'] ?? '';
-    String imageUrl =
-        json['ImageUrl'] ?? json['imageUrl'] ?? json['image'] ?? '';
+    String imageUrl = _normalizeImageUrl(
+      (json['ImageUrl'] ?? json['imageUrl'] ?? json['image'] ?? '').toString(),
+    );
     // Get colors
     List<String> colors = [];
     if (json['colors'] != null && json['colors'] is List) {
@@ -130,7 +149,7 @@ class Product {
           ? json['userId']
           : int.tryParse(json['userId'].toString());
     }
-
+    final userName = (json['userName'] ?? json['username'] ?? '').toString();
     // Get product images
     List<ProductImage> productImages = [];
     if (json['pImageList'] is List) {
@@ -158,9 +177,10 @@ class Product {
       productCode: productCode,
       productName: productName,
       userId: userId,
+      userName: userName,
       price: price,
       category: category,
-      categories: categories, 
+      categories: categories,
       image: imageUrl,
       // rating: (json['rating'] ?? 4.5).toDouble(),
       // ratingCount: json['ratingCount'] ?? 0,
@@ -182,6 +202,7 @@ class Product {
       // 'ratingCount': ratingCount,
       'description': description,
       'userId': userId,
+      'userName': userName,
       'productImages': productImages,
       'variants': variants,
     };
