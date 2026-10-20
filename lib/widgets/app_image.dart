@@ -114,6 +114,7 @@ class AppImage extends StatelessWidget {
                 fontSize: 10,
                 color: Colors.grey[500],
               ),
+              maxLines: 1,
             ),
         ],
       ),

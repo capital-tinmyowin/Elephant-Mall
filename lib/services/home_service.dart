@@ -269,13 +269,11 @@ class HomeService {
     final name = nameRaw is String ? nameRaw : '';
 
     // "/men.jpg" — prefix with the backend host
-    String imgRaw = json['categoryImageUrl'] ?? json['photoPath'];
-    // String imagePath = '';
+    String imgRaw = (json['categoryImageUrl'] ?? json['photoPath'] ?? '')
+        .toString();
+    imgRaw = _normalizeImageUrl(imgRaw);
     if (imgRaw.isEmpty) {
       imgRaw = 'assets/images/placeholders/category_placeholder.jpg';
-    }
-    if (imgRaw.isNotEmpty && imgRaw.startsWith('https://i.pinimg.com')) {
-      imgRaw = ApiService.getProxiedImageUrl(imgRaw);
     }
 
     return Category(
@@ -457,28 +455,21 @@ class HomeService {
     }
 
     // ── image: could be a full URL or a bare filename ──
-    String imageRaw = json['imageUrl'];
-    if (imageRaw.isEmpty) {
-      imageRaw = 'assets/images/placeholders/category_placeholder.jpg';
+    String image = _normalizeImageUrl((json['imageUrl'] ?? '').toString());
+    if (image.isEmpty) {
+      image = 'assets/images/placeholders/category_placeholder.jpg';
     }
-    if (imageRaw.isNotEmpty && imageRaw.startsWith('https://i.pinimg.com')) {
-      imageRaw = ApiService.getProxiedImageUrl(imageRaw);
-    }
-    // ── name ──
-    final nameRaw = json['productName'];
-    final name = nameRaw is String ? nameRaw : '';
 
-    // ── category ──
-    final categoryRaw = json['categoryName'];
-    final category = categoryRaw is String ? categoryRaw : '';
+    final name = (json['productName'] ?? '').toString();
+    final category = (json['categoryName'] ?? '').toString();
 
     return Product(
       productId: productId,
-      productCode: productId.toString(), // required, so pass id as string
+      productCode: productId.toString(),
       productName: name,
       price: price,
       category: category,
-      image: imageRaw,
+      image: image,
       description: null,
       userId: null,
     );
@@ -504,5 +495,23 @@ class HomeService {
       },
     ];
     return jsonData.map((e) => Promo.fromJson(e)).toList();
+  }
+
+  String _normalizeImageUrl(String raw) {
+    if (raw.isEmpty) return '';
+    if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+
+    // "C:/CKMMallImages/CategoryImages/men.jpg" → "/CKMMallImages/CategoryImages/men.jpg"
+    final driveIdx = raw.indexOf(':/');
+    if (driveIdx >= 0) {
+      final path = raw.substring(driveIdx + 2); // skip "C:/"
+      return 'https://www.capital-sys.net/$path';
+    }
+
+    // Already "CKMMallImages/..." or bare filename → prefix
+    if (raw.startsWith('CKMMallImages/')) {
+      return 'https://www.capital-sys.net/$raw';
+    }
+    return 'https://www.capital-sys.net/CKMMallImages/CategoryImages/$raw';
   }
 }

@@ -2,6 +2,7 @@ import 'package:elephant_mall/services/auth_service.dart';
 import 'package:elephant_mall/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../services/Category_service.dart';
@@ -36,6 +37,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final auth = Provider.of<AuthService>(context, listen: false);
+
+      if (auth.isLoggedIn) {
+        await auth.getUserFavorites();
+        if (!mounted) return;
+      }
       final json = await auth.getProductDetail(widget.productId);
       if (!mounted) return;
 
@@ -437,7 +443,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
         // Price
         Text(
-          '\$${product.price.toStringAsFixed(2)} Kyats',
+          '${NumberFormat('#,##0').format(product.price)} Kyats',
           style: const TextStyle(
             fontSize: 25,
             fontWeight: FontWeight.w800,
@@ -528,7 +534,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   child: Row(
                     children: [
                       _variantCell(v.variantName, flex: 3),
-                      _variantCell('\$${v.price.toStringAsFixed(2)}', flex: 2),
+                      _variantCell('${NumberFormat('#,##0').format(v.price)}MMK', flex: 2),
                       _variantCell('${v.quantity}', flex: 1),
                     ],
                   ),
@@ -640,8 +646,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         Expanded(
           child: ElevatedButton(
             onPressed: () {
-              final sellerName = product.userId != null
-                  ? 'Seller #${product.userId}'
+              final sellerName = product.userName != null
+                  ? 'Seller ${product.userName}'
                   : 'seller';
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -684,6 +690,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       product.productId,
                     );
                     if (!context.mounted) return;
+                    if (ok) {
+                      await authService.getUserFavorites(); // 🔥 refetch
+                    }
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -695,6 +704,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   } else {
                     final ok = await authService.addFavorite(product.productId);
                     if (!context.mounted) return;
+                    if (ok) {
+                      await authService.getUserFavorites(); // 🔥 refetch
+                    }
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -752,10 +764,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   // ============= SELLER INFO =============
   Widget _buildSellerInfo(Product product) {
-    final int? userId = product.userId;
+    final String? userName = product.userName;
     // Since the API doesn't send seller name, show a friendly fallback
-    final String sellerName = userId != null
-        ? 'Seller #$userId'
+    final String sellerName = userName != null
+        ? 'Seller $userName'
         : 'Unknown Seller';
     final String avatarText = sellerName.substring(0, 1).toUpperCase();
 
@@ -952,9 +964,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   // ============= MORE FROM SELLER =============
   Widget _buildMoreFromStore(Product product) {
-    final int? userId = product.userId;
-    final String sellerName = userId != null
-        ? 'Seller #$userId'
+    // final int? userId = product.userId;
+    final String? userName = product.userName;
+    final String sellerName = userName != null
+        ? 'Seller $userName'
         : 'this seller';
 
     if (_sellerProducts.isEmpty) {
@@ -1055,12 +1068,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8.0),
                         child: Text(
-                          '\$${sellerProduct.price.toStringAsFixed(2)}',
+                          'MMK${NumberFormat('#,##0').format(sellerProduct.price)}',
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFFD68247),
                           ),
+                          maxLines: 1,
                         ),
                       ),
                     ],
