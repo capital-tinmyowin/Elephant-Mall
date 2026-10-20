@@ -580,8 +580,8 @@ class _SellerStorePageState extends State<SellerStorePage> {
   // ============================================================
 
   Widget buildSellerHeader(bool mobile) {
-    final name = (sellerInfo?.name.isNotEmpty == true)
-        ? sellerInfo!.name
+    final name = (sellerInfo?.userName.isNotEmpty == true)
+        ? sellerInfo!.userName
         : (widget.sellerName ?? "Seller Store");
 
     final location =
@@ -634,7 +634,6 @@ class _SellerStorePageState extends State<SellerStorePage> {
                     mobile,
                   ),
                 ),
-                // Optional right image — remove if you have no asset
                 Expanded(
                   flex: 2,
                   child: Align(

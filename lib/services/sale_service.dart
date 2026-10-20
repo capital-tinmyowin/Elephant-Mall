@@ -64,6 +64,65 @@ class SaleService {
 
   static const String _baseUrl = 'https://www.capital-sys.net/CKMMallAPI';
 
+  static const String _saveRecentViewBaseUrl =
+      'https://www.capital-sys.net/CKMMallAPI/api/Trending/SaveRecentViewData';
+
+  /// POST /api/Trending/SaveRecentViewData/{productId}
+  /// Requires authentication (cookie).
+  Future<bool> saveRecentView({
+    required AuthService authService,
+    required int productId,
+  }) async {
+    final url = Uri.parse('$_saveRecentViewBaseUrl/$productId');
+
+    debugPrint('========== SAVE RECENT VIEW (SALE) API ==========');
+    debugPrint('URL: $url');
+    debugPrint('ProductId: $productId');
+
+    try {
+      final response = await _postOrDelete(url, authService, isDelete: false);
+
+      // Debug after API call
+      debugPrint('Status Code: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+      debugPrint('Headers: ${response.headers}');
+
+      if (response.statusCode == 401) {
+        debugPrint('SAVE RECENT VIEW (SALE): 401 Unauthorized');
+        throw Exception('Unauthorized (401)');
+      }
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        try {
+          final decoded = jsonDecode(response.body);
+          debugPrint('Decoded response: $decoded');
+          if (decoded is Map && decoded['success'] == true) {
+            debugPrint(
+              'SAVE RECENT VIEW (SALE): success = true, message = ${decoded['message']}',
+            );
+            return true;
+          }
+        } catch (e) {
+          debugPrint('SAVE RECENT VIEW (SALE): JSON decode error → $e');
+        }
+        return true; // treat 2xx as success even if body parse fails
+      }
+
+      debugPrint(
+        'SAVE RECENT VIEW (SALE): Unexpected status ${response.statusCode}',
+      );
+      throw Exception(
+        'Failed to save recent view: ${response.statusCode} - ${response.body}',
+      );
+    } catch (e, stackTrace) {
+      print('========== SAVE RECENT VIEW (SALE) API ERROR ==========');
+      print(e);
+      print(stackTrace);
+      print('=======================================================');
+      rethrow;
+    }
+  }
+
   /// POST addFavourite/{productId}
   Future<bool> addFavourite({
     required AuthService authService,
