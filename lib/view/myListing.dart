@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-
-import '../models/sellerpagemodel.dart';
-import '../services/sellerpageservice.dart';
-
-import 'common/footer.dart';
-import 'common/header.dart';
-import 'product_detail_page.dart';
-import 'sell.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../services/auth_service.dart';
+
+import '../models/sellerpagemodel.dart'; // Product
+import '../models/SellerInfo.dart'; // SellerInfo
 import '../models/category.dart';
 import '../models/new_in.dart';
-import 'new_in.dart';
+import '../services/myListing_service.dart';
+import '../services/auth_service.dart';
+import 'common/footer.dart';
+import 'common/header.dart';
 import 'common/loading_widget.dart';
+import 'product_detail_page.dart';
+import 'sell.dart';
+import 'new_in.dart';
 
 class SellerStorePage extends StatefulWidget {
   final int? sellerId;
@@ -56,13 +56,21 @@ class _SellerStorePageState extends State<SellerStorePage> {
   bool newestArrivalsLoading = true;
   String? newestArrivalsError;
 
+  SellerInfo? sellerInfo;
+  bool sellerInfoLoading = true;
+
+  static const int pageSize = 10;
+  int _currentPage = 1;
+
   @override
   void initState() {
     super.initState();
 
     loadProducts();
+    loadSellerInfo();
     loadCategories();
     loadNewestArrivals();
+    _currentPage = 1;
   }
 
   @override
@@ -208,6 +216,68 @@ class _SellerStorePageState extends State<SellerStorePage> {
         errorMessage = e.toString();
       });
     }
+  }
+
+  List<Product> get filteredProducts {
+    List<Product> result = List.from(products);
+
+    // Search by name
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isNotEmpty) {
+      result = result
+          .where((p) => p.productName.toLowerCase().contains(query))
+          .toList();
+    }
+
+    if (selectedCategoryId != null) {
+      result = result
+          .where(
+            (p) => p.categoryId == selectedCategoryId,
+          ) // or p.categoryIds.contains(...)
+          .toList();
+    }
+
+    // Price (parse if price is String)
+    double priceOf(Product p) {
+      if (p.price is num) return (p.price as num).toDouble();
+      return double.tryParse(p.price.toString().replaceAll(',', '')) ?? 0;
+    }
+
+    if (selectedPrice == 'Under 50,000') {
+      result = result.where((p) => priceOf(p) < 50000).toList();
+    } else if (selectedPrice == '50,000 - 100,000') {
+      result = result
+          .where((p) => priceOf(p) >= 50000 && priceOf(p) <= 100000)
+          .toList();
+    } else if (selectedPrice == 'Over 100,000') {
+      result = result.where((p) => priceOf(p) > 100000).toList();
+    }
+
+    // Sort
+    if (selectedSort == 'Lowest Price') {
+      result.sort((a, b) => priceOf(a).compareTo(priceOf(b)));
+    } else if (selectedSort == 'Highest Price') {
+      result.sort((a, b) => priceOf(b).compareTo(priceOf(a)));
+    } else {
+      // default: newest by productId
+      result.sort((a, b) => (b.productId ?? 0).compareTo(a.productId ?? 0));
+    }
+
+    return result;
+  }
+
+  int get totalPages {
+    final total = filteredProducts.length;
+    if (total == 0) return 1;
+    return (total / pageSize).ceil();
+  }
+
+  List<Product> get pagedProducts {
+    final list = filteredProducts;
+    final start = (_currentPage - 1) * pageSize;
+    if (start >= list.length) return [];
+    final end = (start + pageSize).clamp(0, list.length);
+    return list.sublist(start, end);
   }
 
   bool isMobile(BuildContext context) {
@@ -454,14 +524,34 @@ class _SellerStorePageState extends State<SellerStorePage> {
                             onRetry: loading ? null : loadProducts,
                             isRetryEnabled: !loading,
                           )
-                        else if (products.isEmpty)
-                          buildEmptyProducts()
-                        else ...[
-                          buildProductGrid(mobile),
-
+                        else if (products.isEmpty) ...[
+                          // No products from API — message only for main grid
+                          CommonEmpty(onRetry: loadProducts),
                           const SizedBox(height: 12),
-
-                          // Other sections remain visible after loading
+                          // Keep Newest Arrivals + Sales
+                          buildProductSections(mobile),
+                        ] else if (filteredProducts.isEmpty) ...[
+                          // Filters/search matched nothing — message only for main grid
+                          CommonEmpty(
+                            message: 'Try another search or filter.',
+                            onRetry: () {
+                              setState(() {
+                                _searchController.clear();
+                                selectedCategory = 'By Category';
+                                selectedCategoryId = null;
+                                selectedPrice = 'Price';
+                                selectedSort = 'Primmys by Price';
+                                _currentPage = 1;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          // Keep Newest Arrivals + Sales
+                          buildProductSections(mobile),
+                        ] else ...[
+                          buildProductGrid(mobile),
+                          _buildPagination(),
+                          const SizedBox(height: 12),
                           buildProductSections(mobile),
                         ],
 
@@ -490,121 +580,184 @@ class _SellerStorePageState extends State<SellerStorePage> {
   // ============================================================
 
   Widget buildSellerHeader(bool mobile) {
+    final name = (sellerInfo?.name.isNotEmpty == true)
+        ? sellerInfo!.name
+        : (widget.sellerName ?? "Seller Store");
+
+    final location =
+        (sellerInfo?.location != null &&
+            sellerInfo!.location!.trim().isNotEmpty)
+        ? sellerInfo!.location!
+        : '—';
+
+    final followers = sellerInfo?.followerCount ?? 0;
+    final productCount = sellerInfo?.productCount ?? products.length;
+    final avatarUrl = sellerInfo?.avatarUrl;
+
+    if (sellerInfoLoading) {
+      return const SizedBox(
+        height: 100,
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      );
+    }
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
-        horizontal: mobile ? 3 : 15,
-        vertical: mobile ? 3 : 10,
+        horizontal: mobile ? 8 : 16,
+        vertical: mobile ? 10 : 14,
       ),
-      color: Colors.white,
-      child: Row(
-        children: [
-          // ======================================================
-          // SELLER IMAGE
-          // ======================================================
-          Container(
-            width: mobile ? 48 : 65,
-            height: mobile ? 48 : 65,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.grey.shade300, width: 1),
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                'assets/seller.jpg',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey.shade200,
-                    child: Icon(
-                      Icons.person,
-                      size: mobile ? 30 : 40,
-                      color: Colors.grey.shade500,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-
-          SizedBox(width: mobile ? 8 : 12),
-
-          // ======================================================
-          // SELLER NAME + FOLLOW
-          // ======================================================
-          Expanded(
-            child: Column(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: mobile
+          ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  widget.sellerName ?? "Sarah J.'s Full Store",
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: mobile ? 21 : 28,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xff28733D),
+                _headerLeft(name, avatarUrl, mobile),
+                const SizedBox(height: 12),
+                _headerStats(location, followers, productCount, mobile),
+              ],
+            )
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(flex: 4, child: _headerLeft(name, avatarUrl, mobile)),
+                Expanded(
+                  flex: 3,
+                  child: _headerStats(
+                    location,
+                    followers,
+                    productCount,
+                    mobile,
                   ),
                 ),
-
-                const SizedBox(height: 4),
-
-                // FOLLOW BUTTON
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      isFollowing = !isFollowing;
-                    });
-                  },
-                  child: Container(
-                    height: mobile ? 20 : 27,
-                    padding: EdgeInsets.symmetric(horizontal: mobile ? 8 : 12),
-                    decoration: BoxDecoration(
-                      color: isFollowing
-                          ? Colors.grey.shade600
-                          : const Color(0xff28733D),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isFollowing ? Icons.check : Icons.person_add_alt_1,
-                          size: mobile ? 11 : 14,
-                          color: Colors.white,
-                        ),
-
-                        const SizedBox(width: 3),
-
-                        Text(
-                          isFollowing ? 'Following' : 'Follow Seller',
-                          style: TextStyle(
-                            fontSize: mobile ? 9 : 11,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
+                // Optional right image — remove if you have no asset
+                Expanded(
+                  flex: 2,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Image.asset(
+                      'assets/seller_banner.png',
+                      height: 90,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                     ),
                   ),
                 ),
               ],
             ),
+    );
+  }
+
+  Widget _headerLeft(String name, String? avatarUrl, bool mobile) {
+    final hasAvatar =
+        avatarUrl != null &&
+        avatarUrl.trim().isNotEmpty &&
+        (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://'));
+
+    return Row(
+      children: [
+        ClipOval(
+          child: SizedBox(
+            width: mobile ? 52 : 64,
+            height: mobile ? 52 : 64,
+            child: hasAvatar
+                ? Image.network(
+                    avatarUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _avatarPlaceholder(mobile),
+                  )
+                : _avatarPlaceholder(mobile),
           ),
-        ],
+        ),
+        SizedBox(width: mobile ? 10 : 14),
+        Expanded(
+          child: Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: mobile ? 18 : 22,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xff28733D),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _avatarPlaceholder(bool mobile) {
+    return Container(
+      color: Colors.grey.shade200,
+      child: Icon(
+        Icons.person,
+        size: mobile ? 28 : 36,
+        color: Colors.grey.shade500,
       ),
     );
   }
 
-  // ============================================================
+  Widget _headerStats(
+    String location,
+    int followers,
+    int productCount,
+    bool mobile,
+  ) {
+    final style = TextStyle(fontSize: mobile ? 11 : 13, color: Colors.black87);
+
+    Widget row(IconData icon, String text) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Row(
+          children: [
+            Icon(icon, size: mobile ? 14 : 16, color: Colors.grey.shade600),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: style,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        row(Icons.location_on_outlined, location),
+        row(
+          Icons.people_outline,
+          '${NumberFormat('#,###').format(followers)} Followers',
+        ),
+        row(
+          Icons.inventory_2_outlined,
+          '${NumberFormat('#,###').format(productCount)} Products',
+        ),
+        row(Icons.schedule, 'Usually responds within 2 hours'),
+      ],
+    );
+  }
+
   // SEARCH
-  // ============================================================
 
   Widget buildSearchBox(bool mobile) {
     return SizedBox(
       height: mobile ? 28 : 38,
       child: TextField(
         controller: _searchController,
+        onChanged: (_) {
+          setState(() {
+            _currentPage = 1;
+          });
+        },
         style: TextStyle(fontSize: mobile ? 10 : 13),
         decoration: InputDecoration(
           hintText: "Search Items",
@@ -710,16 +863,15 @@ class _SellerStorePageState extends State<SellerStorePage> {
 
                     setState(() {
                       selectedCategory = value;
-
                       if (value == 'By Category') {
                         selectedCategoryId = null;
                       } else {
-                        final selectedCategory = categories.firstWhere(
-                          (category) => category.categoryName == value,
+                        final match = categories.firstWhere(
+                          (c) => c.categoryName == value,
                         );
-
-                        selectedCategoryId = selectedCategory.categoryId;
+                        selectedCategoryId = match.categoryId;
                       }
+                      _currentPage = 1;
                     });
                   },
           ),
@@ -750,7 +902,8 @@ class _SellerStorePageState extends State<SellerStorePage> {
               ['Price', 'Under 50,000', '50,000 - 100,000', 'Over 100,000'],
               (value) {
                 setState(() {
-                  selectedPrice = value;
+                  selectedPrice = value; // or selectedSort
+                  _currentPage = 1;
                 });
               },
               mobile,
@@ -766,7 +919,8 @@ class _SellerStorePageState extends State<SellerStorePage> {
               ['Primmys by Price', 'Lowest Price', 'Highest Price'],
               (value) {
                 setState(() {
-                  selectedSort = value;
+                  selectedSort = value; // or selectedSort
+                  _currentPage = 1;
                 });
               },
               mobile,
@@ -774,19 +928,19 @@ class _SellerStorePageState extends State<SellerStorePage> {
 
             SizedBox(width: mobile ? 8 : 12),
 
-            // ====================================================
-            // SHIPPING
-            // ====================================================
-            buildFilter(
-              selectedShipping,
-              ['Shipping & Payment', 'Shipping', 'Payment'],
-              (value) {
-                setState(() {
-                  selectedShipping = value;
-                });
-              },
-              mobile,
-            ),
+            // // ====================================================
+            // // SHIPPING
+            // // ====================================================
+            // buildFilter(
+            //   selectedShipping,
+            //   ['Shipping & Payment', 'Shipping', 'Payment'],
+            //   (value) {
+            //     setState(() {
+            //       selectedShipping = value;
+            //     });
+            //   },
+            //   mobile,
+            // ),
           ],
         ),
       ),
@@ -843,54 +997,83 @@ class _SellerStorePageState extends State<SellerStorePage> {
     );
   }
 
-  // ============================================================
-  // PRODUCT GRID
-  // ============================================================
+  Future<void> loadSellerInfo() async {
+    setState(() => sellerInfoLoading = true);
+
+    try {
+      final authService = context.read<AuthService>();
+
+      final info = await _service.fetchSellerInfo(authService: authService);
+
+      if (!mounted) return;
+
+      setState(() {
+        sellerInfo = info;
+        isFollowing = info.isFollowing;
+        sellerInfoLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Seller info error: $e');
+      if (!mounted) return;
+      setState(() {
+        sellerInfo = null;
+        sellerInfoLoading = false;
+      });
+    }
+  }
+
+  Widget _buildProductCount() {
+    final total = filteredProducts.length;
+    final start = total == 0 ? 0 : ((_currentPage - 1) * pageSize) + 1;
+    final end = (start + pageSize - 1).clamp(0, total);
+
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Text(
+        total == 0 ? 'No results' : 'Showing $start–$end of $total results',
+        style: const TextStyle(fontSize: 13, color: Colors.black54),
+      ),
+    );
+  } // PRODUCT GRID
 
   Widget buildProductGrid(bool mobile) {
+    final list = pagedProducts;
     return LayoutBuilder(
       builder: (context, constraints) {
         int columns;
 
         if (constraints.maxWidth < 500) {
-          // PHONE
-          columns = 3;
+          columns = 2; // phone
         } else if (constraints.maxWidth < 800) {
-          // TABLET
-          columns = 4;
-        } else if (constraints.maxWidth < 1100) {
-          // SMALL LAPTOP
-          columns = 5;
+          columns = 3; // tablet
         } else {
-          // LARGE LAPTOP
-          columns = 6;
+          columns = 5; // laptop / desktop — always 5 per row
         }
 
         const spacing = 5.0;
+        final list = pagedProducts;
 
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: products.length,
+          itemCount: list.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,
             crossAxisSpacing: spacing,
             mainAxisSpacing: spacing,
-
-            // Reduce empty space below buttons
-            childAspectRatio: mobile ? 1.05 : 0.90,
+            childAspectRatio: mobile
+                ? 0.72
+                : 1.10, // tweak if cards feel too tall/short
           ),
           itemBuilder: (context, index) {
-            return buildProductCard(products[index], mobile);
+            return buildProductCard(list[index], mobile);
           },
         );
       },
     );
   }
 
-  // ============================================================
   // PRODUCT CARD
-  // ============================================================
 
   Widget buildProductCard(Product product, bool mobile) {
     return Container(
@@ -1156,16 +1339,12 @@ class _SellerStorePageState extends State<SellerStorePage> {
     );
   }
 
-  // ============================================================
   // PRODUCT IMAGE WIDGET
-  // ============================================================
 
   Widget _buildProductImage(String? imagePath, bool mobile) {
     final url = getProductImageUrl(imagePath);
 
-    // ----------------------------------------------------------
     // NO VALID URL
-    // ----------------------------------------------------------
 
     if (url == null) {
       return Container(
@@ -1220,7 +1399,156 @@ class _SellerStorePageState extends State<SellerStorePage> {
     );
   }
 
-  // NEWEST ARRIVALS + SALES
+  Widget _buildPagination() {
+    final total = totalPages;
+    if (filteredProducts.isEmpty || total <= 1) {
+      return const SizedBox.shrink();
+    }
+
+    final pages = _visiblePageNumbers(current: _currentPage, total: total);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // <
+          _pageArrow(
+            icon: Icons.chevron_left,
+            enabled: _currentPage > 1,
+            onTap: () => setState(() => _currentPage--),
+          ),
+          const SizedBox(width: 4),
+
+          // 1 2 3 ... 90
+          ...pages.map((page) {
+            if (page == null) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  '...',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black54,
+                  ),
+                ),
+              );
+            }
+
+            final isSelected = page == _currentPage;
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(6),
+                onTap: () {
+                  if (page != _currentPage) {
+                    setState(() => _currentPage = page);
+                  }
+                },
+                child: Container(
+                  width: 40,
+                  height: 32,
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFFF28C00)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFFF28C00)
+                          : Colors.grey.shade300,
+                    ),
+                  ),
+                  child: Text(
+                    '$page',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+
+          const SizedBox(width: 4),
+
+          // >
+          _pageArrow(
+            icon: Icons.chevron_right,
+            enabled: _currentPage < total,
+            onTap: () => setState(() => _currentPage++),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _pageArrow({
+    required IconData icon,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(6),
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 32,
+        height: 32,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: enabled ? Colors.grey.shade400 : Colors.grey.shade200,
+          ),
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color: enabled ? Colors.black87 : Colors.grey.shade400,
+        ),
+      ),
+    );
+  }
+
+  /// Builds [1, 2, 3, null, 90] where null = "..."
+  List<int?> _visiblePageNumbers({required int current, required int total}) {
+    if (total <= 7) {
+      return List<int?>.generate(total, (i) => i + 1);
+    }
+
+    final Set<int> set = {1, total, current};
+
+    for (int i = current - 1; i <= current + 1; i++) {
+      if (i >= 1 && i <= total) set.add(i);
+    }
+
+    // Near start: show 1 2 3 4 ... last
+    if (current <= 3) {
+      set.addAll([1, 2, 3, 4]);
+    }
+    // Near end: show 1 ... last-3 last-2 last-1 last
+    if (current >= total - 2) {
+      set.addAll([total - 3, total - 2, total - 1, total]);
+    }
+
+    final sorted = set.where((p) => p >= 1 && p <= total).toList()..sort();
+
+    final List<int?> result = [];
+    int? prev;
+    for (final p in sorted) {
+      if (prev != null && p - prev > 1) {
+        result.add(null); // ellipsis
+      }
+      result.add(p);
+      prev = p;
+    }
+    return result;
+  }
 
   Widget buildProductSections(bool mobile) {
     final sales = products.length > 4
