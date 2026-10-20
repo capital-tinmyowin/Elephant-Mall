@@ -8,6 +8,8 @@ import '../models/product.dart';
 import '../services/Category_service.dart';
 import 'common/footer.dart';
 import 'common/header.dart';
+import 'myListing.dart';
+import 'sellerListing.dart';
 
 class ProductDetailPage extends StatefulWidget {
   final int productId;
@@ -54,6 +56,36 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
       if (mounted) setState(() {});
     });
+  }
+
+  void openSellerFromProduct(BuildContext context, Product product) {
+    final sellerId = product.userId;
+    if (sellerId == null) return;
+
+    final auth = Provider.of<AuthService>(context, listen: false);
+    final currentUserId = auth.currentUser?.id;
+
+    final sellerName = 'Seller #$sellerId';
+
+    if (currentUserId != null && currentUserId == sellerId) {
+      // My listing
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              SellerStorePage(sellerId: sellerId, sellerName: sellerName),
+        ),
+      );
+    } else {
+      // Other seller
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              SellerListingPage(sellerId: sellerId, sellerName: sellerName),
+        ),
+      );
+    }
   }
 
   @override
@@ -781,18 +813,15 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           InkWell(
-                            onTap: () {
-                              Navigator.pushNamed(context, '/seller');
-                            },
+                            onTap: () =>
+                                openSellerFromProduct(context, product),
                             child: Text(
                               sellerName,
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Colors
-                                    .blue, // Optional: makes it look clickable
-                                decoration:
-                                    TextDecoration.underline, // Optional
+                                color: Colors.blue,
+                                decoration: TextDecoration.underline,
                               ),
                             ),
                           ),
@@ -875,17 +904,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       InkWell(
-                        onTap: () {
-                          Navigator.pushNamed(context, '/seller');
-                        },
+                        onTap: () => openSellerFromProduct(context, product),
                         child: Text(
                           sellerName,
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors
-                                .blue, // Optional: makes it look clickable
-                            decoration: TextDecoration.underline, // Optional
+                            color: Colors.blue,
+                            decoration: TextDecoration.underline,
                           ),
                         ),
                       ),

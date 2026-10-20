@@ -196,6 +196,101 @@ class NewInService {
     }
   }
 
+  static const String _saveRecentViewBaseUrl =
+      'https://www.capital-sys.net/CKMMallAPI/api/Trending/SaveRecentViewData';
+
+  /// POST /api/Trending/SaveRecentViewData/{productId}
+  /// Requires authentication (cookie).
+  Future<bool> saveRecentView({
+    required AuthService authService,
+    required int productId,
+  }) async {
+    final url = Uri.parse('$_saveRecentViewBaseUrl/$productId');
+
+    debugPrint('========== SAVE RECENT VIEW API ==========');
+    debugPrint('URL: $url');
+    debugPrint('ProductId: $productId');
+
+    try {
+      http.Response response;
+
+      // WEB
+      if (kIsWeb) {
+        final client = BrowserClient();
+        client.withCredentials = true; // send login cookie
+        try {
+          response = await client.post(
+            url,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+          );
+        } finally {
+          client.close();
+        }
+      }
+      // ANDROID / iOS
+      else {
+        final headers = <String, String>{
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        };
+        if (authService.authCookie != null &&
+            authService.authCookie!.isNotEmpty) {
+          headers['Cookie'] = authService.authCookie!;
+          debugPrint('SAVE RECENT VIEW AUTH: Cookie attached');
+        } else {
+          debugPrint('SAVE RECENT VIEW AUTH: No authentication cookie found');
+        }
+
+        final client = http.Client();
+        try {
+          response = await client.post(url, headers: headers);
+        } finally {
+          client.close();
+        }
+      }
+
+      // Debug after API call
+      debugPrint('Status Code: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+      debugPrint('Headers: ${response.headers}');
+
+      if (response.statusCode == 401) {
+        debugPrint('SAVE RECENT VIEW: 401 Unauthorized');
+        throw Exception('Please login or sign up first.');
+      }
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        try {
+          final decoded = jsonDecode(response.body);
+          debugPrint('Decoded response: $decoded');
+          if (decoded is Map && decoded['success'] == true) {
+            debugPrint(
+              'SAVE RECENT VIEW: success = true, message = ${decoded['message']}',
+            );
+            return true;
+          }
+        } catch (e) {
+          debugPrint('SAVE RECENT VIEW: JSON decode error → $e');
+        }
+        return true;
+      }
+
+      debugPrint('SAVE RECENT VIEW: Unexpected status ${response.statusCode}');
+      throw Exception(
+        'Failed to save recent view: ${response.statusCode} - ${response.body}',
+      );
+    } catch (e, stackTrace) {
+      print('========== SAVE RECENT VIEW API ERROR ==========');
+      print(e);
+      print(stackTrace);
+      print('================================================');
+      rethrow;
+    }
+  }
+
   static const String _categoryUrl =
       'https://www.capital-sys.net/CKMMallAPI/api/category/all';
 

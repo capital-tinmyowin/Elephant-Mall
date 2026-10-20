@@ -5,8 +5,9 @@ import 'package:image_picker/image_picker.dart';
 import 'common/header.dart';
 import 'common/footer.dart';
 import '../services/auth_service.dart';
-import 'sellerpage.dart';
+import 'myListing.dart';
 import 'package:provider/provider.dart';
+import 'sellerListing.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
