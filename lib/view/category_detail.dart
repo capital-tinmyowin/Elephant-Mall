@@ -1,6 +1,8 @@
+import 'package:elephant_mall/view/common/loading_widget.dart';
 import 'package:elephant_mall/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
@@ -80,6 +82,21 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
     });
   }
 
+  @override
+  void didUpdateWidget(covariant CategoryDetailPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If the URL changed to a new category ID, fetch the new products
+    if (oldWidget.categoryId != widget.categoryId) {
+      setState(() {
+        _currentCategoryId = widget.categoryId;
+        _currentCategoryName = widget.categoryName;
+        _currentPage = 1;
+        _selectedSort = 'Newest First';
+      });
+      _apiService.loadProductsByCategory(_currentCategoryId);
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
@@ -337,15 +354,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   Future<void> _switchCategory(int newId, String newName) async {
     if (newId == _currentCategoryId) return; // already on this category
 
-    setState(() {
-      _currentCategoryId = newId;
-      _currentCategoryName = newName;
-      _currentPage = 1; // reset pagination
-      _selectedSort = 'Newest First'; // optional: reset sort
-    });
-
-    await _apiService.loadProductsByCategory(newId);
-    // No setState needed after — ApiService.notifyListeners triggers rebuild
+    context.go('/category/$newId?name=${Uri.encodeComponent(newName)}');
   }
 
   String _getCategoryDescription(String category) {
@@ -391,74 +400,50 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
     return Column(
       children: [
         //  Scrollable category chips
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            children: [
-              // Category chips list
-              ...[
-                {'id': 1, 'name': 'T-Shirts'},
-                {'id': 2, 'name': 'Blouses'},
-                {'id': 3, 'name': 'Bags'},
-                {'id': 4, 'name': 'Hats'},
-                {'id': 5, 'name': 'Shoes'},
-                {'id': 6, 'name': 'Jeans'},
-                {'id': 7, 'name': 'Accessories'},
-                {'id': 8, 'name': 'Electronics'},
-                {'id': 9, 'name': 'Headphones'},
-                {'id': 10, 'name': 'Power Banks'},
-                {'id': 11, 'name': 'Clearance'},
-                {'id': 12, 'name': 'Home Decor'},
-                {'id': 13, 'name': 'Appliances'},
-              ].map((cat) {
-                final isSelected = widget.categoryId == cat['id'];
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    // avatarBorder: CircleBorder(eccentricity: 0.9),
-                    label: Text(cat['name'] as String),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      if (selected) {
-                        _switchCategory(
-                          cat['id'] as int,
-                          cat['name'] as String,
-                        );
-                      }
-                    },
-                    // onSelected: (selected) {
-                    //   if (selected) {
-                    //     Navigator.pushReplacement(
-                    //       context,
-                    //       MaterialPageRoute(
-                    //         builder: (context) => CategoryDetailPage(
-                    //           categoryId: cat['id'] as int,
-                    //           categoryName: cat['name'] as String,
-                    //         ),
-                    //       ),
-                    //     );
-                    //   }
-                    // },
-                    backgroundColor: Colors.grey[100],
-                    selectedColor: const Color(0xFF2B6E3B).withOpacity(0.2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+        Consumer<ApiService>(
+          builder: (context, api, _) {
+            final cats = api.categories;
+            if (cats.isEmpty) {
+              return const SizedBox(height: 8);
+            }
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: cats.map((cat) {
+                  final isSelected = _currentCategoryId == cat.categoryId;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(cat.categoryName),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected) {
+                          // 🔥 URL change + data reload
+                          _switchCategory(cat.categoryId, cat.categoryName);
+                        }
+                      },
+                      backgroundColor: Colors.grey[100],
+                      selectedColor:
+                          const Color(0xFF2B6E3B).withOpacity(0.2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      labelStyle: TextStyle(
+                        fontSize: 13,
+                        color: isSelected
+                            ? const Color(0xFF2B6E3B)
+                            : Colors.black87,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
                     ),
-                    labelStyle: TextStyle(
-                      fontSize: 13,
-                      color: isSelected
-                          ? const Color(0xFF2B6E3B)
-                          : Colors.black87,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ],
-          ),
+                  );
+                }).toList(),
+              ),
+            );
+          },
         ),
         // const SizedBox(height: 8),
         const SizedBox(height: 12),
@@ -500,19 +485,6 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          // _buildCategoryItem(1, 'T-Shirts', 12),
-          // _buildCategoryItem(2, 'Blouses', 4),
-          // _buildCategoryItem(3, 'Bags', 6),
-          // _buildCategoryItem(4, 'Hats', 6),
-          // _buildCategoryItem(5, 'Shoes', 8),
-          // _buildCategoryItem(6, 'Jeans', 12),
-          // _buildCategoryItem(7, 'Accessories', 15),
-          // _buildCategoryItem(8, 'Electronics', 4),
-          // _buildCategoryItem(9, 'Headphones', 5),
-          // _buildCategoryItem(10, 'Power Banks', 4),
-          // _buildCategoryItem(11, 'Clearance', 2),
-          // _buildCategoryItem(12, 'Home Decor', 5),
-          // _buildCategoryItem(13, 'Appliances', 5),
           Consumer<ApiService>(
             builder: (context, api, _) {
               final cats = api.categories; // from _sortedCategories
@@ -820,45 +792,6 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
         return Colors.grey;
     }
   }
-
-  // Widget _buildCategoryItem(int categoryId, String name, int count) {
-  //   final isSelected = widget.categoryName == name;
-  //   return GestureDetector(
-  //     onTap: () {
-  //       if (!isSelected) {
-  //         Navigator.pushReplacement(
-  //           context,
-  //           MaterialPageRoute(
-  //             builder: (context) => CategoryDetailPage(
-  //               categoryId: categoryId,
-  //               categoryName: name,
-  //             ),
-  //           ),
-  //         );
-  //       }
-  //     },
-  //     child: Padding(
-  //       padding: const EdgeInsets.symmetric(vertical: 4),
-  //       child: Row(
-  //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //         children: [
-  //           Text(
-  //             name,
-  //             style: TextStyle(
-  //               fontSize: 14,
-  //               color: isSelected ? const Color(0xFF2B6E3B) : Colors.black87,
-  //               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-  //             ),
-  //           ),
-  //           Text(
-  //             count.toString(),
-  //             style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-  //           ),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
   Widget _buildCategoryItem(int categoryId, String name, int count) {
     final isSelected = _currentCategoryName == name;
 
@@ -1163,17 +1096,23 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
     return Consumer<ApiService>(
       builder: (context, productController, child) {
         if (productController.isLoading) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(32.0),
-              child: CircularProgressIndicator(),
-            ),
+          return const CommonLoading(
+            size: 42,
+            message: 'Loading products...',
+            height: 300,
           );
         }
 
-        // final allProducts = productController.loadProductsByCategory(
-        //   productController.products,
-        // );
+        //  Replace the empty state with CommonError when the API errored
+        if (productController.errorMessage != null) {
+          return CommonError(
+            height: 300,
+            title: 'Failed to load products',
+            message: productController.errorMessage!,
+            onRetry: () =>
+                _apiService.loadProductsByCategory(_currentCategoryId),
+          );
+        }
 
         final allProducts = _sortedProducts(
           productController.getProductsWithColorVariations(
@@ -1193,7 +1132,10 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
         // Calculate pagination
         final int totalProducts = allProducts.length;
         final int totalPages = (totalProducts / _itemsPerPage).ceil();
-        final int safePage = _currentPage.clamp(1, totalPages == 0 ? 1 : totalPages);
+        final int safePage = _currentPage.clamp(
+          1,
+          totalPages == 0 ? 1 : totalPages,
+        );
         // Ensure current page is valid
         if (_currentPage > totalPages) {
           _currentPage = totalPages;
@@ -1250,13 +1192,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   Widget _buildListProductCard(Product product, bool isMobile) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                ProductDetailPage(productId: product.productId),
-          ),
-        );
+        context.go('/product/${product.productId}');
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -1373,14 +1309,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                       child: ElevatedButton(
                         onPressed: () {
                           print("Clicked Detail");
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ProductDetailPage(
-                                productId: product.productId,
-                              ),
-                            ),
-                          );
+                          context.go('/product/${product.productId}');
                           print(product.productId);
                         },
                         style: ElevatedButton.styleFrom(
@@ -1421,13 +1350,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   Widget _buildProductCard(Product product, bool isMobile) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                ProductDetailPage(productId: product.productId),
-          ),
-        );
+        context.go('/product/${product.productId}');
       },
       child: Container(
         decoration: BoxDecoration(
@@ -1556,13 +1479,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                     height: isMobile ? 30 : 34,
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                ProductDetailPage(productId: product.productId),
-                          ),
-                        );
+                        context.go('/product/${product.productId}');
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey[100],

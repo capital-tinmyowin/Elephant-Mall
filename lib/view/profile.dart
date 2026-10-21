@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'common/header.dart';
 import 'common/footer.dart';
@@ -627,16 +628,18 @@ class _ProfilePageState extends State<ProfilePage> {
 
           print("========================================");
 
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => SellerStorePage(
-                sellerId: currentUserId,
-                sellerName: currentUser.username,
-              ),
-            ),
-          );
-
+          // Navigator.push(
+          //   context,
+          //   MaterialPageRoute(
+          //     builder: (context) => SellerStorePage(
+          //       sellerId: currentUserId,
+          //       sellerName: currentUser.username,
+          //     ),
+          //   ),
+          // );
+          context.go(
+                  '/seller-store/${currentUser.id}?name=${Uri.encodeComponent(currentUser.username)}',
+                );
           return;
         }
       },

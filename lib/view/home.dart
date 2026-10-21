@@ -1,10 +1,14 @@
 import 'dart:async';
 import 'package:elephant_mall/models/product.dart';
+import 'package:elephant_mall/services/auth_service.dart';
 import 'package:elephant_mall/view/category_detail.dart';
+import 'package:elephant_mall/view/common/loading_widget.dart';
 import 'package:elephant_mall/view/new_in.dart';
 import 'package:elephant_mall/view/sale.dart';
 import 'package:elephant_mall/widgets/app_image.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../models/Category.dart';
 import '../models/banner.dart';
@@ -32,7 +36,8 @@ class _HomePageState extends State<HomePage> {
   List<Product> products = [];
   List<Promo> promos = [];
   bool loading = true;
-  final Set<int> _favoriteProductIds = {};
+  String? errorMessage;
+  // final Set<int> _favoriteProductIds = {};
   int _currentPage = 1;
   final int _itemsPerPage = 14;
   int get totalPages {
@@ -45,9 +50,24 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     loadHome();
+    final auth = Provider.of<AuthService>(context, listen: false);
+    auth.addListener(_onAuthChanged);
+  }
+
+  void _onAuthChanged() {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    // When user transitions to logged-in and we don't have favourites yet
+    if (auth.isLoggedIn && auth.favoriteProductIds.isEmpty) {
+      auth.getUserFavorites();
+    }
   }
 
   Future<void> loadHome() async {
+    setState(() {
+      loading = true;
+      errorMessage = null;
+    });
+
     try {
       final result = await Future.wait([
         _service.getBanners(),
@@ -63,11 +83,13 @@ class _HomePageState extends State<HomePage> {
         promos = result[3] as List<Promo>;
         _currentPage = 1;
         loading = false;
+        errorMessage = null;
       });
     } catch (e) {
-      debugPrint(e.toString());
+      if (!mounted) return;
       setState(() {
         loading = false;
+        errorMessage = e.toString();
       });
     }
   }
@@ -103,6 +125,8 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _categoryController.dispose();
+    final auth = Provider.of<AuthService>(context, listen: false);
+    auth.removeListener(_onAuthChanged);
     super.dispose();
   }
 
@@ -135,10 +159,32 @@ class _HomePageState extends State<HomePage> {
                         if (isMobile) ...[buildPromotions(), sectionGap],
                         buildTitle("TRENDING CATEGORIES"),
                         sectionGap,
-                        buildCategories(),
+                        if (loading)
+                          const CommonLoading(size: 32, height: 120)
+                        else if (errorMessage != null)
+                          CommonError(
+                            height: 120,
+                            title: 'Failed to load categories',
+                            onRetry: loadHome,
+                          )
+                        else
+                          buildCategories(),
                         buildTitle("Trending Now in YANGON"),
                         sectionGap,
-                        buildProducts(),
+                        if (loading)
+                          const CommonLoading(
+                            size: 42,
+                            message: 'Loading products...',
+                            height: 240,
+                          )
+                        else if (errorMessage != null)
+                          CommonError(
+                            height: 240,
+                            onRetry: loading ? null : loadHome,
+                            isRetryEnabled: !loading,
+                          )
+                        else
+                          buildProducts(),
                       ],
                     ),
                   ),
@@ -248,7 +294,7 @@ class _HomePageState extends State<HomePage> {
     // Hardcode which promo goes to which page. Update these indices if you add more promos.
     // promo[0] = "Summer Sale 50% OFF"   -> /sale
     // promo[1] = "New Fashion Collection" -> /new-in
-    final destinations = <Widget>[const NewInPage(), const SalePage()];
+    final destinations = <String>['/new-in', '/sale']; 
 
     return Row(
       spacing: 10,
@@ -260,18 +306,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget promo(Promo item, Widget destination) {
+  Widget promo(Promo item, String route) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                destination,
-            transitionDuration: Duration.zero,
-            reverseTransitionDuration: Duration.zero,
-          ),
-        );
+        context.go(route);
       },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -405,15 +443,7 @@ class _HomePageState extends State<HomePage> {
                             //   );
                             // },
                             onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => CategoryDetailPage(
-                                    categoryId: item.categoryId,
-                                    categoryName: item.categoryName,
-                                  ),
-                                ),
-                              );
+                              context.go('/category/${item.categoryId}?name=${Uri.encodeComponent(item.categoryName)}');
                             },
                             child: AppImage(
                               imageUrl: item.photoPath,
@@ -428,15 +458,7 @@ class _HomePageState extends State<HomePage> {
                         const SizedBox(height: 5),
                         GestureDetector(
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => CategoryDetailPage(
-                                  categoryId: item.categoryId,
-                                  categoryName: item.categoryName,
-                                ),
-                              ),
-                            );
+                            context.go('/category/${item.categoryId}?name=${Uri.encodeComponent(item.categoryName)}');
                           },
                           child: Text(
                             item.categoryName,
@@ -556,7 +578,7 @@ class _HomePageState extends State<HomePage> {
           ),
           itemBuilder: (context, index) {
             final p = pageProducts[index];
-            final isFav = _favoriteProductIds.contains(p.productId);
+            // final isFav = _favoriteProductIds.contains(p.productId);
 
             return Card(
               elevation: 2,
@@ -666,21 +688,7 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               ),
                               onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  PageRouteBuilder(
-                                    pageBuilder:
-                                        (
-                                          context,
-                                          animation,
-                                          secondaryAnimation,
-                                        ) => ProductDetailPage(
-                                          productId: p.productId,
-                                        ),
-                                    transitionDuration: Duration.zero,
-                                    reverseTransitionDuration: Duration.zero,
-                                  ),
-                                );
+                                context.go('/product/${p.productId}');
                               },
                               child: const Text(
                                 "View Details",
@@ -696,31 +704,86 @@ class _HomePageState extends State<HomePage> {
                         const SizedBox(width: 4),
 
                         // FAVORITE BUTTON
-                        SizedBox(
-                          width: 32,
-                          height: 30,
-                          child: IconButton(
-                            padding: EdgeInsets.zero,
-                            splashRadius: 18,
-                            icon: Icon(
-                              _favoriteProductIds.contains(p.productId)
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                              size: 20,
-                              color: _favoriteProductIds.contains(p.productId)
-                                  ? Colors.red
-                                  : Colors.grey.shade700,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                if (_favoriteProductIds.contains(p.productId)) {
-                                  _favoriteProductIds.remove(p.productId);
-                                } else {
-                                  _favoriteProductIds.add(p.productId);
-                                }
-                              });
-                            },
-                          ),
+                        Consumer<AuthService>(
+                          builder: (context, authService, child) {
+                            final isFav = authService.isFavorite(p.productId);
+                            final isLoggedIn = authService.isLoggedIn;
+
+                            return SizedBox(
+                              width: 32,
+                              height: 30,
+                              child: IconButton(
+                                padding: EdgeInsets.zero,
+                                splashRadius: 18,
+                                icon: Icon(
+                                  isFav
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  size: 20,
+                                  color: isFav
+                                      ? Colors.red
+                                      : Colors.grey.shade700,
+                                ),
+                                onPressed: () async {
+                                  // 1) Not logged in → prompt to log in
+                                  if (!isLoggedIn) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Please sign in to save favourites',
+                                        ),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  // 2) Toggle favourite
+                                  if (isFav) {
+                                    final ok = await authService.removeFavorite(
+                                      p.productId,
+                                    );
+                                    if (!context.mounted) return;
+                                    if (ok) {
+                                      await authService
+                                          .getUserFavorites(); // refetch to stay in sync
+                                    }
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          ok
+                                              ? 'Removed from favourites'
+                                              : authService.errorMessage ??
+                                                    'Could not remove',
+                                        ),
+                                        duration: const Duration(seconds: 1),
+                                      ),
+                                    );
+                                  } else {
+                                    final ok = await authService.addFavorite(
+                                      p.productId,
+                                    );
+                                    if (!context.mounted) return;
+                                    if (ok) {
+                                      await authService
+                                          .getUserFavorites(); // refetch to stay in sync
+                                    }
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          ok
+                                              ? 'Added to favourites ❤️'
+                                              : authService.errorMessage ??
+                                                    'Could not add',
+                                        ),
+                                        duration: const Duration(seconds: 2),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),

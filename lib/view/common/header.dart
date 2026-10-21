@@ -1,4 +1,5 @@
 import 'package:elephant_mall/services/auth_service.dart';
+import 'package:go_router/go_router.dart';
 import '../profile.dart';
 import 'package:elephant_mall/view/category_page.dart';
 import 'package:elephant_mall/view/favourite_page.dart';
@@ -137,17 +138,7 @@ class _CommonHeaderState extends State<CommonHeader> {
                         ),
                       ),
                       onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          PageRouteBuilder(
-                            settings: const RouteSettings(name: "/sell"),
-                            pageBuilder:
-                                (context, animation, secondaryAnimation) =>
-                                    const SellPage(),
-                            transitionDuration: Duration.zero,
-                            reverseTransitionDuration: Duration.zero,
-                          ),
-                        );
+                        context.go('/sell');
                       },
                       child: const Text("SELL ITEMS"),
                     ),
@@ -161,16 +152,7 @@ class _CommonHeaderState extends State<CommonHeader> {
                           _showLoginRequiredDialog(context);
                           return;
                         }
-                        Navigator.push(
-                          context,
-                          PageRouteBuilder(
-                            pageBuilder:
-                                (context, animation, secondaryAnimation) =>
-                                    MyFavouritePage(),
-                            transitionDuration: Duration.zero,
-                            reverseTransitionDuration: Duration.zero,
-                          ),
-                        );
+                        context.go('/favourites');
                       },
                     ),
 
@@ -179,16 +161,7 @@ class _CommonHeaderState extends State<CommonHeader> {
                     if (!isLoggedIn)
                       GestureDetector(
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            PageRouteBuilder(
-                              pageBuilder:
-                                  (context, animation, secondaryAnimation) =>
-                                      LoginPage(),
-                              transitionDuration: Duration.zero,
-                              reverseTransitionDuration: Duration.zero,
-                            ),
-                          );
+                          context.go('/login');
                         },
                         child: const Text(
                           "Sign In",
@@ -232,7 +205,7 @@ class _CommonHeaderState extends State<CommonHeader> {
   }
 
   bool isCurrentPage(String menuName) {
-    final currentRoute = ModalRoute.of(context)?.settings.name;
+    final currentRoute = ModalRoute.of(context)?.settings.name ?? '/';
 
     switch (currentRoute) {
       case "/":
@@ -319,53 +292,6 @@ class _CommonHeaderState extends State<CommonHeader> {
     );
   }
 
-  // ============= PROFILE BUTTON =============
-  // Widget _buildProfileButton(BuildContext context, bool isLoggedIn) {
-  //   return MouseRegion(
-  //     cursor: SystemMouseCursors.click,
-  //     child: GestureDetector(
-  //       onTap: () {
-  //         Navigator.push(
-  //           context,
-  //           PageRouteBuilder(
-  //             pageBuilder: (context, animation, secondaryAnimation) =>
-  //                 NewSellerPage(),
-  //             transitionDuration: Duration.zero,
-  //             reverseTransitionDuration: Duration.zero,
-  //           ),
-  //         );
-  //       },
-  //       child: Container(
-  //         padding: const EdgeInsets.all(4),
-  //         decoration: BoxDecoration(
-  //           shape: BoxShape.circle,
-  //           color: isLoggedIn
-  //               ? const Color(0xFF2B6E3B).withOpacity(0.1)
-  //               : Colors.transparent,
-  //         ),
-  //         child: Stack(
-  //           children: [
-  //             const Icon(Icons.person_outline, size: 28),
-
-  //             if (isLoggedIn)
-  //               Positioned(
-  //                 right: 0,
-  //                 bottom: 0,
-  //                 child: Container(
-  //                   width: 10,
-  //                   height: 10,
-  //                   decoration: const BoxDecoration(
-  //                     color: Colors.green,
-  //                     shape: BoxShape.circle,
-  //                   ),
-  //                 ),
-  //               ),
-  //           ],
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
   Widget _buildProfileButton(BuildContext context, bool isLoggedIn) {
     return GestureDetector(
       onTap: () {
@@ -374,14 +300,8 @@ class _CommonHeaderState extends State<CommonHeader> {
           _showLogoutDialog(context);
         } else {
           // Navigate to login page
-          Navigator.push(
-            context,
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) =>
-                  LoginPage(),
-              transitionDuration: Duration.zero,
-              reverseTransitionDuration: Duration.zero,
-            ),
+          context.go(
+            '/login',
           );
         }
       },
@@ -447,15 +367,8 @@ class _CommonHeaderState extends State<CommonHeader> {
               onTap: () {
                 Navigator.pop(context);
                 // Navigate to profile
-                Navigator.push(
-                  context,
-
-                  PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) =>
-                        ProfilePage(),
-                    transitionDuration: Duration.zero,
-                    reverseTransitionDuration: Duration.zero,
-                  ),
+                context.go(
+                  '/profile',
                 );
               },
             ),
@@ -465,15 +378,8 @@ class _CommonHeaderState extends State<CommonHeader> {
               onTap: () {
                 Navigator.pop(context);
                 // Navigate to favorites
-                Navigator.push(
-                  context,
-
-                  PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) =>
-                        MyFavouritePage(),
-                    transitionDuration: Duration.zero,
-                    reverseTransitionDuration: Duration.zero,
-                  ),
+                context.go(
+                  '/favourites',
                 );
               },
             ),
@@ -488,18 +394,8 @@ class _CommonHeaderState extends State<CommonHeader> {
                   );
                   return;
                 }
-                Navigator.push(
-                  context,
-
-                  PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) =>
-                        SellerStorePage(
-                          sellerId: user.id,
-                          sellerName: user.username,
-                        ),
-                    transitionDuration: Duration.zero,
-                    reverseTransitionDuration: Duration.zero,
-                  ),
+                context.go(
+                  '/seller-store/${user.id}?name=${Uri.encodeComponent(user.username)}',
                 );
               },
             ),
@@ -575,14 +471,8 @@ class _CommonHeaderState extends State<CommonHeader> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      LoginPage(),
-                  transitionDuration: Duration.zero,
-                  reverseTransitionDuration: Duration.zero,
-                ),
+              context.go(
+                '/login',
               );
             },
             style: ElevatedButton.styleFrom(
@@ -615,7 +505,7 @@ class _CommonHeaderState extends State<CommonHeader> {
 
           switch (text) {
             case "HOME":
-              routeName = "/home";
+              routeName = "/";
               break;
 
             case "CATEGORIES":
@@ -639,15 +529,7 @@ class _CommonHeaderState extends State<CommonHeader> {
           }
 
           // CHANGE pushReplacement TO push
-          Navigator.push(
-            context,
-            PageRouteBuilder(
-              settings: RouteSettings(name: routeName),
-              pageBuilder: (context, animation, secondaryAnimation) => page,
-              transitionDuration: Duration.zero,
-              reverseTransitionDuration: Duration.zero,
-            ),
-          );
+          context.go(routeName);
         },
 
         child: AnimatedContainer(
@@ -682,54 +564,37 @@ class CommonBottomBar extends StatelessWidget {
 
   void _navigate(BuildContext context, int index) {
     if (index == currentIndex) return;
-
-    Widget page;
+    String routeName;
+    // Widget page;
 
     switch (index) {
       case 0:
-        page = const HomePage();
+        routeName = '/';
         break;
 
       case 1:
-        page = const CategoryPage();
+        routeName = '/category';
         break;
 
       case 2:
-        page = const SellPage();
+        routeName = '/sell';
         break;
 
       case 3:
-        page = const MyFavouritePage();
+        routeName = '/favourites';
         break;
 
       case 4:
-        page = const ProfilePage();
+        routeName = '/profile';
         break;
 
       default:
         return;
     }
 
-    Navigator.pushReplacement(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => page,
-        transitionDuration: Duration.zero,
-        reverseTransitionDuration: Duration.zero,
-      ),
-    );
+    context.go(routeName);
   }
 
-  // void _navigate(BuildContext context, int index) {
-  //   if (index == currentIndex) return;
-
-  //   ScaffoldMessenger.of(context).showSnackBar(
-  //     SnackBar(
-  //       content: Text('Page $index is not implemented yet.'),
-  //       duration: const Duration(seconds: 1),
-  //     ),
-  //   );
-  // }
 
   @override
   Widget build(BuildContext context) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../models/sale.dart';
 import '../services/sale_service.dart';
@@ -948,15 +949,7 @@ class _SalePageState extends State<SalePage> {
 
                   // Navigate immediately
                   if (!mounted) return;
-                  Navigator.push(
-                    context,
-                    PageRouteBuilder(
-                      pageBuilder: (context, animation, secondaryAnimation) =>
-                          ProductDetailPage(productId: product.productId),
-                      transitionDuration: Duration.zero,
-                      reverseTransitionDuration: Duration.zero,
-                    ),
-                  );
+                  context.go('/product/${product.productId}');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xffF28C00),
