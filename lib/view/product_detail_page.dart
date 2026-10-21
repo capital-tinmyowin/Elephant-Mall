@@ -41,6 +41,22 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadProduct());
   }
 
+  @override
+  void didUpdateWidget(covariant ProductDetailPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    //  If the productId changes, reload the new product data
+    if (oldWidget.productId != widget.productId) {
+      setState(() {
+        _pageLoading = true;
+        _pageError = null;
+        _selectedImageIndex = 0; // Reset image gallery
+        _sellerProducts = [];    // Clear old seller products
+      });
+      _loadProduct(); // Fetch the new product
+    }
+  }
+
   Future<void> _loadProduct() async {
     final auth = Provider.of<AuthService>(context, listen: false);
 
