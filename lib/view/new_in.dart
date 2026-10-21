@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../models/new_in.dart';
 import '../services/new_in_service.dart';
@@ -1036,15 +1037,7 @@ class _NewInPageState extends State<NewInPage> {
               child: OutlinedButton(
                 onPressed: () {
                   if (product.productId != 0) {
-                    Navigator.push(
-                      context,
-                      PageRouteBuilder(
-                        pageBuilder: (context, animation, secondaryAnimation) =>
-                            ProductDetailPage(productId: product.productId),
-                        transitionDuration: Duration.zero,
-                        reverseTransitionDuration: Duration.zero,
-                      ),
-                    );
+                    context.go('/product/${product.productId}');
                   }
                 },
                 style: OutlinedButton.styleFrom(

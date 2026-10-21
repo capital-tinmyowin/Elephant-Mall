@@ -1,10 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:elephant_mall/models/Category.dart';
+import 'package:elephant_mall/services/auth_service.dart';
 import 'package:elephant_mall/view/category_detail.dart';
+import 'package:elephant_mall/view/common/loading_widget.dart';
 import 'package:elephant_mall/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
@@ -30,7 +33,7 @@ class _CategoryPageState extends State<CategoryPage> {
   int _currentSlideIndex = 0;
   final Map<String, int> _sliderIndexes = {};
   final Map<String, CarouselSliderController> _sliderControllers = {};
-  // ADD method to get or create a slider index
+  String? _loadError;
 
   // ADD method to update slider index
   void _updateSliderIndex(String id, int index) {
@@ -243,38 +246,8 @@ class _CategoryPageState extends State<CategoryPage> {
       // Get trending products from the service
       final trending = productController.trendingProducts;
       final news = productController.newProducts;
-      // // if (trending.isEmpty) {
-      // //   return const SizedBox.shrink();
-      // // }
-
-      // // final fashionTrending = trending
-      // //     .where(
-      // //       (p) =>
-      // //           p.category == "Blouses" ||
-      // //           p.category == "Jeans" ||
-      // //           p.category == "Bags" ||
-      // //           p.category == "Shoes" ||
-      // //           p.category == "T-Shirts",
-      // //     )
-      // //     .take(5)
-      // //     .toList();
-
-      // // final electronicsTrending = trending
-      // //     .where(
-      // //       (p) =>
-      // //           p.category == "Electronics" ||
-      // //           p.category == "Power Banks" ||
-      // //           p.category == "Headphones",
-      // //     )
-      // //     .take(5)
-      // //     .toList();
-
+      
       final bool isMobile = MediaQuery.of(context).size.width < 768;
-
-      // if (fashionTrending.isEmpty && electronicsTrending.isEmpty) {
-      //   return const SizedBox.shrink();
-      // }
-
       if (isMobile) {
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,6 +259,7 @@ class _CategoryPageState extends State<CategoryPage> {
                   products: news,
                   sliderId: 'fashion_mobile',
                   isCompact: true,
+                  viewAllRoute: '/new-in',
                 ),
               ),
             // if (fashionTrending.isNotEmpty && electronicsTrending.isNotEmpty)
@@ -297,6 +271,7 @@ class _CategoryPageState extends State<CategoryPage> {
                   products: trending,
                   sliderId: 'electronics_mobile',
                   isCompact: true,
+                  viewAllRoute: '/',
                 ),
               ),
           ],
@@ -311,6 +286,7 @@ class _CategoryPageState extends State<CategoryPage> {
               title: ' New Arrivals',
               products: news,
               sliderId: 'fashion_mobile',
+               viewAllRoute: '/new-in',
             ),
           const SizedBox(height: 20),
           if (trending.isNotEmpty)
@@ -318,6 +294,7 @@ class _CategoryPageState extends State<CategoryPage> {
               title: ' Trending Now In Product',
               products: trending,
               sliderId: 'electronics_mobile',
+              viewAllRoute: '/',
             ),
         ],
       );
@@ -648,18 +625,33 @@ class _CategoryPageState extends State<CategoryPage> {
   // ============= DESKTOP PRODUCTS =============
   Widget _buildProducts() {
   return Consumer<ApiService>(
-    builder: (context, productController, child) {
-      if (productController.isLoading) {
-        return const Center(
-          child: Padding(
-            padding: EdgeInsets.all(32.0),
-            child: CircularProgressIndicator(),
-          ),
+    builder: (context, api, _) {
+      // Loading / error only replaces the categories grid
+      if (api.isLoading) {
+        return const CommonLoading(
+          size: 42,
+          message: 'Loading categories...',
+          height: 300,
         );
       }
 
-      final categories = productController.categories;
-      
+      if (_loadError != null) {
+        return CommonError(
+          height: 300,
+          title: 'Failed to load categories',
+          message: _loadError!,
+          onRetry: () {
+            setState(() => _loadError = null);
+            _apiService.loadCategories();
+          },
+        );
+      }
+
+      final categories = api.categories;
+      if (categories.isEmpty) {
+        return const SizedBox();
+      }
+
       return Wrap(
         spacing: 20,
         runSpacing: 5,
@@ -684,15 +676,7 @@ class _CategoryPageState extends State<CategoryPage> {
                 const SizedBox(height: 2),
                 GestureDetector(
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CategoryDetailPage(
-                          categoryId: category.categoryId,
-                          categoryName: category.categoryName,
-                        ),
-                      ),
-                    );
+                    context.go('/category/${category.categoryId}?name=${Uri.encodeComponent(category.categoryName)}');
                   },
                   child: Center(
                     child: Text(
@@ -796,38 +780,6 @@ class _CategoryPageState extends State<CategoryPage> {
       // Get trending products from the service
       final trending = productController.trendingProducts;
       final news = productController.newProducts;
-      // If no trending products, show nothing
-      // if (trending.isEmpty) {
-      //   return const SizedBox.shrink();
-      // }
-
-      // // Split trending products into fashion and electronics
-      // final fashionTrending = trending
-      //     .where(
-      //       (p) =>
-      //           p.category == "Blouses" ||
-      //           p.category == "Jeans" ||
-      //           p.category == "Bags" ||
-      //           p.category == "Shoes" ||
-      //           p.category == "T-Shirts",
-      //     )
-      //     .take(5)
-      //     .toList();
-
-      // final electronicsTrending = trending
-      //     .where(
-      //       (p) =>
-      //           p.category == "Electronics" ||
-      //           p.category == "Power Banks" ||
-      //           p.category == "Headphones",
-      //     )
-      //     .take(5)
-      //     .toList();
-
-      // // If no filtered trending products, show nothing
-      // if (fashionTrending.isEmpty && electronicsTrending.isEmpty) {
-      //   return const SizedBox.shrink();
-      // }
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -837,12 +789,14 @@ class _CategoryPageState extends State<CategoryPage> {
               title: ' New Arrivals',
               products: news,
               sliderId: 'fashion',
+              viewAllRoute: '/new-in',
             ),
           if (trending.isNotEmpty)
             _buildTrendingSlider(
               title: ' Trending Now In Product',
               products: trending,
               sliderId: 'electronics',
+              viewAllRoute: '/',
             ),
         ],
       );
@@ -855,6 +809,8 @@ class _CategoryPageState extends State<CategoryPage> {
     required List<Product> products,
     required String sliderId,
     bool isCompact = false,
+    String? viewAllRoute,
+
   }) {
     final bool isMobile = MediaQuery.of(context).size.width < 768;
     final controller = _getController(sliderId);
@@ -887,6 +843,27 @@ class _CategoryPageState extends State<CategoryPage> {
                     color: Colors.black,
                   ),
                 ),
+                // 🔥 ADD VIEW ALL BUTTON HERE
+                if (viewAllRoute != null)
+                  GestureDetector(
+                    onTap: () => context.go(viewAllRoute),
+                    child: Row(
+                      children: [
+                        Text(
+                          'View all',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.chevron_right,
+                          size: 16,
+                          color: Colors.grey,
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
@@ -905,6 +882,12 @@ class _CategoryPageState extends State<CategoryPage> {
     bool isCompact,
   ) {
     final bool isMobile = MediaQuery.of(context).size.width < 768;
+    final int initialIndex = _sliderIndexes[sliderId] ?? 0;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Just try to jump. The controller handles safety internally.
+      controller.jumpToPage(initialIndex); 
+    });
 
     return Stack(
       children: [
@@ -918,12 +901,15 @@ class _CategoryPageState extends State<CategoryPage> {
                 : 0.32, //  0.7 = show 70% width on mobile
             padEnds: false,
             scrollDirection: Axis.horizontal,
+            initialPage: initialIndex, 
             onPageChanged: (index, reason) {
               //  ADD THIS
-              setState(() {
-                _updateSliderIndex(sliderId, index);
-              });
-            },
+              if (_sliderIndexes[sliderId] != index) {
+                setState(() {
+                  _updateSliderIndex(sliderId, index);
+                });
+              }
+            }
           ),
           items: products.map((product) {
             return Builder(
@@ -1018,12 +1004,7 @@ class _CategoryPageState extends State<CategoryPage> {
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProductDetailPage(productId: product.productId),
-          ),
-        );
+        context.go('/product/${product.productId}');
       },
       child: Container(
         // width: double.infinity,
@@ -1100,52 +1081,78 @@ class _CategoryPageState extends State<CategoryPage> {
   Widget _buildFavoriteButton(Product product) {
     final bool isMobile = MediaQuery.of(context).size.width < 768;
 
-    return Consumer<ApiService>(
-      builder: (context, cartController, child) {
-        final inCart = cartController.isInCart(product.productId);
+    return Consumer<AuthService>(
+      builder: (context, authService, child) {
+        final isFav = authService.isFavorite(product.productId);
+        final isLoggedIn = authService.isLoggedIn;
+
         return SizedBox(
           width: 100,
           child: ElevatedButton(
-            onPressed: () {
-              if (inCart) {
-                cartController.removeItem(product.productId);
+            onPressed: () async {
+              // 1) Not logged in → prompt to log in
+              if (!isLoggedIn) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please sign in to save favourites'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+                return;
+              }
+
+              // 2) Toggle favourite in DB
+              if (isFav) {
+                final ok = await authService.removeFavorite(product.productId);
+                if (!context.mounted) return;
+                if (ok) {
+                  await authService.getUserFavorites(); // Sync cache
+                }
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('${product.productName} removed'),
+                    content: Text(
+                      ok ? 'Removed from favourites' : 'Could not remove',
+                    ),
                     duration: const Duration(seconds: 1),
                   ),
                 );
               } else {
-                cartController.addItem(product);
+                final ok = await authService.addFavorite(product.productId);
+                if (!context.mounted) return;
+                if (ok) {
+                  await authService.getUserFavorites(); // Sync cache
+                }
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('${product.productCode} added to favourites'),
-                    duration: const Duration(seconds: 1),
+                    content: Text(
+                      ok ? 'Added to favourites ❤️' : authService.errorMessage ?? 'Could not add',
+                    ),
+                    duration: const Duration(seconds: 2),
                   ),
                 );
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: inCart ? Colors.grey : const Color(0xFFD68247),
+              backgroundColor: isFav ? Colors.grey : const Color(0xFFD68247),
               foregroundColor: Colors.white,
               padding: EdgeInsets.symmetric(
                 vertical: isMobile ? 10 : 8,
-              ), //  Larger on mobile
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(5),
               ),
               minimumSize: Size(
                 double.infinity,
                 isMobile ? 40 : 32,
-              ), //  Taller on mobile
+              ),
             ),
             child: Text(
-              inCart ? 'REMOVED' : 'ADD TO FAVOURITE',
+              isFav ? 'REMOVED' : 'ADD TO FAVOURITE',
               style: TextStyle(
-                fontSize: isMobile ? 10 : 9, //  Larger text on mobile
+                fontSize: isMobile ? 10 : 9,
                 fontWeight: FontWeight.bold,
               ),
-              maxLines: isMobile ? 2 : 2,
+              maxLines: 2,
               textAlign: TextAlign.center,
             ),
           ),

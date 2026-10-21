@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/browser_client.dart' show BrowserClient;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
 import '../models/product.dart';
 
@@ -37,6 +38,10 @@ class AuthService extends ChangeNotifier {
   Set<int> get favoriteProductIds => _favoriteProductIds;
 
   bool isFavorite(int productId) => _favoriteProductIds.contains(productId);
+  static const _kLoggedInKey = 'is_logged_in';
+  static const _kUserIdKey = 'user_id';
+  static const _kUserEmailKey = 'user_email';
+  static const _kAuthCookieKey = 'auth_cookie';
 
   void _addFavoriteId(int id) {
     _favoriteProductIds.add(id);
@@ -161,6 +166,13 @@ class AuthService extends ChangeNotifier {
             email: email,
             fullName: '',
           );
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool(_kLoggedInKey, true);
+          await prefs.setInt(_kUserIdKey, _currentUser!.id);
+          await prefs.setString(_kUserEmailKey, email);
+          if (_authCookie != null) {
+            await prefs.setString(_kAuthCookieKey, _authCookie!);
+          }
           _isLoading = false;
           notifyListeners();
           // 🔥 Pre-load favourites so the button state is correct on any screen
@@ -192,10 +204,17 @@ class AuthService extends ChangeNotifier {
   }
 
   // ============= LOGOUT =============
-  void logout() {
+  Future<void> logout() async {
     _currentUser = null;
     _token = null;
     _authCookie = null;
+    _favoriteProductIds.clear();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kLoggedInKey);
+    await prefs.remove(_kUserIdKey);
+    await prefs.remove(_kUserEmailKey);
+    await prefs.remove(_kAuthCookieKey);
     notifyListeners();
   }
 
@@ -235,21 +254,29 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<List<Product>> getUserFavorites() async {
-    if (_currentUser == null) return [];
+    if (_currentUser == null) {
+      _favoriteProductIds.clear();
+      notifyListeners();
+      return [];
+    }
 
     try {
+      final headers = <String, String>{'Content-Type': 'application/json'};
+      if (!kIsWeb && _authCookie != null) {
+        headers['Cookie'] = _authCookie!;
+      }
       final response = await _client
           .get(
             Uri.parse('$_baseUrl/productshowcase/GetFavouriteProductList'),
-            headers: {'Content-Type': 'application/json'},
+            headers: headers,
           )
           .timeout(const Duration(seconds: 15));
 
-      print('=== FAVORITES DEBUG ===');
-      print('Status: ${response.statusCode}');
-      print('Body: ${response.body}');
-      print('kIsWeb: $kIsWeb');
-      print('======================');
+      // print('=== FAVORITES DEBUG ===');
+      // print('Status: ${response.statusCode}');
+      // print('Body: ${response.body}');
+      // print('kIsWeb: $kIsWeb');
+      // print('======================');
 
       if (response.statusCode == 200) {
         final dynamic data = json.decode(response.body);
@@ -265,14 +292,32 @@ class AuthService extends ChangeNotifier {
           }
         }
 
-        return items.whereType<Map<String, dynamic>>().map((json) {
-          debugPrint('🔵 About to parse: $json');
+         final products = items.whereType<Map<String, dynamic>>().map((json) {
+          // 1. Extract categoryId (e.g., "9,10")
+          final rawCatId = json['categoryId']?.toString() ?? '';
+          
+          // 2. Create the product from JSON
           final p = Product.fromJson(json);
-          debugPrint(
-            '🟢 Parsed → productId=${p.productId}, productCode=${p.productCode}',
-          );
+
+          // 3. If the product category is empty, try to find the name
+          if (p.category.isEmpty && rawCatId.isNotEmpty) {
+            // Here we need the ApiService categories. 
+            // Since we can't easily access it, we will resolve this in the UI.
+            // For now, we will pass the rawCatId to a temporary variable 
+            // (You might need to update your Product model to accept a list of IDs).
+          }
+
           return p;
         }).toList();
+
+        // FIX: Update the cached IDs so the Home page hearts turn red!
+        _favoriteProductIds.clear();
+        for (var p in products) {
+          _favoriteProductIds.add(p.productId);
+        }
+        notifyListeners(); // Notify UI to update
+
+        return products;
       }
       //  Show exact backend message + status code inline
       String backendMsg = '';
@@ -426,5 +471,35 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  Future<bool> restoreSession() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final loggedIn = prefs.getBool(_kLoggedInKey) ?? false;
+    if (!loggedIn) return false;
+
+    final userId = prefs.getInt(_kUserIdKey);
+    final email = prefs.getString(_kUserEmailKey) ?? '';
+
+    // restore mobile cookie
+    if (!kIsWeb) {
+      _authCookie = prefs.getString(_kAuthCookieKey);
+    }
+
+    if (userId == null) return false;
+
+    _currentUser = User(
+      id: userId,
+      username: email.split('@').first,
+      email: email,
+      fullName: '',
+    );
+
+    notifyListeners();
+
+    // 🔥 now actually rehydrate favorites from the server
+    await getUserFavorites();
+    return true;
   }
 }

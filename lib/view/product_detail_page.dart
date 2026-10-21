@@ -1,7 +1,9 @@
 import 'package:elephant_mall/services/auth_service.dart';
+import 'package:elephant_mall/view/common/loading_widget.dart';
 import 'package:elephant_mall/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
@@ -27,33 +29,51 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   int _selectedImageIndex = 0;
   bool _isMobile = false;
   List<Product> _sellerProducts = [];
+  bool _pageLoading = true; // 🔥 new
+  String? _pageError;
 
   @override
   void initState() {
     super.initState();
     _apiService = ApiService();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadProduct());
+  }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final auth = Provider.of<AuthService>(context, listen: false);
+  Future<void> _loadProduct() async {
+    final auth = Provider.of<AuthService>(context, listen: false);
 
+    try {
       if (auth.isLoggedIn) {
         await auth.getUserFavorites();
         if (!mounted) return;
       }
+
       final json = await auth.getProductDetail(widget.productId);
       if (!mounted) return;
 
-      if (json != null) {
-        _apiService.setProductFromJson(json);
-        final product = _apiService.selectedProduct;
-        final uid = product?.userId;
-        if (uid != null) {
-          await _apiService.loadSellerProducts(uid);
-        }
+      if (json == null) {
+        setState(() {
+          _pageLoading = false;
+          _pageError = 'Product not found';
+        });
+        return;
       }
 
-      if (mounted) setState(() {});
-    });
+      _apiService.setProductFromJson(json);
+      final product = _apiService.selectedProduct;
+      final uid = product?.userId;
+      if (uid != null) {
+        await _apiService.loadSellerProducts(uid);
+      }
+
+      if (mounted) setState(() => _pageLoading = false);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _pageLoading = false;
+        _pageError = e.toString();
+      });
+    }
   }
 
   @override
@@ -66,42 +86,50 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       child: Scaffold(
         body: Consumer<ApiService>(
           builder: (context, productController, child) {
-            if (productController.isLoading) {
-              return const Column(
-                children: [
-                  CommonHeader(),
-                  Expanded(child: Center(child: CircularProgressIndicator())),
-                ],
+            Widget body;
+            if (_pageLoading) {
+              body = const CommonLoading(
+                size: 42,
+                message: 'Loading product...',
+                height: 400,
               );
+            } else if (_pageError != null) {
+              body = CommonError(
+                height: 400,
+                title: 'Failed to load product',
+                message: _pageError!,
+                onRetry: () {
+                  setState(() {
+                    _pageLoading = true;
+                    _pageError = null;
+                  });
+                  _loadProduct(); // 🔥 see below
+                },
+              );
+            } else {
+              final product = productController.selectedProduct;
+              if (product == null) {
+                body = const Center(child: Text('Product not found'));
+              } else {
+                _sellerProducts = productController.sellerProducts
+                    .where((p) => p.productId != product.productId)
+                    .take(8)
+                    .toList();
+                body = _isMobile
+                    ? _buildMobileLayout(product)
+                    : _buildDesktopLayout(product);
+              }
             }
 
-            final product = productController.selectedProduct;
-            if (product == null) {
-              return const Column(
-                children: [
-                  CommonHeader(),
-                  // Expanded(child: Center(child: Text('Product not found'))),
-                ],
-              );
-            }
-            // _sellerProducts = _getSellerProducts(product, productController);
-            _sellerProducts = productController.sellerProducts
-                .where((p) => p.productId != product.productId)
-                .take(8)
-                .toList();
-            print(product.productId);
             return Column(
               children: [
                 const CommonHeader(),
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
-                    child: _isMobile
-                        ? _buildMobileLayout(product)
-                        : _buildDesktopLayout(product),
+                    child: body,
                   ),
                 ),
-                //  Add Footer for PC view
                 if (!isMobile) const CommonFooter(),
               ],
             );
@@ -502,7 +530,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   child: Row(
                     children: [
                       _variantCell(v.variantName, flex: 3),
-                      _variantCell('${NumberFormat('#,##0').format(v.price)}MMK', flex: 2),
+                      _variantCell(
+                        '${NumberFormat('#,##0').format(v.price)}MMK',
+                        flex: 2,
+                      ),
                       _variantCell('${v.quantity}', flex: 1),
                     ],
                   ),
@@ -782,7 +813,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         children: [
                           InkWell(
                             onTap: () {
-                              Navigator.pushNamed(context, '/seller');
+                              context.go('/seller');
                             },
                             child: Text(
                               sellerName,
@@ -876,7 +907,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     children: [
                       InkWell(
                         onTap: () {
-                          Navigator.pushNamed(context, '/seller');
+                          context.go('/seller');
                         },
                         child: Text(
                           sellerName,
@@ -964,7 +995,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(left: 100, right: 100),
+      padding: _isMobile ? const EdgeInsets.all(1) : const EdgeInsets.only(left: 100, right: 100),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -987,13 +1018,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               final sellerProduct = _sellerProducts[index];
               return GestureDetector(
                 onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          ProductDetailPage(productId: sellerProduct.productId),
-                    ),
-                  );
+                  context.pushReplacement('/product/${sellerProduct.productId}');
                 },
                 child: Container(
                   decoration: BoxDecoration(

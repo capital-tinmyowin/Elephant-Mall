@@ -4,6 +4,7 @@ import 'package:elephant_mall/view/common/header.dart';
 import 'package:elephant_mall/view/signup.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import 'Signup.dart' hide RegisterPage;
@@ -69,15 +70,12 @@ class _LoginPageState extends State<LoginPage> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
-        );
+        context.go('/');
       } else {
         final error = authService.errorMessage ?? 'Login failed';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ $error'),
+            content: Text(' $error'),
             backgroundColor: Colors.red,
           ),
         );
@@ -86,7 +84,7 @@ class _LoginPageState extends State<LoginPage> {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('❌ Connection error. Please try again.'),
+          content: Text(' Connection error. Please try again.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -342,10 +340,7 @@ class _LoginPageState extends State<LoginPage> {
               GestureDetector(
                 onTap: () {
                   // Navigate to Register page (if exists)
-                  Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const RegisterPage()),
-                );
+                  context.go('/signup');
                 },
                 child: const Text(
                   "Sign Up",
