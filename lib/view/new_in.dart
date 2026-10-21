@@ -1035,10 +1035,44 @@ class _NewInPageState extends State<NewInPage> {
               width: double.infinity,
               height: 28,
               child: OutlinedButton(
-                onPressed: () {
-                  if (product.productId != 0) {
-                    context.go('/product/${product.productId}');
+                onPressed: () async {
+                  if (product.productId == 0) return;
+
+                  final authService = Provider.of<AuthService>(
+                    context,
+                    listen: false,
+                  );
+
+                  // Fire-and-forget recent view (only when logged in)
+                  if (authService.currentUser != null) {
+                    _newInService
+                        .saveRecentView(
+                          authService: authService,
+                          productId: product.productId,
+                        )
+                        .then((success) {
+                          debugPrint(
+                            'saveRecentView finished → success=$success, productId=${product.productId}',
+                          );
+                        })
+                        .catchError((e) {
+                          debugPrint(
+                            'saveRecentView failed (ignored) → $e, productId=${product.productId}',
+                          );
+                          final msg = e.toString().toLowerCase();
+                          if (msg.contains('401') || msg.contains('please login')) {
+                            if (mounted) _showLoginRequiredDialog();
+                          }
+                        });
+                  } else {
+                    print(
+                      'saveRecentView skipped – user not logged in, productId=${product.productId}',
+                    );
                   }
+
+                  // Navigate immediately
+                  if (!mounted) return;
+                  context.go('/product/${product.productId}');
                 },
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Colors.orange),

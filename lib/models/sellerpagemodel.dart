@@ -4,6 +4,7 @@ class Product {
   final double price;
   final String imageUrl;
   final int favourite;
+  final int? categoryId;
 
   Product({
     required this.productId,
@@ -11,28 +12,23 @@ class Product {
     required this.price,
     required this.imageUrl,
     this.favourite = 0,
+    this.categoryId,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      productId: int.tryParse(
-            json['productId']?.toString() ?? '',
-          ) ??
-          0,
+      productId: int.tryParse(json['productId']?.toString() ?? '') ?? 0,
 
       productName: json['productName']?.toString() ?? '',
 
-      price: double.tryParse(
-            json['price']?.toString() ?? '',
-          ) ??
-          0.0,
+      price: double.tryParse(json['price']?.toString() ?? '') ?? 0.0,
 
       imageUrl: json['imageUrl']?.toString() ?? '',
 
-      favourite: int.tryParse(
-            json['favourite']?.toString() ?? '',
-          ) ??
-          0,
+      favourite: int.tryParse(json['favourite']?.toString() ?? '') ?? 0,
+      categoryId: int.tryParse(
+        json['categoryId']?.toString() ?? json['CategoryId']?.toString() ?? '',
+      ),
     );
   }
 
@@ -63,23 +59,3 @@ class Product {
   }
 }
 
-
-class SellerInfo {
-  final String name;
-  final String? avatarUrl;
-  final bool isFollowing;
-
-  SellerInfo({
-    required this.name,
-    this.avatarUrl,
-    this.isFollowing = false,
-  });
-
-  factory SellerInfo.fromJson(Map<String, dynamic> json) {
-    return SellerInfo(
-      name: json['name']?.toString() ?? '',
-      avatarUrl: json['avatarUrl']?.toString(),
-      isFollowing: json['isFollowing'] == true,
-    );
-  }
-}

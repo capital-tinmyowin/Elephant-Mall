@@ -912,10 +912,44 @@ class _SalePageState extends State<SalePage> {
               width: double.infinity,
               height: 28,
               child: ElevatedButton(
-                onPressed: () {
-                  if (product.productId != 0) {
-                    context.go('/product/${product.productId}');
+                onPressed: () async {
+                  if (product.productId == 0) return;
+
+                  final authService = Provider.of<AuthService>(
+                    context,
+                    listen: false,
+                  );
+
+                  // Fire-and-forget recent view (only when logged in)
+                  if (authService.currentUser != null) {
+                    _saleService
+                        .saveRecentView(
+                          authService: authService,
+                          productId: product.productId,
+                        )
+                        .then((success) {
+                          print(
+                            'saveRecentView (Sale) finished → success=$success, productId=${product.productId}',
+                          );
+                        })
+                        .catchError((e) {
+                          print(
+                            'saveRecentView (Sale) failed (ignored) → $e, productId=${product.productId}',
+                          );
+                          // Optional: force login on 401
+                          // if (_isUnauthorizedError(e) && mounted) {
+                          //   _showLoginRequiredDialog();
+                          // }
+                        });
+                  } else {
+                    print(
+                      'saveRecentView (Sale) skipped – user not logged in, productId=${product.productId}',
+                    );
                   }
+
+                  // Navigate immediately
+                  if (!mounted) return;
+                  context.go('/product/${product.productId}');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xffF28C00),
