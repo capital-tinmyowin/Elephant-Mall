@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -497,6 +498,7 @@ class _SellerStorePageState extends State<SellerStorePage> {
               height: mobile ? 22 : 28,
               child: ElevatedButton(
                 onPressed: () {
+                  context.go('/product/${item.productId}');
                   // Add product-detail navigation when the
                   // NewInModel product ID is confirmed.
                 },
@@ -1256,18 +1258,7 @@ class _SellerStorePageState extends State<SellerStorePage> {
                     child: ElevatedButton(
                       onPressed: () {
                         if (product.productId != null) {
-                          Navigator.push(
-                            context,
-                            PageRouteBuilder(
-                              pageBuilder:
-                                  (context, animation, secondaryAnimation) =>
-                                      ProductDetailPage(
-                                        productId: product.productId!,
-                                      ),
-                              transitionDuration: Duration.zero,
-                              reverseTransitionDuration: Duration.zero,
-                            ),
-                          );
+                          context.go('/product/${product.productId}');
                         }
                       },
                       style: ElevatedButton.styleFrom(

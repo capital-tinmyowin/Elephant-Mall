@@ -44,14 +44,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   @override
   void didUpdateWidget(covariant ProductDetailPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     //  If the productId changes, reload the new product data
     if (oldWidget.productId != widget.productId) {
       setState(() {
         _pageLoading = true;
         _pageError = null;
         _selectedImageIndex = 0; // Reset image gallery
-        _sellerProducts = [];    // Clear old seller products
+        _sellerProducts = []; // Clear old seller products
       });
       _loadProduct(); // Fetch the new product
     }
@@ -812,6 +812,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   // ============= SELLER INFO =============
   Widget _buildSellerInfo(Product product) {
     final String? userName = product.userName;
+    // final int? userId=product.userId;
     // Since the API doesn't send seller name, show a friendly fallback
     final String sellerName = userName != null
         ? 'Seller $userName'
@@ -861,7 +862,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         children: [
                           InkWell(
                             onTap: () {
-                              context.go('/seller');
+                              context.go(
+                                '/seller/${product.userId}?name=${Uri.encodeComponent(sellerName)}',
+                              );
                             },
                             child: Text(
                               sellerName,
@@ -953,7 +956,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     children: [
                       InkWell(
                         onTap: () {
-                          context.go('/seller');
+                          context.go(
+                  '/seller/${product.userId}?name=${Uri.encodeComponent(sellerName)}',
+                );
                         },
                         child: Text(
                           sellerName,
@@ -1040,7 +1045,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     }
 
     return Padding(
-      padding: _isMobile ? const EdgeInsets.all(1) : const EdgeInsets.only(left: 100, right: 100),
+      padding: _isMobile
+          ? const EdgeInsets.all(1)
+          : const EdgeInsets.only(left: 100, right: 100),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1063,7 +1070,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               final sellerProduct = _sellerProducts[index];
               return GestureDetector(
                 onTap: () {
-                  context.pushReplacement('/product/${sellerProduct.productId}');
+                  context.pushReplacement(
+                    '/product/${sellerProduct.productId}',
+                  );
                 },
                 child: Container(
                   decoration: BoxDecoration(

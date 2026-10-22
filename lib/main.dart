@@ -5,6 +5,7 @@ import 'package:elephant_mall/view/home.dart';
 import 'package:elephant_mall/view/myListing.dart';
 import 'package:elephant_mall/view/profile.dart';
 import 'package:elephant_mall/view/sale.dart';
+import 'package:elephant_mall/view/sellerListing.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -48,74 +49,80 @@ class MyApp extends StatelessWidget {
       routes: [
         GoRoute(
           path: '/',
-          builder: (context, state) => const HomePage(),
+          pageBuilder: (context, state) => NoTransitionPage(child: const HomePage()),
         ),
         GoRoute(
           path: '/login',
-          builder: (context, state) => const LoginPage(),
+          pageBuilder: (context, state) => NoTransitionPage(child: const LoginPage()),
         ),
         GoRoute(
           path: '/signup',
-          builder: (context, state) => const RegisterPage(),
+          pageBuilder: (context, state) => NoTransitionPage(child: const RegisterPage()),
         ),
         GoRoute(
           path: '/profile',
-          builder: (context, state) => const ProfilePage(),
+          pageBuilder: (context, state) => NoTransitionPage(child: const ProfilePage()),
         ),
         GoRoute(
           path: '/favourites',
-          builder: (context, state) => const MyFavouritePage(),
+          pageBuilder: (context, state) => NoTransitionPage(child: const MyFavouritePage()),
         ),
         GoRoute(
           path: '/sell',
-          builder: (context, state) => const SellPage(),
+          pageBuilder: (context, state) => NoTransitionPage(child: const SellPage()),
         ),
         GoRoute(
           path: '/category',
-          builder: (context, state) => const CategoryPage(),
+          pageBuilder: (context, state) => NoTransitionPage(child: const CategoryPage()),
         ),
         GoRoute(
           path: '/sale',
-          builder: (context, state) => const SalePage(),
+          pageBuilder: (context, state) => NoTransitionPage(child: const SalePage()),
         ),
         GoRoute(
           path: '/new-in',
-          builder: (context, state) => const NewInPage(),
+          pageBuilder: (context, state) => NoTransitionPage(child: const NewInPage()),
         ),
         
         // Product Detail (e.g. /product/123)
         GoRoute(
           path: '/product/:id',
-          builder: (context, state) {
+          pageBuilder: (context, state) {
             final productId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
-            return ProductDetailPage(productId: productId);
+            return NoTransitionPage(child: ProductDetailPage(productId: productId));
           },
         ),
         GoRoute(
-          path: '/seller',
-          builder: (context, state) => const SellerPage(),
+          path: '/seller/:id',
+          pageBuilder: (context, state) {
+            final sellerId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+            final sellerName = state.uri.queryParameters['name'] ?? '';
+            return NoTransitionPage(child: SellerListingPage(sellerId: sellerId, sellerName: sellerName));
+          },
         ),
 
         // Category Detail (e.g. /category/5?name=T-Shirts)
         GoRoute(
           path: '/category/:id',
-          builder: (context, state) {
+          pageBuilder: (context, state) {
             final categoryId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
             final categoryName = state.uri.queryParameters['name'] ?? 'Category';
-            return CategoryDetailPage(
-              categoryId: categoryId,
-              categoryName: categoryName,
+            return NoTransitionPage(
+              child: CategoryDetailPage(
+                categoryId: categoryId,
+                categoryName: categoryName,
+              ),
             );
           },
         ),
 
         // Seller Store (e.g. /seller-store/123?name=John)
         GoRoute(
-          path: '/seller-store/:id',
-          builder: (context, state) {
+          path: '/my-store/:id',
+          pageBuilder: (context, state) {
             final sellerId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
             final sellerName = state.uri.queryParameters['name'] ?? '';
-            return SellerStorePage(sellerId: sellerId, sellerName: sellerName);
+            return NoTransitionPage(child: SellerStorePage(sellerId: sellerId, sellerName: sellerName));
           },
         ),
       ],

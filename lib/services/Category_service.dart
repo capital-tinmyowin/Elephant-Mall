@@ -184,6 +184,7 @@ class ApiService extends ChangeNotifier {
       'gstatic.com', // encrypted-tbn*.gstatic.com works
       'images.unsplash.com',
       'placehold.co',
+      
     ];
     final lower = originalUrl.toLowerCase();
     if (corsSafeHosts.any(lower.contains)) {

@@ -638,7 +638,7 @@ class _ProfilePageState extends State<ProfilePage> {
           //   ),
           // );
           context.go(
-                  '/seller-store/${currentUser.id}?name=${Uri.encodeComponent(currentUser.username)}',
+                  '/my-store/${currentUser.id}?name=${Uri.encodeComponent(currentUser.username)}',
                 );
           return;
         }
