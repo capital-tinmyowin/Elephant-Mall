@@ -124,7 +124,7 @@ class ProductService {
     ),
   };
 
-  // GET BUYER CONTACT METHODS
+  // GET BUYER CONTACT METHODS / GROUP IDS
   Future<List<BuyerContactMethod>> getBuyerContactMethods({
     required AuthService authService,
   }) async {
@@ -133,9 +133,8 @@ class ProductService {
     );
 
     try {
-      http.Response response;
+      late http.Response response;
 
-      //WEB
       if (kIsWeb) {
         final client = BrowserClient();
         client.withCredentials = true;
@@ -148,20 +147,18 @@ class ProductService {
         } finally {
           client.close();
         }
-      }
-      // ANDROID / iOS
-      else {
-        final headers = <String, String>{'Accept': 'application/json'};
+      } else {
+        final headers = <String, String>{
+          'Accept': 'application/json',
+        };
 
-        if (authService.authCookie != null &&
-            authService.authCookie!.isNotEmpty) {
-          headers['Cookie'] = authService.authCookie!;
-          debugPrint('CONTACT-GROUP AUTH: cookie attached');
-        } else {
-          debugPrint('CONTACT-GROUP AUTH: no cookie found');
+        final cookie = authService.authCookie;
+        if (cookie != null && cookie.isNotEmpty) {
+          headers['Cookie'] = cookie;
         }
 
         final client = http.Client();
+
         try {
           response = await client.get(url, headers: headers);
         } finally {
@@ -169,28 +166,39 @@ class ProductService {
         }
       }
 
-      //Handle response
       if (response.statusCode == 401) {
-        throw Exception('Unauthorized (401)');
+        throw Exception('Unauthorized (401). Please log in again.');
       }
 
       if (response.statusCode != 200) {
         throw Exception(
-          'Failed to load contact groups: ${response.statusCode} - ${response.body}',
+          'Failed to load contact groups: '
+          '${response.statusCode} - ${response.body}',
         );
       }
 
-      final List<dynamic> ids = jsonDecode(response.body);
+      final decoded = jsonDecode(response.body);
 
-      // Map [1,2,3,...] → BuyerContactMethod list
-      return ids.map<BuyerContactMethod>((rawId) {
-        final methodId = int.tryParse(rawId.toString()) ?? 0;
+      if (decoded is! List) {
+        throw Exception('Invalid contact-group API response.');
+      }
+
+      return List<BuyerContactMethod>.generate(decoded.length, (index) {
+        final rawId = decoded[index];
+        final groupId = int.tryParse(rawId.toString());
+
+        if (groupId == null) {
+          throw FormatException(
+            'Invalid contact group ID: $rawId',
+          );
+        }
+
         return BuyerContactMethod(
-          methodId: methodId,
-          methodName: methodId.toString(),
+          methodId: groupId,
+          methodName: 'Contact ${index + 1}',
           userId: 0,
         );
-      }).toList();
+      });
     } catch (e, st) {
       debugPrint('getBuyerContactMethods error: $e');
       debugPrint(st.toString());
@@ -490,18 +498,9 @@ class ProductService {
     }
   }
 
-  // ============================================================
   // UPDATE PRODUCT
-  // ============================================================
 
-  // ============================================================
-  // UPDATE PRODUCT
-  // ============================================================
-
-  // ============================================================
-  // UPDATE PRODUCT
-  // ============================================================
-
+  // UPDATE PRODUCT USING PUT + MULTIPART
   Future<ProductApiResponse> updateProduct({
     required AuthService authService,
     required int productId,
@@ -522,13 +521,10 @@ class ProductService {
     required List<Map<String, dynamic>> businessContacts,
   }) async {
     final url = Uri.parse(
-      'https://www.capital-sys.net/CKMMallAPI/api/saleitem/UpdateSaleItem',
+      'https://www.capital-sys.net/CKMMallAPI/api/Product/UpdateProduct/$productId',
     );
 
-    // ============================================================
-    // CATEGORIES
-    // ============================================================
-
+    // Categories
     final pCategoryList = categoryIds.map((categoryId) {
       return {
         'id': 0,
@@ -537,108 +533,81 @@ class ProductService {
       };
     }).toList();
 
-    // ============================================================
-    // VARIANTS
-    // ============================================================
-
-    final pVariantList = variants.map((variant) {
-      return {
-        'id': 0,
-        'productId': productId,
-        'variantID': '',
-        'quantity': variant.quantity.toString(),
-        'price': variant.price,
-        'discountPrice': variant.discountPrice,
-        'variantName': variant.variantName,
-      };
-    }).toList();
-
-    // ============================================================
-    // IMAGES
-    // ============================================================
-
+    // Existing image metadata
     final pImageList = images.map((image) {
       return {
         'id': image['id'] ?? 0,
-        'productId': productCode,
+        'productId': productId,
         'imageUrl': image['imageUrl'] ?? '',
         'sortOrder': image['sortOrder'] ?? 1,
       };
     }).toList();
 
-    // ============================================================
-    // REQUEST BODY
-    // ============================================================
+    // Product variants
+    final pVariantList = variants.map((variant) {
+      return {
+        'id': 0,
+        'productId': productId,
+        'variantID': variant.variantId,
+        'quantity': variant.quantity,
+        'price': variant.price.toString(),
+        'discountPrice': (variant.discountPrice ?? 0).toString(),
+        'variantName': variant.variantName,
+      };
+    }).toList();
 
-    final body = {
+    // Product payload
+    final product = {
       'productId': productId,
       'productCode': productCode,
       'userId': userId,
       'productName': productName,
       'description': description,
       'location': location,
-      'price': price,
-      'discountPrice': discountPrice ?? 0,
+      'price': price.toString(),
+      'discountPrice': (discountPrice ?? 0).toString(),
+      'quantity': quantity,
       'condition': condition,
       'status': status,
       'businessContactGroupId': businessContactGroupId,
-
       'pCategoryList': pCategoryList,
       'pImageList': pImageList,
       'pVariantList': pVariantList,
       'businesscontact': businessContacts,
     };
 
-    final jsonBody = jsonEncode(body);
+    // IMPORTANT: PUT request with multipart/form-data
+    final request = http.MultipartRequest('PUT', url);
+
+    request.headers['Accept'] = 'application/json';
+    request.fields['product'] = jsonEncode(product);
 
     debugPrint('========== UPDATE API REQUEST ==========');
-    debugPrint('Method: PUT');
+    debugPrint('Method: ${request.method}');
     debugPrint('URL: $url');
-    debugPrint('Body: $jsonBody');
-    debugPrint('========================================');
+    debugPrint('Product: ${request.fields['product']}');
 
     try {
-      http.Response response;
-
-      // ============================================================
-      // WEB
-      // ============================================================
+      late http.Response response;
 
       if (kIsWeb) {
+        // Web: send browser authentication cookies
         final client = BrowserClient();
-
-        // IMPORTANT:
-        // This allows the browser to send the authentication cookie.
         client.withCredentials = true;
 
         try {
-          response = await client.put(
-            url,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            body: jsonBody,
-          );
+          final streamedResponse = await client.send(request);
+          response = await http.Response.fromStream(streamedResponse);
         } finally {
           client.close();
         }
-      }
-      // ============================================================
-      // ANDROID / IOS
-      // ============================================================
-      else {
-        final headers = <String, String>{
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        };
+      } else {
+        // Android / iOS: attach authentication cookie
+        final cookie = authService.authCookie;
 
-        // Native Flutter does not automatically send the login cookie.
-        if (authService.authCookie != null &&
-            authService.authCookie!.isNotEmpty) {
-          headers['Cookie'] = authService.authCookie!;
-
-          debugPrint('UPDATE AUTH: Authentication cookie attached.');
+        if (cookie != null && cookie.isNotEmpty) {
+          request.headers['Cookie'] = cookie;
+          debugPrint('UPDATE AUTH: Cookie attached.');
         } else {
           debugPrint('UPDATE AUTH: No authentication cookie found.');
         }
@@ -646,29 +615,20 @@ class ProductService {
         final client = http.Client();
 
         try {
-          response = await client.put(url, headers: headers, body: jsonBody);
+          final streamedResponse = await client.send(request);
+          response = await http.Response.fromStream(streamedResponse);
         } finally {
           client.close();
         }
       }
 
-      // ============================================================
-      // RESPONSE DEBUG
-      // ============================================================
-
       debugPrint('========== UPDATE API RESPONSE ==========');
       debugPrint('Status Code: ${response.statusCode}');
       debugPrint('Response Body: ${response.body}');
       debugPrint('Response Headers: ${response.headers}');
-      debugPrint('=========================================');
 
-      // ============================================================
-      // 401 UNAUTHORIZED
-      // ============================================================
-
+      // Authentication failure
       if (response.statusCode == 401) {
-        debugPrint('UPDATE RESULT: 401 Unauthorized');
-
         return ProductApiResponse(
           success: false,
           message: 'Please login or sign up first.',
@@ -676,78 +636,65 @@ class ProductService {
         );
       }
 
-      // ============================================================
-      // EMPTY RESPONSE
-      // ============================================================
+      // Successful response with no body
+      final isHttpSuccess =
+          response.statusCode >= 200 && response.statusCode < 300;
 
-      if (response.body.isEmpty) {
-        final isSuccess =
-            response.statusCode >= 200 && response.statusCode < 300;
-
+      if (response.body.trim().isEmpty) {
         return ProductApiResponse(
-          success: isSuccess,
-          message: isSuccess
+          success: isHttpSuccess,
+          message: isHttpSuccess
               ? 'Product updated successfully.'
               : 'Failed to update product.',
           statusCode: response.statusCode,
         );
       }
 
-      // ============================================================
-      // PARSE JSON
-      // ============================================================
-
+      // Parse JSON response
       dynamic decodedResponse;
 
       try {
         decodedResponse = jsonDecode(response.body);
-      } catch (e) {
-        debugPrint('UPDATE JSON PARSE ERROR: $e');
-
+      } catch (_) {
         return ProductApiResponse(
-          success: response.statusCode >= 200 && response.statusCode < 300,
-          message: response.body.isNotEmpty
-              ? response.body
-              : 'Failed to update product.',
+          success: isHttpSuccess,
+          message: response.body,
           statusCode: response.statusCode,
         );
       }
 
-      // ============================================================
-      // INVALID RESPONSE FORMAT
-      // ============================================================
+      if (decodedResponse is Map<String, dynamic>) {
+        final apiResponse = ProductApiResponse.fromJson(
+          decodedResponse,
+          statusCode: response.statusCode,
+        );
 
-      if (decodedResponse is! Map<String, dynamic>) {
+        debugPrint('UPDATE SUCCESS: ${apiResponse.success}');
+        debugPrint('UPDATE MESSAGE: ${apiResponse.message}');
+
         return ProductApiResponse(
-          success: response.statusCode >= 200 && response.statusCode < 300,
-          message: decodedResponse.toString(),
+          success: isHttpSuccess && apiResponse.success,
+          message: apiResponse.message.isNotEmpty
+              ? apiResponse.message
+              : (isHttpSuccess
+                    ? 'Product updated successfully.'
+                    : 'Failed to update product.'),
+          id: apiResponse.id,
+          updatedAt: apiResponse.updatedAt,
+          savedAt: apiResponse.savedAt,
           statusCode: response.statusCode,
         );
       }
 
-      // ============================================================
-      // API RESPONSE MODEL
-      // ============================================================
-
-      final apiResponse = ProductApiResponse.fromJson(
-        decodedResponse,
+      return ProductApiResponse(
+        success: isHttpSuccess,
+        message: decodedResponse.toString(),
         statusCode: response.statusCode,
       );
-
-      debugPrint('========== PARSED UPDATE RESPONSE ==========');
-      debugPrint('Success: ${apiResponse.success}');
-      debugPrint('Message: ${apiResponse.message}');
-      debugPrint('ID: ${apiResponse.id}');
-      debugPrint('Updated At: ${apiResponse.updatedAt}');
-      debugPrint('Status Code: ${apiResponse.statusCode}');
-      debugPrint('============================================');
-
-      return apiResponse;
     } catch (e, stackTrace) {
       debugPrint('========== UPDATE API ERROR ==========');
       debugPrint('Error: $e');
-      debugPrint('StackTrace: $stackTrace');
-      debugPrint('======================================');
+      debugPrint('$stackTrace');
 
       return ProductApiResponse(success: false, message: e.toString());
     }
@@ -813,9 +760,7 @@ class ProductService {
   //   return response.statusCode == 200;
   // }
 
-  // ============================================================
   // GET CATEGORIES
-  // ============================================================
 
   static const String _categoryUrl =
       'https://www.capital-sys.net/CKMMallAPI/api/category/all';

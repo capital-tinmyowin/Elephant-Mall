@@ -51,9 +51,7 @@ class SellProductModel {
   });
 
   factory SellProductModel.fromJson(Map<String, dynamic> json) {
-    // ==========================================================
     // CATEGORIES
-    // ==========================================================
 
     final List<int> categoryIds = [];
 
@@ -83,9 +81,7 @@ class SellProductModel {
     //   }
     // }
 
-    // ==========================================================
     // VARIANTS
-    // ==========================================================
 
     final List<ProductVariant> variants = [];
 
@@ -94,6 +90,20 @@ class SellProductModel {
     if (variantList is List) {
       for (final item in variantList) {
         if (item is Map<String, dynamic>) {
+          // Strip commas / non-numeric chars before parsing
+          double parseMoney(dynamic raw) {
+            if (raw == null) return 0;
+            if (raw is num) return raw.toDouble();
+            final cleaned = raw.toString().replaceAll(RegExp(r'[^0-9.]'), '');
+            return double.tryParse(cleaned) ?? 0;
+          }
+
+          final rawDiscount = item['discountPrice'];
+          final double? discount =
+              (rawDiscount == null || rawDiscount.toString().trim().isEmpty)
+              ? null
+              : parseMoney(rawDiscount);
+
           variants.add(
             ProductVariant(
               variantId:
@@ -101,22 +111,18 @@ class SellProductModel {
                   item['variantID']?.toString() ??
                   '',
               variantName: item['variantName']?.toString() ?? '',
-              price: double.tryParse(item['price']?.toString() ?? '0') ?? 0,
+              price: parseMoney(item['price']),
               quantity: int.tryParse(item['quantity']?.toString() ?? '0') ?? 0,
-              discountPrice:
-                  item['discountPrice'] == null ||
-                      item['discountPrice'].toString().isEmpty
-                  ? null
-                  : double.tryParse(item['discountPrice'].toString()),
+              discountPrice: (discount != null && discount > 0)
+                  ? discount
+                  : null,
             ),
           );
         }
       }
     }
 
-    // ==========================================================
     // IMAGES
-    // ==========================================================
 
     final List<String> imageUrls = [];
 
@@ -134,7 +140,6 @@ class SellProductModel {
       }
     }
 
-    // ==========================================================
     // BUSINESS CONTACTS
     //
     // Location is NOT taken from businesscontact.
@@ -173,12 +178,25 @@ class SellProductModel {
       }
     }
 
-    // ==========================================================
     // PRODUCT PRICE / QUANTITY / SKU
-    // ==========================================================
 
-    final String price = json['price']?.toString() ?? '0';
-    final String discountPrice = json['discountPrice']?.toString() ?? '';
+    final String price = (() {
+      final raw = json['price'];
+      if (raw is num) return raw.toString();
+      final cleaned = (raw?.toString() ?? '0').replaceAll(
+        RegExp(r'[^0-9.]'),
+        '',
+      );
+      return cleaned.isEmpty ? '0' : cleaned;
+    })();
+
+    final String discountPrice = (() {
+      final raw = json['discountPrice'];
+      if (raw == null) return '';
+      if (raw is num) return raw.toString();
+      final cleaned = raw.toString().replaceAll(RegExp(r'[^0-9.]'), '');
+      return cleaned;
+    })();
 
     String sku = '';
     String quantity = '0';
@@ -189,9 +207,7 @@ class SellProductModel {
       quantity = variants.first.quantity.toStringAsFixed(0);
     }
 
-    // ==========================================================
     // RETURN MODEL
-    // ==========================================================
 
     return SellProductModel(
       productId: int.tryParse(json['productId']?.toString() ?? '') ?? 0,

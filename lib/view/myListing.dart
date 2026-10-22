@@ -159,6 +159,57 @@ class _SellerStorePageState extends State<SellerStorePage> {
     }
   }
 
+  Future<void> deleteProduct(Product product) async {
+    final productId = product.productId;
+
+    if (productId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot delete this product: missing product ID.'),
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Product'),
+        content: Text(
+          'Are you sure you want to delete "${product.productName}"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    // UI-only deletion. Replace this with your DELETE API call.
+    setState(() {
+      products.removeWhere((item) => item.productId == productId);
+
+      favouriteProductIds.remove(productId);
+      favouriteLoadingIds.remove(productId);
+
+      if (_currentPage > totalPages) {
+        _currentPage = totalPages;
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Product removed from the displayed list.')),
+    );
+  }
+
   Future<void> loadProducts() async {
     if (!mounted) {
       return;
@@ -1085,46 +1136,72 @@ class _SellerStorePageState extends State<SellerStorePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ======================================================
           // PRODUCT IMAGE + EDIT BUTTON
-          // ======================================================
           SizedBox(
             height: mobile ? 75 : 145,
             width: double.infinity,
             child: Stack(
               children: [
-                // ------------------------------------------------
                 // PRODUCT IMAGE
-                // ------------------------------------------------
                 Positioned.fill(
                   child: _buildProductImage(product.imageUrl, mobile),
                 ),
 
-                // ------------------------------------------------
-                // EDIT BUTTON
-                // ------------------------------------------------
+                // THREE-DOT MENU (EDIT + DELETE)
                 Positioned(
                   top: 4,
                   right: 4,
-                  child: Material(
+                  child: PopupMenuButton<String>(
+                    tooltip: 'Product options',
+                    padding: EdgeInsets.zero,
+                    iconSize: mobile ? 18 : 22,
+                    icon: Icon(
+                      Icons.more_vert,
+                      color: Colors.black87,
+                      size: mobile ? 18 : 22,
+                    ),
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
-                    elevation: 2,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(4),
-                      onTap: () {
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    onSelected: (value) {
+                      if (value == 'edit') {
                         editProduct(product);
-                      },
-                      child: SizedBox(
-                        width: mobile ? 24 : 30,
-                        height: mobile ? 24 : 30,
-                        child: Icon(
-                          Icons.edit,
-                          size: mobile ? 13 : 17,
-                          color: const Color(0xff28733D),
+                      } else if (value == 'delete') {
+                        deleteProduct(product);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem<String>(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.edit_outlined,
+                              size: 18,
+                              color: Color(0xff28733D),
+                            ),
+                            SizedBox(width: 10),
+                            Text('Edit'),
+                          ],
                         ),
                       ),
-                    ),
+                      const PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.delete_outline,
+                              size: 18,
+                              color: Colors.red,
+                            ),
+                            SizedBox(width: 10),
+                            Text('Delete', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
