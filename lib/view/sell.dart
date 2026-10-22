@@ -227,13 +227,13 @@ class _VariantDialogState extends State<_VariantDialog> {
                 controller: variantController,
 
                 decoration: const InputDecoration(
-                  labelText: "Variant Name",
+                  labelText: "SKU",
                   border: OutlineInputBorder(),
                 ),
 
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return "Please enter variant name";
+                    return "Please enter SKU";
                   }
 
                   return null;
@@ -438,8 +438,13 @@ class _SellPageState extends State<SellPage> {
 
   BuyerContactMethod? selectedBuyerContactMethod;
 
+  // Actual API group ID selected in the dropdown.
+  int? selectedBusinessContactGroupId;
+
   bool isLoadingBuyerMethods = false;
   bool isLoadingBuyerDetail = false;
+
+  int? _productBusinessContactGroupId;
 
   bool isNewBuyerMethod = false;
 
@@ -485,10 +490,63 @@ class _SellPageState extends State<SellPage> {
     }
   }
 
+  void _selectProductBusinessContactGroup() {
+    if (!mounted || buyerContactMethods.isEmpty) {
+      return;
+    }
+
+    final groupId = _productBusinessContactGroupId;
+
+    debugPrint('Product contact group ID: $groupId');
+    debugPrint(
+      'Available contact group IDs: '
+      '${buyerContactMethods.map((m) => m.methodId).toList()}',
+    );
+
+    if (groupId == null) {
+      return;
+    }
+
+    BuyerContactMethod? matchedMethod;
+
+    for (final method in buyerContactMethods) {
+      if (method.methodId == groupId) {
+        matchedMethod = method;
+        break;
+      }
+    }
+
+    if (matchedMethod == null) {
+      debugPrint('Contact group $groupId is not in the dropdown list.');
+      return;
+    }
+
+    setState(() {
+      selectedBusinessContactGroupId = groupId;
+      selectedBuyerContactMethod = matchedMethod;
+      isNewBuyerMethod = false;
+    });
+
+    debugPrint('Selected contact group ID: $groupId');
+
+    // Group 0 is valid, but do not call the detail API for it.
+    // The product's existing contact fields have already been loaded.
+    if (groupId == 0) {
+      setState(() {
+        isLoadingBuyerDetail = false;
+      });
+      return;
+    }
+
+    onBuyerContactMethodSelected(matchedMethod);
+  }
+
   bool get _contactsReadOnly {
-    // Selected existing group → read-only
-    // New buyer method (or no selection) → editable
-    return selectedBuyerContactMethod != null && !isNewBuyerMethod;
+    // Existing positive group IDs load saved contacts and remain read-only.
+    // Group 0 and the new-contact option remain editable.
+    return selectedBusinessContactGroupId != null &&
+        selectedBusinessContactGroupId! > 0 &&
+        !isNewBuyerMethod;
   }
 
   Future<void> _showLoginRequiredDialog() async {
@@ -634,6 +692,13 @@ class _SellPageState extends State<SellPage> {
 
       debugPrint('Product found: ${product.productCode}');
 
+      String formatMoney(double value) {
+        if (value == value.roundToDouble()) {
+          return NumberFormat('#,##0').format(value);
+        }
+        return NumberFormat('#,##0.##').format(value);
+      }
+
       // Save BOTH values.
       _productId = product.productId;
       _productCode = product.productCode;
@@ -644,25 +709,77 @@ class _SellPageState extends State<SellPage> {
       priceController.text = product.price.toString();
       skuController.text = product.sku;
       qtyController.text = product.quantity.toString();
-
+      _productBusinessContactGroupId = product.businessContactGroupId;
+      debugPrint(
+        'Parsed product business contact group ID: '
+        '$_productBusinessContactGroupId',
+      );
       locationController.text = product.location;
       phoneController.text = product.phoneNumber;
       messengerController.text = product.messengerLink;
       telegramController.text = product.telegram;
       viberController.text = product.viber;
 
+      final loadedVariants = List<ProductVariant>.from(product.variants);
+
+      if (loadedVariants.length == 1) {
+        final v = loadedVariants.first;
+
+        // Price
+        // final priceVal = v.price;
+        priceController.text = formatMoney(v.price);
+
+        // Discount price
+        if (v.discountPrice != null && v.discountPrice! > 0) {
+          discountPriceController.text = formatMoney(v.discountPrice!);
+          enableDiscountPrice = true;
+        } else {
+          discountPriceController.clear();
+          enableDiscountPrice = false;
+        }
+
+        // SKU = variantName
+        skuController.text = v.variantName;
+
+        // Quantity
+        qtyController.text = v.quantity.toStringAsFixed(0);
+      } else {
+        final topPrice = parsePrice(product.price) ?? 0;
+        // Multiple variants (or none) → use top-level product fields
+        priceController.text = formatMoney(topPrice);
+
+        final topDiscount = parsePrice(product.discountPrice);
+        if (topDiscount != null && topDiscount > 0) {
+          discountPriceController.text = formatMoney(topDiscount);
+          enableDiscountPrice = true;
+        } else {
+          discountPriceController.clear();
+          enableDiscountPrice = false;
+        }
+
+        skuController.text = product.sku;
+        qtyController.text = product.quantity.toString();
+      }
+
       setState(() {
         selectedCategoryIds = List<int>.from(product.categoryIds);
-        variants = List<ProductVariant>.from(product.variants);
+
+        // Keep variants list empty when there was only one variant
+        // so the simple Price/SKU/Qty fields remain enabled.
+        variants = loadedVariants.length == 1
+            ? <ProductVariant>[]
+            : loadedVariants;
 
         telegramVisible = product.telegram.trim().isNotEmpty;
         viberVisible = product.viber.trim().isNotEmpty;
       });
 
+      _selectProductBusinessContactGroup();
+
       debugPrint('Product ID: $_productId');
       debugPrint('Product Code: $_productCode');
       debugPrint('Selected category IDs: $selectedCategoryIds');
-      debugPrint('Loaded variants: ${variants.length}');
+      debugPrint('Loaded variants (UI): ${variants.length}');
     } catch (e) {
       debugPrint('Load product error: $e');
       await _handleApiError(e);
@@ -704,6 +821,7 @@ class _SellPageState extends State<SellPage> {
         buyerContactMethods = methods;
         isLoadingBuyerMethods = false;
       });
+      _selectProductBusinessContactGroup();
     } catch (e) {
       if (!mounted) return;
       setState(() => isLoadingBuyerMethods = false);
@@ -720,14 +838,22 @@ class _SellPageState extends State<SellPage> {
   }
 
   Future<void> onBuyerContactMethodSelected(BuyerContactMethod? method) async {
-    if (method == null) {
+    if (method == null) return;
+
+    // Group 0 is a valid dropdown option, but its detail endpoint
+    // should not be called.
+    if (method.methodId == 0) {
       setState(() {
-        selectedBuyerContactMethod = null;
+        selectedBusinessContactGroupId = 0;
+        selectedBuyerContactMethod = method;
+        isNewBuyerMethod = false;
+        isLoadingBuyerDetail = false;
       });
       return;
     }
 
     setState(() {
+      selectedBusinessContactGroupId = method.methodId;
       selectedBuyerContactMethod = method;
       isNewBuyerMethod = false;
       isLoadingBuyerDetail = true;
@@ -743,18 +869,20 @@ class _SellPageState extends State<SellPage> {
 
       if (!mounted) return;
 
+      // Do not apply an old response if the user selected another group.
+      if (selectedBusinessContactGroupId != method.methodId) {
+        return;
+      }
+
       setState(() {
-        // Bind only the fields that come from the API
         phoneController.text = detail.phoneNumber;
         telegramController.text = detail.telegram;
         viberController.text = detail.viber;
         messengerController.text = detail.messenger;
 
-        // Show optional fields only when they have a value
         telegramVisible = detail.telegram.isNotEmpty;
         viberVisible = detail.viber.isNotEmpty;
 
-        // Location is NOT touched – user types it manually
         isLoadingBuyerDetail = false;
       });
     } catch (e) {
@@ -823,13 +951,14 @@ class _SellPageState extends State<SellPage> {
       isNewBuyerMethod = newValue;
 
       if (newValue) {
+        // The new-contact option uses group ID 0.
+        selectedBusinessContactGroupId = 0;
         selectedBuyerContactMethod = null;
 
         phoneController.clear();
         telegramController.clear();
         viberController.clear();
         messengerController.clear();
-        // Keep location as user types it manually
 
         telegramVisible = false;
         viberVisible = false;
@@ -1486,6 +1615,11 @@ class _SellPageState extends State<SellPage> {
                   });
                 }
               },
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
               decoration: _input(
                 "ပစ္စည်းအမည် (ဥပမာ - ပိုးလုံချည် သို့မဟုတ် ကျွန်းပန်းကန်)",
                 errorText: titleError,
@@ -1740,6 +1874,11 @@ class _SellPageState extends State<SellPage> {
                   });
                 }
               },
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
               decoration: _input(
                 "Describe your item. (Material, Condition, Size, etc.)\n"
                 "သင့်ပစ္စည်းအကြောင်းဖော်ပြပါ။ (ပစ္စည်း၊ အခြေအနေ၊ အရွယ်အစား စသည်)",
@@ -1763,6 +1902,11 @@ class _SellPageState extends State<SellPage> {
 
             TextField(
               controller: conditionController,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
               decoration: _input("Enter condition (e.g., New, Used, Like New)"),
             ),
 
@@ -1783,6 +1927,11 @@ class _SellPageState extends State<SellPage> {
             TextField(
               controller: locationController,
               maxLength: 200,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
               decoration: _input(
                 "Enter your location (e.g., Yangon, Mandalay)",
               ),
@@ -1864,6 +2013,11 @@ class _SellPageState extends State<SellPage> {
                     textAlign: TextAlign.right,
                     keyboardType: TextInputType.number,
                     inputFormatters: [ThousandsSeparatorInputFormatter()],
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
                     decoration: InputDecoration(
                       labelText: "Price", // ← left-aligned label (like variant)
                       suffixText: "Ks",
@@ -1900,6 +2054,11 @@ class _SellPageState extends State<SellPage> {
                     enabled: enableDiscountPrice,
                     textAlign: TextAlign.right,
                     keyboardType: TextInputType.number,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
                     inputFormatters: [ThousandsSeparatorInputFormatter()],
                     decoration: InputDecoration(
                       labelText: "Discount Price",
@@ -1954,6 +2113,11 @@ class _SellPageState extends State<SellPage> {
         const SizedBox(height: 6),
 
         TextField(
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
           controller: skuController,
           enabled: variants.isEmpty,
           decoration: _input("SKU (Optional)", errorText: skuError),
@@ -1978,6 +2142,11 @@ class _SellPageState extends State<SellPage> {
                 controller: qtyController,
                 enabled: variants.isEmpty,
                 keyboardType: TextInputType.number,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 onChanged: (value) {
                   if (value.trim().isNotEmpty && qtyError != null) {
@@ -2071,54 +2240,69 @@ class _SellPageState extends State<SellPage> {
           children: [
             // BUYER CONTACT METHOD DROPDOWN
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: const Color(0xffFDF7ED),
-                      border: Border.all(color: const Color(0xffD8D8D8)),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<BuyerContactMethod>(
-                        value: selectedBuyerContactMethod,
-                        isExpanded: true,
-
-                        hint: const Text(
-                          "Select Business Contact Method",
-                          overflow: TextOverflow.ellipsis,
-                        ),
-
-                        icon: const Icon(Icons.keyboard_arrow_down, size: 20),
-
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.black87,
-                        ),
-
-                        dropdownColor: Colors.white,
-
-                        items: buyerContactMethods.map((method) {
-                          return DropdownMenuItem<BuyerContactMethod>(
-                            value: method,
-                            child: Text(
-                              method.methodName,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          );
-                        }).toList(),
-
-                        onChanged: isLoadingBuyerMethods
-                            ? null
-                            : onBuyerContactMethodSelected,
-                      ),
-                    ),
+              child: DropdownButtonFormField<int>(
+                value:
+                    buyerContactMethods.any(
+                      (method) =>
+                          method.methodId == selectedBusinessContactGroupId,
+                    )
+                    ? selectedBusinessContactGroupId
+                    : null,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  labelText: 'Business Contact',
+                  labelStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ],
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.grey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.grey),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 16,
+                  ),
+                ),
+                style: const TextStyle(fontSize: 14, color: Colors.black87),
+                hint: const Text(
+                  'Select Business Contact',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+
+                items: buyerContactMethods.map((method) {
+                  return DropdownMenuItem<int>(
+                    value: method.methodId,
+                    child: Text(method.methodName),
+                  );
+                }).toList(),
+                onChanged: isLoadingBuyerMethods
+                    ? null
+                    : (groupId) {
+                        if (groupId == null) return;
+
+                        final method = buyerContactMethods.firstWhere(
+                          (item) => item.methodId == groupId,
+                        );
+
+                        if (groupId == 0) {
+                          setState(() {
+                            selectedBusinessContactGroupId = 0;
+                            selectedBuyerContactMethod = method;
+                            isNewBuyerMethod = false;
+                            isLoadingBuyerDetail = false;
+                          });
+
+                          // Do not request contact details for group 0.
+                          return;
+                        }
+
+                        onBuyerContactMethodSelected(method);
+                      },
               ),
             ),
 
@@ -2146,50 +2330,6 @@ class _SellPageState extends State<SellPage> {
                 ),
               ],
             ),
-
-            // Row(
-            //   mainAxisSize: MainAxisSize.min,
-            //   children: [
-            //     Checkbox(
-            //       value: isNewBuyerMethod,
-            //       onChanged: (value) {
-            //         final newValue = value ?? false;
-
-            //         setState(() {
-            //           isNewBuyerMethod = newValue;
-
-            //           if (newValue) {
-            //             // CLEAR SELECTED BUYER CONTACT METHOD
-            //             selectedBuyerContactMethod = null;
-
-            //             // CLEAR CONTACT INFORMATION
-            //             locationController.clear();
-            //             phoneController.clear();
-            //             telegramController.clear();
-            //             viberController.clear();
-            //             messengerController.clear();
-
-            //             // RESET OPTIONAL CONTACT CHECKBOXES
-            //             telegramVisible = false;
-            //             viberVisible = false;
-
-            //             // Detail loading is no longer needed
-            //             isLoadingBuyerDetail = false;
-            //           }
-            //         });
-            //       },
-            //     ),
-
-            //     const Text(
-            //       "New Buyer Method",
-            //       style: TextStyle(
-            //         fontSize: 15,
-            //         fontWeight: FontWeight.w600,
-            //         color: Colors.black,
-            //       ),
-            //     ),
-            //   ],
-            // ),
           ],
         ),
 
@@ -2208,6 +2348,11 @@ class _SellPageState extends State<SellPage> {
           controller: phoneController,
           enabled: !_contactsReadOnly,
           keyboardType: TextInputType.phone,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           onChanged: (value) {
             if (value.trim().isNotEmpty && phoneError != null) {
@@ -2254,6 +2399,11 @@ class _SellPageState extends State<SellPage> {
                 Expanded(
                   child: TextField(
                     controller: telegramController,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
                     enabled: !_contactsReadOnly,
                     decoration: _input("Telegram Username"),
                   ),
@@ -2339,6 +2489,11 @@ class _SellPageState extends State<SellPage> {
 
                 Expanded(
                   child: TextField(
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
                     controller: viberController,
                     enabled: !_contactsReadOnly,
                     keyboardType: TextInputType.phone,
@@ -2430,6 +2585,11 @@ class _SellPageState extends State<SellPage> {
                 /// INPUT ONLY
                 Expanded(
                   child: TextField(
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
                     controller: messengerController,
                     enabled: !_contactsReadOnly,
                     decoration: _input(
@@ -2567,10 +2727,10 @@ class _SellPageState extends State<SellPage> {
                       return;
                     }
                     // ---- Business contact group + payload ----
-                    final int groupId =
-                        isNewBuyerMethod || selectedBuyerContactMethod == null
+
+                    final int groupId = isNewBuyerMethod
                         ? 0
-                        : selectedBuyerContactMethod!.methodId;
+                        : (selectedBusinessContactGroupId ?? 0);
 
                     final List<Map<String, dynamic>> businessContacts = [
                       if (phoneController.text.trim().isNotEmpty)
@@ -2608,6 +2768,38 @@ class _SellPageState extends State<SellPage> {
                         ? double.tryParse(discountPriceController.text.trim())
                         : null;
 
+                    // Clean prices (remove thousand separators)
+                    final double? parsedMainPrice = parsePrice(
+                      priceController.text,
+                    );
+                    final double? parsedDiscountPrice =
+                        enableDiscountPrice &&
+                            discountPriceController.text.trim().isNotEmpty
+                        ? parsePrice(discountPriceController.text)
+                        : null;
+
+                    // When user did NOT add any variants, still send a single
+                    // entry in pVariantList built from the simple form fields.
+                    // variantName = SKU (optional). This keeps create/update
+                    // consistent with how a single-variant product is loaded.
+                    List<ProductVariant> variantsToSend =
+                        List<ProductVariant>.from(variants);
+
+                    if (variantsToSend.isEmpty) {
+                      final qty = int.tryParse(qtyController.text.trim()) ?? 0;
+                      final sku = skuController.text.trim();
+
+                      variantsToSend = [
+                        ProductVariant(
+                          variantId: '',
+                          variantName: sku, // SKU becomes variantName
+                          price: parsedMainPrice ?? 0,
+                          quantity: qty,
+                          discountPrice: parsedDiscountPrice,
+                        ),
+                      ];
+                    }
+
                     setState(() {
                       isSubmitting = true;
                     });
@@ -2644,21 +2836,21 @@ class _SellPageState extends State<SellPage> {
                           productName: titleController.text.trim(),
                           description: descriptionController.text.trim(),
                           location: locationController.text.trim(),
-                          price:
-                              double.tryParse(priceController.text.trim()) ?? 0,
-                          discountPrice: discountPrice,
+                          price: parsedMainPrice ?? 0,
+                          discountPrice: parsedDiscountPrice,
                           quantity:
                               int.tryParse(qtyController.text.trim()) ?? 0,
                           condition: conditionController.text.trim(),
                           status: isActive ? 'Active' : 'Inactive',
                           businessContactGroupId: groupId,
                           categoryIds: selectedCategoryIds,
-                          variants: variants,
+                          variants: variantsToSend, // ← uses synthetic list
                           images: [],
                           businessContacts: businessContacts,
                         );
 
                         requestSuccess = apiResponse.success;
+                        await loadBuyerContactMethods();
                       } else {
                         // CREATE
                         apiResponse = await productService.createProduct(
@@ -2669,11 +2861,9 @@ class _SellPageState extends State<SellPage> {
                           productName: titleController.text.trim(),
                           description: descriptionController.text.trim(),
                           location: locationController.text.trim(),
-                          price: (parsePrice(priceController.text) ?? 0)
-                              .toString(),
-                          discountPrice: enableDiscountPrice
-                              ? (parsePrice(discountPriceController.text) ?? 0)
-                                    .toString()
+                          price: (parsedMainPrice ?? 0).toString(),
+                          discountPrice: parsedDiscountPrice != null
+                              ? parsedDiscountPrice.toString()
                               : null,
                           quantity:
                               int.tryParse(qtyController.text.trim()) ?? 0,
@@ -2681,7 +2871,7 @@ class _SellPageState extends State<SellPage> {
                           status: isActive ? 'Active' : 'Inactive',
                           businessContactGroupId: groupId,
                           categoryIds: selectedCategoryIds,
-                          variants: variants,
+                          variants: variantsToSend, // ← uses synthetic list
                           images: [],
                           imageBytes: images,
                           businessContacts: businessContacts,
