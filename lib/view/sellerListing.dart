@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -879,18 +880,7 @@ class _SellerListingPageState extends State<SellerListingPage> {
                     child: ElevatedButton(
                       onPressed: () {
                         if (product.productId != null) {
-                          Navigator.push(
-                            context,
-                            PageRouteBuilder(
-                              pageBuilder: (context, animation,
-                                      secondaryAnimation) =>
-                                  ProductDetailPage(
-                                productId: product.productId!,
-                              ),
-                              transitionDuration: Duration.zero,
-                              reverseTransitionDuration: Duration.zero,
-                            ),
-                          );
+                          context.go('/product/${product.productId}');
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -1196,10 +1186,7 @@ class _SellerListingPageState extends State<SellerListingPage> {
             ),
             TextButton(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const NewInPage()),
-                );
+                context.go('/new-in');
               },
               child: Text(
                 'VIEW ALL',
@@ -1304,15 +1291,7 @@ class _SellerListingPageState extends State<SellerListingPage> {
               child: ElevatedButton(
                 onPressed: () {
                   if (item.productId != 0) {
-                    Navigator.push(
-                      context,
-                      PageRouteBuilder(
-                        pageBuilder: (context, a, b) =>
-                            ProductDetailPage(productId: item.productId),
-                        transitionDuration: Duration.zero,
-                        reverseTransitionDuration: Duration.zero,
-                      ),
-                    );
+                    context.go('/product/${item.productId}');
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -1361,7 +1340,9 @@ class _SellerListingPageState extends State<SellerListingPage> {
               ),
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () {
+                context.go('/sale');
+              },
               child: Text(
                 'VIEW ALL',
                 style: TextStyle(
@@ -1443,16 +1424,7 @@ class _SellerListingPageState extends State<SellerListingPage> {
               child: ElevatedButton(
                 onPressed: () {
                   if (product.productId != null) {
-                    Navigator.push(
-                      context,
-                      PageRouteBuilder(
-                        pageBuilder: (context, a, b) => ProductDetailPage(
-                          productId: product.productId!,
-                        ),
-                        transitionDuration: Duration.zero,
-                        reverseTransitionDuration: Duration.zero,
-                      ),
-                    );
+                    context.go('/product/${product.productId}');
                   }
                 },
                 style: ElevatedButton.styleFrom(

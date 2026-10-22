@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../home.dart';
 
 class CommonFooter extends StatelessWidget {
@@ -51,14 +52,12 @@ class CommonFooter extends StatelessWidget {
       {
         'label': 'Home',
         'onTap': () {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const HomePage()),
-            (route) => false,
-          );
+          context.go('/');
         },
       },
-      {'label': 'Products', 'onTap': () {}},
+      {'label': 'Products', 'onTap': () {
+        context.go('/sale');
+      }},
       {'label': 'About Us', 'onTap': () {}},
       {'label': 'Guide', 'onTap': () {}},
       {'label': 'Reviews', 'onTap': () {}},

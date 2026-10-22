@@ -1,3 +1,6 @@
+import 'package:elephant_mall/models/Category.dart';
+import 'package:elephant_mall/services/auth_service.dart';
+import 'package:elephant_mall/view/common/favorite_helper.dart';
 import 'package:elephant_mall/view/common/loading_widget.dart';
 import 'package:elephant_mall/widgets/app_image.dart';
 import 'package:flutter/material.dart';
@@ -96,7 +99,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
       _apiService.loadProductsByCategory(_currentCategoryId);
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
@@ -141,6 +144,15 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
             .getProductsWithColorVariations(productController.products);
         final productCount = expandedProducts.length;
 
+        // Find the current category to get its image
+        final currentCat = productController.categories.firstWhere(
+          (c) => c.categoryId == _currentCategoryId,
+          orElse: () => Category(
+            categoryId: _currentCategoryId,
+            categoryName: _currentCategoryName,
+            photoPath: '',
+          ),
+        );
         return Container(
           width: double.infinity,
           margin: EdgeInsets.symmetric(
@@ -261,26 +273,38 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                             maxLines: 1,
                           ),
                           const SizedBox(height: 2),
-                          Text(
-                            _getCategoryDescription(_currentCategoryName),
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[700],
-                            ),
-                            maxLines: 2,
-                          ),
+                          // Text(
+                          //   _getCategoryDescription(_currentCategoryName),
+                          //   style: TextStyle(
+                          //     fontSize: 14,
+                          //     color: Colors.grey[700],
+                          //   ),
+                          //   maxLines: 2,
+                          // ),
                         ],
                       ),
                     ),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Image.asset(
-                        'assets/images/heroslider/category_detail_header.png',
-                        height: 130,
-                        width: 500,
-                        fit: BoxFit.cover,
+                    if (currentCat.photoPath.isNotEmpty)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: AppImage(
+                          imageUrl: ApiService.getProxiedImageUrl(currentCat.photoPath),
+                          height: 130,
+                          width: 300, // Adjusted width
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    else
+                      // Fallback asset
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset(
+                          'assets/images/heroslider/category_detail_header.png',
+                          height: 130,
+                          width: 300,
+                          fit: BoxFit.cover,
+                        ),
                       ),
-                    ),
                   ],
                 ),
         );
@@ -424,8 +448,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                         }
                       },
                       backgroundColor: Colors.grey[100],
-                      selectedColor:
-                          const Color(0xFF2B6E3B).withOpacity(0.2),
+                      selectedColor: const Color(0xFF2B6E3B).withOpacity(0.2),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -792,6 +815,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
         return Colors.grey;
     }
   }
+
   Widget _buildCategoryItem(int categoryId, String name, int count) {
     final isSelected = _currentCategoryName == name;
 
@@ -1304,37 +1328,75 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    SizedBox(
-                      width: isMobile ? 100 : 120,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          print("Clicked Detail");
-                          context.go('/product/${product.productId}');
-                          print(product.productId);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey[100],
-                          foregroundColor: const Color(0xFF2B6E3B),
-                          padding: EdgeInsets.symmetric(
-                            vertical: isMobile ? 6 : 8,
-                            horizontal: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          minimumSize: Size(
-                            isMobile ? 80 : 100,
-                            isMobile ? 28 : 32,
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: isMobile ? 100 : 120,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              context.go('/product/${product.productId}');
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey[100],
+                              foregroundColor: const Color(0xFF2B6E3B),
+                              padding: EdgeInsets.symmetric(
+                                vertical: isMobile ? 6 : 8,
+                                horizontal: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              minimumSize: Size(
+                                isMobile ? 80 : 100,
+                                isMobile ? 28 : 32,
+                              ),
+                            ),
+                            child: Text(
+                              'View Detail',
+                              style: TextStyle(
+                                fontSize: isMobile ? 10 : 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
-                        child: Text(
-                          'View Detail',
-                          style: TextStyle(
-                            fontSize: isMobile ? 10 : 11,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        const SizedBox(width: 8),
+                        // 🔥 Favorite Button for List View
+                        Consumer<AuthService>(
+                          builder: (context, authService, child) {
+                            final isFav = authService.isFavorite(
+                              product.productId,
+                            );
+                            final isLoggedIn = authService.isLoggedIn;
+
+                            return GestureDetector(
+                              onTap: () async {
+                                await FavoriteHelper.toggleFavorite(
+                                  context,
+                                  productId: product.productId,
+                                  isCurrentlyFavorite: isFav,
+                                );
+                              },
+                              child: Container(
+                                height: isMobile ? 28 : 32,
+                                width: isMobile ? 32 : 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: Icon(
+                                  isFav
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  size: isMobile ? 16 : 18,
+                                  color: isFav ? Colors.red : Colors.grey[700],
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
@@ -1411,17 +1473,33 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                   Positioned(
                     top: 8,
                     right: 8,
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      padding: const EdgeInsets.all(4),
-                      child: Icon(
-                        Icons.favorite_border,
-                        size: isMobile ? 16 : 18,
-                        color: Colors.grey[700],
-                      ),
+                    child: Consumer<AuthService>(
+                      builder: (context, authService, child) {
+                        final isFav = authService.isFavorite(product.productId);
+                        final isLoggedIn = authService.isLoggedIn;
+
+                        return GestureDetector(
+                          onTap: () async {
+                            await FavoriteHelper.toggleFavorite(
+                              context,
+                              productId: product.productId,
+                              isCurrentlyFavorite: isFav,
+                            );
+                          },
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            padding: const EdgeInsets.all(6),
+                            child: Icon(
+                              isFav ? Icons.favorite : Icons.favorite_border,
+                              size: isMobile ? 16 : 18,
+                              color: isFav ? Colors.red : Colors.grey[700],
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],

@@ -1,3 +1,4 @@
+import 'package:elephant_mall/view/common/favorite_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -210,58 +211,21 @@ class _SalePageState extends State<SalePage> {
   }
 
   Future<void> _toggleFavourite(SaleModel product) async {
-    final authService = Provider.of<AuthService>(context, listen: false);
-
-    if (authService.currentUser == null) {
-      await _showLoginRequiredDialog();
-      return;
-    }
-
-    final productId = product.productId;
-    if (productId == 0) return;
-
-    final isFav = product.favourite == 1;
-
-    try {
-      final success = isFav
-          ? await _saleService.removeFavourite(
-              authService: authService,
-              productId: productId,
-            )
-          : await _saleService.addFavourite(
-              authService: authService,
-              productId: productId,
-            );
-
-      if (!mounted) return;
-
-      if (success) {
-        setState(() {
-          product.favourite = isFav ? 0 : 1;
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isFav ? 'Could not remove favourite' : 'Could not add favourite',
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      if (_isUnauthorizedError(e)) {
-        await _showLoginRequiredDialog();
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+  await FavoriteHelper.toggleFavorite(
+    context,
+    productId: product.productId,
+    isCurrentlyFavorite: product.favourite == 1,
+  );
+  
+  // If the helper was successful, we can optimistically update the NewInModel
+  if (!mounted) return;
+  final authService = Provider.of<AuthService>(context, listen: false);
+  if (authService.isFavorite(product.productId)) {
+    setState(() => product.favourite = 1);
+  } else {
+    setState(() => product.favourite = 0);
   }
+}
 
   // BUILD
 

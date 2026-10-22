@@ -370,6 +370,18 @@ class AuthService extends ChangeNotifier {
             headers: headers,
           )
           .timeout(const Duration(seconds: 15));
+           if (response.statusCode == 401) {
+        await logout(); // Force logout locally
+         _errorMessage = 'Session has expired (401)';
+        notifyListeners();
+        return false;
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _favoriteProductIds.add(productId);
+        notifyListeners();
+        return true;
+      }
 
       print('Add favorite status: ${response.statusCode}');
       print('Add favorite body: ${response.body}');
@@ -434,6 +446,25 @@ class AuthService extends ChangeNotifier {
           .delete(uri, headers: headers)
           .timeout(const Duration(seconds: 15));
 
+           if (response.statusCode == 401) {
+        await logout(); // Force logout locally
+         _errorMessage = 'Session has expired (401)';
+        notifyListeners();
+        return false;
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _favoriteProductIds.add(productId);
+        notifyListeners();
+        return true;
+      }
+
+      if (response.statusCode == 401) {
+        await logout(); // Force logout locally
+        _errorMessage = 'Your session has expired. Please log in again.';
+        notifyListeners();
+        return false;
+      }
       debugPrint('========== REMOVE FAVOURITE RESPONSE ==========');
       debugPrint('Status: ${response.statusCode}');
       debugPrint('Headers: ${response.headers}');

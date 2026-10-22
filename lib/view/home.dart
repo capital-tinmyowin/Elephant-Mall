@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:elephant_mall/models/product.dart';
+import 'package:elephant_mall/services/Category_service.dart';
 import 'package:elephant_mall/services/auth_service.dart';
 import 'package:elephant_mall/view/category_detail.dart';
+import 'package:elephant_mall/view/common/favorite_helper.dart';
 import 'package:elephant_mall/view/common/loading_widget.dart';
 import 'package:elephant_mall/view/new_in.dart';
 import 'package:elephant_mall/view/sale.dart';
@@ -294,7 +296,7 @@ class _HomePageState extends State<HomePage> {
     // Hardcode which promo goes to which page. Update these indices if you add more promos.
     // promo[0] = "Summer Sale 50% OFF"   -> /sale
     // promo[1] = "New Fashion Collection" -> /new-in
-    final destinations = <String>['/new-in', '/sale']; 
+    final destinations = <String>['/new-in', '/sale'];
 
     return Row(
       spacing: 10,
@@ -379,7 +381,12 @@ class _HomePageState extends State<HomePage> {
 
   Widget buildCategories() {
     if (categories.isEmpty) {
-      return const SizedBox();
+      return const CommonError(
+        height: 240,
+        title: 'Failed to load Categories',
+        message: 'No Categories available or connection timeout.',
+        onRetry: null, // You can pass loadHome here
+      );
     }
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -443,10 +450,12 @@ class _HomePageState extends State<HomePage> {
                             //   );
                             // },
                             onTap: () {
-                              context.go('/category/${item.categoryId}?name=${Uri.encodeComponent(item.categoryName)}');
+                              context.go(
+                                '/category/${item.categoryId}?name=${Uri.encodeComponent(item.categoryName)}',
+                              );
                             },
                             child: AppImage(
-                              imageUrl: item.photoPath,
+                              imageUrl: ApiService.getProxiedImageUrl(item.photoPath),
                               height: 90,
                               width: 80,
                               fit: BoxFit.cover,
@@ -458,7 +467,9 @@ class _HomePageState extends State<HomePage> {
                         const SizedBox(height: 5),
                         GestureDetector(
                           onTap: () {
-                            context.go('/category/${item.categoryId}?name=${Uri.encodeComponent(item.categoryName)}');
+                            context.go(
+                              '/category/${item.categoryId}?name=${Uri.encodeComponent(item.categoryName)}',
+                            );
                           },
                           child: Text(
                             item.categoryName,
@@ -537,7 +548,12 @@ class _HomePageState extends State<HomePage> {
 
   Widget buildProducts() {
     if (products.isEmpty) {
-      return const SizedBox();
+      return const CommonError(
+        height: 240,
+        title: 'Failed to load products',
+        message: 'No products available or connection timeout.',
+        onRetry: null, // You can pass loadHome here
+      );
     }
 
     final int totalProducts = products.length;
@@ -726,60 +742,11 @@ class _HomePageState extends State<HomePage> {
                                 ),
                                 onPressed: () async {
                                   // 1) Not logged in → prompt to log in
-                                  if (!isLoggedIn) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Please sign in to save favourites',
-                                        ),
-                                        duration: Duration(seconds: 2),
-                                      ),
-                                    );
-                                    return;
-                                  }
-
-                                  // 2) Toggle favourite
-                                  if (isFav) {
-                                    final ok = await authService.removeFavorite(
-                                      p.productId,
-                                    );
-                                    if (!context.mounted) return;
-                                    if (ok) {
-                                      await authService
-                                          .getUserFavorites(); // refetch to stay in sync
-                                    }
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          ok
-                                              ? 'Removed from favourites'
-                                              : authService.errorMessage ??
-                                                    'Could not remove',
-                                        ),
-                                        duration: const Duration(seconds: 1),
-                                      ),
-                                    );
-                                  } else {
-                                    final ok = await authService.addFavorite(
-                                      p.productId,
-                                    );
-                                    if (!context.mounted) return;
-                                    if (ok) {
-                                      await authService
-                                          .getUserFavorites(); // refetch to stay in sync
-                                    }
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          ok
-                                              ? 'Added to favourites ❤️'
-                                              : authService.errorMessage ??
-                                                    'Could not add',
-                                        ),
-                                        duration: const Duration(seconds: 2),
-                                      ),
-                                    );
-                                  }
+                                  await FavoriteHelper.toggleFavorite(
+                                    context,
+                                    productId: p.productId,
+                                    isCurrentlyFavorite: isFav,
+                                  );
                                 },
                               ),
                             );

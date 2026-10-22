@@ -205,7 +205,7 @@ class _CommonHeaderState extends State<CommonHeader> {
   }
 
   bool isCurrentPage(String menuName) {
-    final currentRoute = ModalRoute.of(context)?.settings.name ?? '/';
+    final currentRoute = GoRouterState.of(context).uri.path;
 
     switch (currentRoute) {
       case "/":
@@ -395,7 +395,7 @@ class _CommonHeaderState extends State<CommonHeader> {
                   return;
                 }
                 context.go(
-                  '/seller-store/${user.id}?name=${Uri.encodeComponent(user.username)}',
+                  '/my-store/${user.id}?name=${Uri.encodeComponent(user.username)}',
                 );
               },
             ),
@@ -405,8 +405,10 @@ class _CommonHeaderState extends State<CommonHeader> {
               title: 'Logout',
               isDestructive: true,
               onTap: () async {
-                Navigator.pop(context);
-                authService.logout();
+                Navigator.pop(context); // Close dialog
+                
+                await authService.logout(); // Clear session and cookies
+                
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
