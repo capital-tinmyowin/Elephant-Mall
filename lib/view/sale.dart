@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import 'login.dart';
 import 'product_detail_page.dart';
+import 'common/loading_widget.dart';
 
 class SalePage extends StatefulWidget {
   const SalePage({super.key});
@@ -316,23 +317,10 @@ class _SalePageState extends State<SalePage> {
                             ),
                           )
                         else if (errorMessage != null)
-                          Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Center(
-                              child: Column(
-                                children: [
-                                  Text(
-                                    'Failed to load sale products',
-                                    style: const TextStyle(color: Colors.red),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  ElevatedButton(
-                                    onPressed: _loadProducts,
-                                    child: const Text('Retry'),
-                                  ),
-                                ],
-                              ),
-                            ),
+                          CommonError(
+                            height: 240,
+                            onRetry: isLoading ? null : _loadProducts,
+                            isRetryEnabled: !isLoading,
                           )
                         else ...[
                           _buildProductCount(filteredProducts.length),
