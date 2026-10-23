@@ -72,6 +72,13 @@ class MyApp extends StatelessWidget {
           pageBuilder: (context, state) => NoTransitionPage(child: const SellPage()),
         ),
         GoRoute(
+          path: '/sell/:id',
+          pageBuilder: (context, state) {
+            final productId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+            return NoTransitionPage(child: SellPage(productId: productId));
+          },
+        ),
+        GoRoute(
           path: '/category',
           pageBuilder: (context, state) => NoTransitionPage(child: const CategoryPage()),
         ),

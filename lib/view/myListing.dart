@@ -1954,30 +1954,25 @@ class _SellerStorePageState extends State<SellerStorePage> {
     debugPrint('Product Name: ${product.productName}');
     debugPrint('==============================================');
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => SellPage(productId: product.productId),
-      ),
-    );
+    context.go('/sell/${product.productId}');
   }
 
-  void openProduct(Product product) {
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            ProductDetailPage(
-              // IMPORTANT:
-              // Product model has productId,
-              // not productCode.
-              productId: product.productId,
-            ),
-        transitionDuration: Duration.zero,
-        reverseTransitionDuration: Duration.zero,
-      ),
-    );
-  }
+  // void openProduct(Product product) {
+  //   Navigator.push(
+  //     context,
+  //     PageRouteBuilder(
+  //       pageBuilder: (context, animation, secondaryAnimation) =>
+  //           ProductDetailPage(
+  //             // IMPORTANT:
+  //             // Product model has productId,
+  //             // not productCode.
+  //             productId: product.productId,
+  //           ),
+  //       transitionDuration: Duration.zero,
+  //       reverseTransitionDuration: Duration.zero,
+  //     ),
+  //   );
+  // }
 
   // VIEW ALL
 
