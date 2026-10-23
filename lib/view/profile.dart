@@ -812,18 +812,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
           print("========================================");
 
-<<<<<<< Updated upstream
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => SellerStorePage(
-                sellerId: currentUserId,
-                sellerName: currentUser.username,
-              ),
-            ),
-          );
 
-=======
           // Navigator.push(
           //   context,
           //   MaterialPageRoute(
@@ -836,7 +825,6 @@ class _ProfilePageState extends State<ProfilePage> {
           context.go(
             '/seller-store/${currentUser.id}?name=${Uri.encodeComponent(currentUser.username)}',
           );
->>>>>>> Stashed changes
           return;
         }
       },
