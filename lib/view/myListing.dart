@@ -14,6 +14,8 @@ import 'common/loading_widget.dart';
 import 'product_detail_page.dart';
 import 'sell.dart';
 import 'new_in.dart';
+import 'login.dart';
+import 'common/favorite_helper.dart';
 
 class SellerStorePage extends StatefulWidget {
   final int? sellerId;
@@ -66,6 +68,24 @@ class _SellerStorePageState extends State<SellerStorePage> {
   void initState() {
     super.initState();
 
+    // Require login before loading anything
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ensureAuthenticated();
+    });
+  }
+
+  Future<void> _ensureAuthenticated() async {
+    if (!mounted) return;
+
+    final authService = context.read<AuthService>();
+    final currentUser = authService.currentUser;
+
+    if (currentUser == null) {
+      await _showLoginRequiredDialog();
+      return;
+    }
+
+    // Logged in → load data
     loadProducts();
     loadSellerInfo();
     loadCategories();
@@ -149,12 +169,20 @@ class _SellerStorePageState extends State<SellerStorePage> {
     } catch (e) {
       if (!mounted) return;
 
+      if (_isUnauthorizedError(e)) {
+        setState(() {
+          newestArrivals = [];
+          newestArrivalsLoading = false;
+        });
+        await _showLoginRequiredDialog();
+        return;
+      }
+
       setState(() {
         newestArrivals = [];
         newestArrivalsLoading = false;
         newestArrivalsError = e.toString();
       });
-
       debugPrint('Failed to load newest arrivals: $e');
     }
   }
@@ -210,6 +238,66 @@ class _SellerStorePageState extends State<SellerStorePage> {
     );
   }
 
+  Future<void> _showLoginRequiredDialog() async {
+    if (!mounted) return;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xfffdfaf4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.lock_outline, color: Color(0xFFC77C2E), size: 28),
+              SizedBox(width: 10),
+              Text(
+                "Login Required",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: const Text(
+            "Your session has expired or you are not logged in.\n\n"
+            "Please login to continue.",
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFC77C2E),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                if (!mounted) return;
+                context.go('/login'); // same as FavoriteHelper
+              },
+              child: const Text(
+                "Login",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  bool _isUnauthorizedError(Object error) {
+    final message = error.toString().toLowerCase();
+    return message.contains('401') ||
+        message.contains('unauthorized') ||
+        message.contains('http 401') ||
+        message.contains('please login');
+  }
+
   Future<void> loadProducts() async {
     if (!mounted) {
       return;
@@ -227,8 +315,11 @@ class _SellerStorePageState extends State<SellerStorePage> {
         throw Exception('Seller ID is required.');
       }
 
-      final result = await _service.fetchSellerProducts(sellerId.toString());
-
+      final authService = context.read<AuthService>();
+      final result = await _service.fetchSellerProducts(
+        sellerId.toString(),
+        authService: authService,
+      );
       // SORT BY PRODUCT ID - BIGGEST FIRST
       result.sort((a, b) => (b.productId ?? 0).compareTo(a.productId ?? 0));
 
@@ -257,7 +348,14 @@ class _SellerStorePageState extends State<SellerStorePage> {
         errorMessage = null;
       });
     } catch (e) {
-      if (!mounted) {
+      if (!mounted) return;
+
+      if (_isUnauthorizedError(e)) {
+        setState(() {
+          loading = false;
+          products = [];
+        });
+        await _showLoginRequiredDialog();
         return;
       }
 
@@ -1052,7 +1150,6 @@ class _SellerStorePageState extends State<SellerStorePage> {
 
     try {
       final authService = context.read<AuthService>();
-
       final info = await _service.fetchSellerInfo(authService: authService);
 
       if (!mounted) return;
@@ -1065,6 +1162,13 @@ class _SellerStorePageState extends State<SellerStorePage> {
     } catch (e) {
       debugPrint('Seller info error: $e');
       if (!mounted) return;
+
+      if (_isUnauthorizedError(e)) {
+        setState(() => sellerInfoLoading = false);
+        await _showLoginRequiredDialog();
+        return;
+      }
+
       setState(() {
         sellerInfo = null;
         sellerInfoLoading = false;
