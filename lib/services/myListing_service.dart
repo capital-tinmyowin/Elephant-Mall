@@ -8,7 +8,7 @@ import '../models/sellerpagemodel.dart';
 import '../services/auth_service.dart';
 import '../models/category.dart';
 import '../models/new_in.dart';
-import '../models/SellerInfo.dart';     
+import '../models/SellerInfo.dart';
 
 class SellerPageService {
   static const String baseUrl = 'https://www.capital-sys.net/CKMMallAPI';
@@ -162,23 +162,44 @@ class SellerPageService {
   // SELLER PRODUCTS
   // ============================================================
 
-  Future<List<Product>> fetchSellerProducts(String sellerId) async {
+  Future<List<Product>> fetchSellerProducts(
+    String sellerId, {
+    required AuthService authService,
+  }) async {
     final url = Uri.parse('$baseUrl/api/Product/GetProductByUserId/$sellerId');
 
-    final response = await http.get(
-      url,
-      headers: {'Accept': 'application/json'},
-    );
+    late http.Response response;
+
+    if (kIsWeb) {
+      final client = BrowserClient()..withCredentials = true;
+      try {
+        response = await client.get(
+          url,
+          headers: {'Accept': 'application/json'},
+        );
+      } finally {
+        client.close();
+      }
+    } else {
+      final headers = <String, String>{'Accept': 'application/json'};
+      if (authService.authCookie != null &&
+          authService.authCookie!.isNotEmpty) {
+        headers['Cookie'] = authService.authCookie!;
+      }
+      response = await http.get(url, headers: headers);
+    }
+
+    if (response.statusCode == 401) {
+      throw Exception('Unauthorized (401). Please log in again.');
+    }
 
     if (response.statusCode != 200) {
       throw Exception(
-        'Failed to load seller products. '
-        'Status: ${response.statusCode}',
+        'Failed to load seller products. Status: ${response.statusCode}',
       );
     }
 
     final dynamic decoded = jsonDecode(response.body);
-
     if (decoded is! List) {
       throw Exception('Invalid seller products response.');
     }
