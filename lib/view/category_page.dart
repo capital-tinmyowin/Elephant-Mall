@@ -1,10 +1,14 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:elephant_mall/models/Category.dart';
+import 'package:elephant_mall/services/auth_service.dart';
 import 'package:elephant_mall/view/category_detail.dart';
+import 'package:elephant_mall/view/common/favorite_helper.dart';
+import 'package:elephant_mall/view/common/loading_widget.dart';
 import 'package:elephant_mall/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
@@ -30,7 +34,7 @@ class _CategoryPageState extends State<CategoryPage> {
   int _currentSlideIndex = 0;
   final Map<String, int> _sliderIndexes = {};
   final Map<String, CarouselSliderController> _sliderControllers = {};
-  // ADD method to get or create a slider index
+  String? _loadError;
 
   // ADD method to update slider index
   void _updateSliderIndex(String id, int index) {
@@ -101,97 +105,93 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 
   Widget buildHero() {
-  final width = MediaQuery.of(context).size.width;
-  final isMobile = width < 600;
+    final width = MediaQuery.of(context).size.width;
+    final isMobile = width < 600;
 
-  return Padding(
-    padding: const EdgeInsets.only(top: 10),
-    child: SizedBox(
-      height: isMobile ? 150 : 250,
-      width: double.infinity,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // SINGLE BANNER IMAGE
-            Image.asset(
-              'assets/ShopbyCategorySummerStyle.png',
-              fit: BoxFit.cover,
-              // alignment: const Alignment(0, -0.3),
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  color: Colors.grey.shade300,
-                  child: const Icon(
-                    Icons.image_not_supported,
-                    size: 40,
-                  ),
-                );
-              },
-            ),
-    
-            // DARK OVERLAY
-            Container(
-              color: Colors.black.withValues(alpha: 0.25),
-            ),
-    
-            // TEXT
-            // Positioned(
-            //   left: isMobile ? 15 : 40,
-            //   top: isMobile ? 15 : 40,
-            //   right: 10,
-            //   child: Column(
-            //     crossAxisAlignment: CrossAxisAlignment.start,
-            //     children: [
-            //       Text(
-            //         'YANGON SUMMER HEATWAVE SAVINGS!',
-            //         maxLines: 1,
-            //         overflow: TextOverflow.ellipsis,
-            //         style: TextStyle(
-            //           color: Colors.white,
-            //           fontSize: isMobile ? 14 : 28,
-            //           fontWeight: FontWeight.bold,
-            //         ),
-            //       ),
-    
-            //       const SizedBox(height: 8),
-    
-            //       Text(
-            //         'Cool styles for Yangon’s hottest days.',
-            //         maxLines: 2,
-            //         overflow: TextOverflow.ellipsis,
-            //         style: TextStyle(
-            //           color: Colors.white,
-            //           fontSize: isMobile ? 11 : 16,
-            //         ),
-            //       ),
-    
-            //       const SizedBox(height: 15),
-    
-            //       ElevatedButton(
-            //         style: ElevatedButton.styleFrom(
-            //           backgroundColor: Colors.orange,
-            //           shape: RoundedRectangleBorder(
-            //             borderRadius: BorderRadius.circular(20),
-            //           ),
-            //         ),
-            //         onPressed: () {},
-            //         child: const Text(
-            //           'SHOP NOW',
-            //           style: TextStyle(
-            //             color: Colors.white,
-            //           ),
-            //         ),
-            //       ),
-            //     ],
-            //   ),
-            // ),
-          ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: SizedBox(
+        height: isMobile ? 150 : 250,
+        width: double.infinity,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // SINGLE BANNER IMAGE
+              Image.asset(
+                'assets/ShopbyCategorySummerStyle.png',
+                fit: BoxFit.cover,
+                // alignment: const Alignment(0, -0.3),
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.grey.shade300,
+                    child: const Icon(Icons.image_not_supported, size: 40),
+                  );
+                },
+              ),
+
+              // DARK OVERLAY
+              Container(color: Colors.black.withValues(alpha: 0.25)),
+
+              // TEXT
+              // Positioned(
+              //   left: isMobile ? 15 : 40,
+              //   top: isMobile ? 15 : 40,
+              //   right: 10,
+              //   child: Column(
+              //     crossAxisAlignment: CrossAxisAlignment.start,
+              //     children: [
+              //       Text(
+              //         'YANGON SUMMER HEATWAVE SAVINGS!',
+              //         maxLines: 1,
+              //         overflow: TextOverflow.ellipsis,
+              //         style: TextStyle(
+              //           color: Colors.white,
+              //           fontSize: isMobile ? 14 : 28,
+              //           fontWeight: FontWeight.bold,
+              //         ),
+              //       ),
+
+              //       const SizedBox(height: 8),
+
+              //       Text(
+              //         'Cool styles for Yangon’s hottest days.',
+              //         maxLines: 2,
+              //         overflow: TextOverflow.ellipsis,
+              //         style: TextStyle(
+              //           color: Colors.white,
+              //           fontSize: isMobile ? 11 : 16,
+              //         ),
+              //       ),
+
+              //       const SizedBox(height: 15),
+
+              //       ElevatedButton(
+              //         style: ElevatedButton.styleFrom(
+              //           backgroundColor: Colors.orange,
+              //           shape: RoundedRectangleBorder(
+              //             borderRadius: BorderRadius.circular(20),
+              //           ),
+              //         ),
+              //         onPressed: () {},
+              //         child: const Text(
+              //           'SHOP NOW',
+              //           style: TextStyle(
+              //             color: Colors.white,
+              //           ),
+              //         ),
+              //       ),
+              //     ],
+              //   ),
+              // ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
+
   // ============= DESKTOP LAYOUT =============
   Widget _buildDesktopLayout() {
     return Row(
@@ -203,9 +203,9 @@ class _CategoryPageState extends State<CategoryPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-            buildHero(),
+              buildHero(),
               // _buildHeroCarousel(false),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
               _buildProducts(),
             ],
           ),
@@ -238,92 +238,66 @@ class _CategoryPageState extends State<CategoryPage> {
 
   // ============= MOBILE TRENDING SECTION =============
   Widget _buildMobileTrendingSection() {
-  return Consumer<ApiService>(
-    builder: (context, productController, child) {
-      // Get trending products from the service
-      final trending = productController.trendingProducts;
-      final news = productController.newProducts;
-      // // if (trending.isEmpty) {
-      // //   return const SizedBox.shrink();
-      // // }
+    return Consumer<ApiService>(
+      builder: (context, productController, child) {
+        // Get trending products from the service
+        final trending = productController.trendingProducts;
+        final news = productController.newProducts;
 
-      // // final fashionTrending = trending
-      // //     .where(
-      // //       (p) =>
-      // //           p.category == "Blouses" ||
-      // //           p.category == "Jeans" ||
-      // //           p.category == "Bags" ||
-      // //           p.category == "Shoes" ||
-      // //           p.category == "T-Shirts",
-      // //     )
-      // //     .take(5)
-      // //     .toList();
+        final bool isMobile = MediaQuery.of(context).size.width < 768;
+        if (isMobile) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (news.isNotEmpty)
+                Expanded(
+                  child: _buildTrendingSlider(
+                    title: 'New Arrivals',
+                    products: news,
+                    sliderId: 'fashion_mobile',
+                    isCompact: true,
+                    viewAllRoute: '/new-in',
+                  ),
+                ),
+              // if (fashionTrending.isNotEmpty && electronicsTrending.isNotEmpty)
+              const SizedBox(width: 8),
+              if (trending.isNotEmpty)
+                Expanded(
+                  child: _buildTrendingSlider(
+                    title: 'Trending Now',
+                    products: trending,
+                    sliderId: 'electronics_mobile',
+                    isCompact: true,
+                    viewAllRoute: '/',
+                  ),
+                ),
+            ],
+          );
+        }
 
-      // // final electronicsTrending = trending
-      // //     .where(
-      // //       (p) =>
-      // //           p.category == "Electronics" ||
-      // //           p.category == "Power Banks" ||
-      // //           p.category == "Headphones",
-      // //     )
-      // //     .take(5)
-      // //     .toList();
-
-      final bool isMobile = MediaQuery.of(context).size.width < 768;
-
-      // if (fashionTrending.isEmpty && electronicsTrending.isEmpty) {
-      //   return const SizedBox.shrink();
-      // }
-
-      if (isMobile) {
-        return Row(
+        return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (news.isNotEmpty)
-              Expanded(
-                child: _buildTrendingSlider(
-                  title: 'New Arrivals',
-                  products: news,
-                  sliderId: 'fashion_mobile',
-                  isCompact: true,
-                ),
+              _buildTrendingSlider(
+                title: ' New Arrivals',
+                products: news,
+                sliderId: 'fashion_mobile',
+                viewAllRoute: '/new-in',
               ),
-            // if (fashionTrending.isNotEmpty && electronicsTrending.isNotEmpty)
-              const SizedBox(width: 8),
+            const SizedBox(height: 20),
             if (trending.isNotEmpty)
-              Expanded(
-                child: _buildTrendingSlider(
-                  title: 'Trending Now',
-                  products: trending,
-                  sliderId: 'electronics_mobile',
-                  isCompact: true,
-                ),
+              _buildTrendingSlider(
+                title: ' Trending Now In Product',
+                products: trending,
+                sliderId: 'electronics_mobile',
+                viewAllRoute: '/',
               ),
           ],
         );
-      }
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (news.isNotEmpty)
-            _buildTrendingSlider(
-              title: ' New Arrivals',
-              products: news,
-              sliderId: 'fashion_mobile',
-            ),
-          const SizedBox(height: 20),
-          if (trending.isNotEmpty)
-            _buildTrendingSlider(
-              title: ' Trending Now In Product',
-              products: trending,
-              sliderId: 'electronics_mobile',
-            ),
-        ],
-      );
-    },
-  );
-}
+      },
+    );
+  }
 
   // ============= HERO CAROUSEL =============
   // Widget _buildHeroCarousel(bool isMobile) {
@@ -647,72 +621,84 @@ class _CategoryPageState extends State<CategoryPage> {
 
   // ============= DESKTOP PRODUCTS =============
   Widget _buildProducts() {
-  return Consumer<ApiService>(
-    builder: (context, productController, child) {
-      if (productController.isLoading) {
-        return const Center(
-          child: Padding(
-            padding: EdgeInsets.all(32.0),
-            child: CircularProgressIndicator(),
-          ),
-        );
-      }
+    return Consumer<ApiService>(
+      builder: (context, api, _) {
+        // Loading / error only replaces the categories grid
+        if (api.isLoading) {
+          return const CommonLoading(
+            size: 42,
+            message: 'Loading categories...',
+            height: 300,
+          );
+        }
 
-      final categories = productController.categories;
-      
-      return Wrap(
-        spacing: 20,
-        runSpacing: 5,
-        children: categories.map((category) {
-          return Container(
-            width: 100, // Fixed width for single product
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(
-                  height: 120,
-                  child: Center(
-                    child: Container(
-                      width: 100.0,
-                      padding: const EdgeInsets.only(right: 5.0),
-                      child: Center(
-                        child: _buildProductCard(category),
+        if (_loadError != null) {
+          return CommonError(
+            height: 300,
+            title: 'Failed to load categories',
+            message: _loadError!,
+            onRetry: () {
+              setState(() => _loadError = null);
+              _apiService.loadCategories();
+            },
+          );
+        }
+
+        final categories = api.categories;
+        if (categories.isEmpty) {
+          return const CommonError(
+            height: 300,
+            title: 'Failed to load categories',
+            message:
+                'Categories could not be loaded. Please check your connection.',
+          );
+        }
+
+        return Wrap(
+          spacing: 20,
+          runSpacing: 5,
+          children: categories.map((category) {
+            return Container(
+              width: 100, // Fixed width for single product
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    height: 120,
+                    child: Center(
+                      child: Container(
+                        width: 100.0,
+                        padding: const EdgeInsets.only(right: 5.0),
+                        child: Center(child: _buildProductCard(category)),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CategoryDetailPage(
-                          categoryId: category.categoryId,
-                          categoryName: category.categoryName,
+                  const SizedBox(height: 2),
+                  GestureDetector(
+                    onTap: () {
+                      context.go(
+                        '/category/${category.categoryId}?name=${Uri.encodeComponent(category.categoryName)}',
+                      );
+                    },
+                    child: Center(
+                      child: Text(
+                        category.categoryName,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2B6E3B),
                         ),
                       ),
-                    );
-                  },
-                  child: Center(
-                    child: Text(
-                      category.categoryName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2B6E3B),
-                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      );
-    },
-  );
-}
+                ],
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
 
   // ============= DESKTOP PRODUCT CARD =============
   Widget _buildProductCard(Category category) {
@@ -746,7 +732,7 @@ class _CategoryPageState extends State<CategoryPage> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: AppImage(
-                  imageUrl: category.photoPath,
+                  imageUrl: ApiService.getProxiedImageUrl(category.photoPath),
                   height: 90,
                   width: 90,
                   fit: BoxFit.cover,
@@ -789,72 +775,59 @@ class _CategoryPageState extends State<CategoryPage> {
       ),
     );
   }
+
   // ============= TRENDING SIDEBAR =============
   Widget _buildTrendingSidebar() {
-  return Consumer<ApiService>(
-    builder: (context, productController, child) {
-      // Get trending products from the service
-      final trending = productController.trendingProducts;
-      final news = productController.newProducts;
-      // If no trending products, show nothing
-      // if (trending.isEmpty) {
-      //   return const SizedBox.shrink();
-      // }
+    return Consumer<ApiService>(
+      builder: (context, productController, child) {
+        // Get trending products from the service
+        final trending = productController.trendingProducts;
+        final news = productController.newProducts;
 
-      // // Split trending products into fashion and electronics
-      // final fashionTrending = trending
-      //     .where(
-      //       (p) =>
-      //           p.category == "Blouses" ||
-      //           p.category == "Jeans" ||
-      //           p.category == "Bags" ||
-      //           p.category == "Shoes" ||
-      //           p.category == "T-Shirts",
-      //     )
-      //     .take(5)
-      //     .toList();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (news.isNotEmpty)
+              _buildTrendingSlider(
+                title: ' New Arrivals',
+                products: news,
+                sliderId: 'fashion',
+                viewAllRoute: '/new-in',
+              )
+            else if (news.isEmpty)
+              const CommonError(
+                height: 300,
+                title: 'Failed to New Arrivals',
+                message:
+                    'News could not be loaded. Please check your connection.',
+              ),
+            if (trending.isNotEmpty)
+              _buildTrendingSlider(
+                title: ' Trending Now In Product',
+                products: trending,
+                sliderId: 'electronics',
+                viewAllRoute: '/',
+              )
+            else if (trending.isEmpty)
+              const CommonError(
+                height: 300,
+                title: 'Failed to load Products',
+                message:
+                    'Products could not be loaded. Please check your connection.',
+              ),
+          ],
+        );
+      },
+    );
+  }
 
-      // final electronicsTrending = trending
-      //     .where(
-      //       (p) =>
-      //           p.category == "Electronics" ||
-      //           p.category == "Power Banks" ||
-      //           p.category == "Headphones",
-      //     )
-      //     .take(5)
-      //     .toList();
-
-      // // If no filtered trending products, show nothing
-      // if (fashionTrending.isEmpty && electronicsTrending.isEmpty) {
-      //   return const SizedBox.shrink();
-      // }
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (news.isNotEmpty)
-            _buildTrendingSlider(
-              title: ' New Arrivals',
-              products: news,
-              sliderId: 'fashion',
-            ),
-          if (trending.isNotEmpty)
-            _buildTrendingSlider(
-              title: ' Trending Now In Product',
-              products: trending,
-              sliderId: 'electronics',
-            ),
-        ],
-      );
-    },
-  );
-}
   // ============= TRENDING SLIDER =============
   Widget _buildTrendingSlider({
     required String title,
     required List<Product> products,
     required String sliderId,
     bool isCompact = false,
+    String? viewAllRoute,
   }) {
     final bool isMobile = MediaQuery.of(context).size.width < 768;
     final controller = _getController(sliderId);
@@ -887,6 +860,27 @@ class _CategoryPageState extends State<CategoryPage> {
                     color: Colors.black,
                   ),
                 ),
+                //  ADD VIEW ALL BUTTON HERE
+                if (viewAllRoute != null)
+                  GestureDetector(
+                    onTap: () => context.go(viewAllRoute),
+                    child: Row(
+                      children: [
+                        Text(
+                          'View all',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.chevron_right,
+                          size: 16,
+                          color: Colors.grey,
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
@@ -905,6 +899,12 @@ class _CategoryPageState extends State<CategoryPage> {
     bool isCompact,
   ) {
     final bool isMobile = MediaQuery.of(context).size.width < 768;
+    final int initialIndex = _sliderIndexes[sliderId] ?? 0;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Just try to jump. The controller handles safety internally.
+      controller.jumpToPage(initialIndex);
+    });
 
     return Stack(
       children: [
@@ -918,11 +918,14 @@ class _CategoryPageState extends State<CategoryPage> {
                 : 0.32, //  0.7 = show 70% width on mobile
             padEnds: false,
             scrollDirection: Axis.horizontal,
+            initialPage: initialIndex,
             onPageChanged: (index, reason) {
               //  ADD THIS
-              setState(() {
-                _updateSliderIndex(sliderId, index);
-              });
+              if (_sliderIndexes[sliderId] != index) {
+                setState(() {
+                  _updateSliderIndex(sliderId, index);
+                });
+              }
             },
           ),
           items: products.map((product) {
@@ -1018,12 +1021,7 @@ class _CategoryPageState extends State<CategoryPage> {
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProductDetailPage(productId: product.productId),
-          ),
-        );
+        context.go('/product/${product.productId}');
       },
       child: Container(
         // width: double.infinity,
@@ -1100,52 +1098,38 @@ class _CategoryPageState extends State<CategoryPage> {
   Widget _buildFavoriteButton(Product product) {
     final bool isMobile = MediaQuery.of(context).size.width < 768;
 
-    return Consumer<ApiService>(
-      builder: (context, cartController, child) {
-        final inCart = cartController.isInCart(product.productId);
+    return Consumer<AuthService>(
+      builder: (context, authService, child) {
+        final isFav = authService.isFavorite(product.productId);
+        final isLoggedIn = authService.isLoggedIn;
+
         return SizedBox(
           width: 100,
           child: ElevatedButton(
-            onPressed: () {
-              if (inCart) {
-                cartController.removeItem(product.productId);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${product.productName} removed'),
-                    duration: const Duration(seconds: 1),
-                  ),
-                );
-              } else {
-                cartController.addItem(product);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${product.productCode} added to favourites'),
-                    duration: const Duration(seconds: 1),
-                  ),
-                );
-              }
+            onPressed: () async {
+              // 1) Not logged in → prompt to log in
+              await FavoriteHelper.toggleFavorite(
+                context,
+                productId: product.productId,
+                isCurrentlyFavorite: isFav,
+              );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: inCart ? Colors.grey : const Color(0xFFD68247),
+              backgroundColor: isFav ? Colors.grey : const Color(0xFFD68247),
               foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(
-                vertical: isMobile ? 10 : 8,
-              ), //  Larger on mobile
+              padding: EdgeInsets.symmetric(vertical: isMobile ? 10 : 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(5),
               ),
-              minimumSize: Size(
-                double.infinity,
-                isMobile ? 40 : 32,
-              ), //  Taller on mobile
+              minimumSize: Size(double.infinity, isMobile ? 40 : 32),
             ),
             child: Text(
-              inCart ? 'REMOVED' : 'ADD TO FAVOURITE',
+              isFav ? 'REMOVED' : 'ADD TO FAVOURITE',
               style: TextStyle(
-                fontSize: isMobile ? 10 : 9, //  Larger text on mobile
+                fontSize: isMobile ? 10 : 9,
                 fontWeight: FontWeight.bold,
               ),
-              maxLines: isMobile ? 2 : 2,
+              maxLines: 2,
               textAlign: TextAlign.center,
             ),
           ),

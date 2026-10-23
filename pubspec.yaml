@@ -36,7 +36,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.6.0
   image_picker: ^1.1.2
-
+  shared_preferences: ^2.2.3
+  go_router: ^14.0.0
   font_awesome_flutter: any
 
   dotted_border: ^2.1.0

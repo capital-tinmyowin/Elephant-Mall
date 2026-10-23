@@ -4,6 +4,7 @@ import 'package:elephant_mall/view/common/footer.dart';
 import 'package:elephant_mall/view/common/header.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import 'home.dart';
@@ -114,10 +115,7 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         );
         
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
-        );
+         context.go('/');
       } else {
         final error = authService.errorMessage ?? 'Registration failed';
         ScaffoldMessenger.of(context).showSnackBar(
@@ -475,10 +473,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 GestureDetector(
                   onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const LoginPage()),
-                    );
+                    context.go('/login');
                   },
                   child: const Text(
                     "Sign In",

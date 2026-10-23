@@ -1,4 +1,6 @@
+import 'package:elephant_mall/view/common/favorite_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../models/new_in.dart';
 import '../services/new_in_service.dart';
@@ -242,52 +244,21 @@ class _NewInPageState extends State<NewInPage> {
   }
 
   Future<void> _toggleFavourite(NewInModel product) async {
-    final authService = Provider.of<AuthService>(context, listen: false);
-
-    if (authService.currentUser == null) {
-      await _showLoginRequiredDialog();
-      return;
-    }
-
-    final isFav = product.favourite == 1;
-
-    try {
-      final success = isFav
-          ? await _newInService.removeFavourite(
-              authService: authService,
-              productId: product.productId,
-            )
-          : await _newInService.addFavourite(
-              authService: authService,
-              productId: product.productId,
-            );
-
-      if (!mounted) return;
-
-      if (success) {
-        setState(() {
-          product.favourite = isFav ? 0 : 1;
-        });
-      }
-    } catch (e) {
-      if (!mounted) return;
-
-      final message = e.toString().toLowerCase();
-      if (message.contains('401') ||
-          message.contains('unauthorized') ||
-          message.contains('please login')) {
-        await _showLoginRequiredDialog();
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+  await FavoriteHelper.toggleFavorite(
+    context,
+    productId: product.productId,
+    isCurrentlyFavorite: product.favourite == 1,
+  );
+  
+  // If the helper was successful, we can optimistically update the NewInModel
+  if (!mounted) return;
+  final authService = Provider.of<AuthService>(context, listen: false);
+  if (authService.isFavorite(product.productId)) {
+    setState(() => product.favourite = 1);
+  } else {
+    setState(() => product.favourite = 0);
   }
+}
 
   Widget _buildPagination() {
     final total = totalPages;
@@ -1071,15 +1042,7 @@ class _NewInPageState extends State<NewInPage> {
 
                   // Navigate immediately
                   if (!mounted) return;
-                  Navigator.push(
-                    context,
-                    PageRouteBuilder(
-                      pageBuilder: (context, animation, secondaryAnimation) =>
-                          ProductDetailPage(productId: product.productId),
-                      transitionDuration: Duration.zero,
-                      reverseTransitionDuration: Duration.zero,
-                    ),
-                  );
+                  context.go('/product/${product.productId}');
                 },
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Colors.orange),

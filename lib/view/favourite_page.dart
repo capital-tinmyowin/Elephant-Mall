@@ -3,11 +3,13 @@ import 'package:elephant_mall/models/favourite.dart';
 import 'package:elephant_mall/services/Category_service.dart';
 import 'package:elephant_mall/view/common/footer.dart';
 import 'package:elephant_mall/view/common/header.dart';
+import 'package:elephant_mall/view/common/loading_widget.dart';
 import 'package:elephant_mall/view/login.dart';
 import 'package:elephant_mall/view/product_detail_page.dart';
 import 'package:elephant_mall/widgets/app_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../services/auth_service.dart';
@@ -33,6 +35,7 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
   final int _itemsPerPage = 12; // 10 items per page
   bool _isLoadingMore = false;
   late Set<int> _lastFavoriteIds;
+  String? _loadError;
 
   final List<String> _sortOptions = [
     'Recently Added',
@@ -41,13 +44,7 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
     'Name: A to Z',
   ];
 
-  final List<String> _filterOptions = [
-    'All',
-    'Fashion',
-    'Accessories',
-    'Newest',
-    'Price',
-  ];
+  List<String> _filterOptions = ['All'];
 
   @override
   void initState() {
@@ -55,6 +52,19 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
     final auth = Provider.of<AuthService>(context, listen: false);
     _lastFavoriteIds = Set.from(auth.favoriteProductIds);
     auth.addListener(_onAuthChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final apiService = Provider.of<ApiService>(context, listen: false);
+      await apiService.loadCategories();
+     if (mounted) {
+        setState(() {
+          // Map categories to names, prepend 'All'
+          _filterOptions = [
+            'All',
+            ...apiService.categories.map((c) => c.categoryName)
+          ];
+        });
+      }
+    });
     _loadFavorites();
   }
 
@@ -108,7 +118,14 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
   }
 
   Future<void> _loadFavorites() async {
+    setState(() {
+      
+      _isLoading = true;
+      _loadError = null;
+    });
+
     final authService = Provider.of<AuthService>(context, listen: false);
+    final apiService = Provider.of<ApiService>(context, listen: false);
 
     if (!authService.isLoggedIn) {
       setState(() {
@@ -119,26 +136,38 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
       return;
     }
 
-    setState(() => _isLoading = true);
-
     try {
-      //  AuthService handles the cookie/token internally
       final products = await authService.getUserFavorites();
-      //  DEBUG
-      for (final p in products) {
-        debugPrint(
-          '💚 Favorite Product → productId=${p.productId}  productCode=${p.productCode}  name=${p.productName}',
-        );
-      }
       if (!mounted) return;
 
+      // FIX: Fetch full details for any product with an empty category
+      List<Product> fixedProducts = [];
+      for (var p in products) {
+        if (p.category.isEmpty) {
+          // Fetch full product details to get the category name
+          final json = await authService.getProductDetail(p.productId);
+          if (json != null) {
+            apiService.setProductFromJson(json);
+            if (apiService.selectedProduct != null) {
+              fixedProducts.add(apiService.selectedProduct!);
+            } else {
+              fixedProducts.add(p);
+            }
+          } else {
+            fixedProducts.add(p);
+          }
+        } else {
+          fixedProducts.add(p);
+        }
+      }
+
       setState(() {
-        _favorites = products.asMap().entries.map((entry) {
+        _favorites = fixedProducts.asMap().entries.map((entry) {
           return Favorite(
             id: entry.key + 1,
             userId: authService.currentUser?.id ?? 0,
             productId: entry.value.productId,
-            addedDate: DateTime.now(),
+            addedDate: DateTime.now().subtract(Duration(milliseconds: entry.key)),
             product: entry.value,
           );
         }).toList();
@@ -146,24 +175,15 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
         _resetPagination();
       });
 
-      // Show error if favorites couldn't be loaded
       if (products.isEmpty && authService.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(authService.errorMessage!),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() => _loadError = authService.errorMessage);
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error loading favorites: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() {
+        _isLoading = false;
+        _loadError = e.toString();
+      });
     }
   }
 
@@ -364,7 +384,12 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
                     onSelected: (selected) {
                       setState(() {
                         _selectedFilter = selected ? filter : 'All';
+                        debugPrint('🔵 Selected Filter: $_selectedFilter');
+                        for (var fav in _favorites) {
+                          debugPrint('🟢 Item Category: ${fav.product?.category}');
+                        }
                         _resetPagination();
+
                       });
                     },
                     backgroundColor: Colors.grey[100],
@@ -439,7 +464,7 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) {
+      builder: (modalcontext) {
         return StatefulBuilder(
           builder: (context, setStateBottomSheet) {
             return Container(
@@ -462,11 +487,17 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
                         label: Text(filter),
                         selected: isSelected,
                         onSelected: (selected) {
+                            //  Update the main page state
                           setState(() {
                             _selectedFilter = selected ? filter : 'All';
                             _resetPagination();
                           });
-                          Navigator.pop(context);
+                          
+                          //  Update the bottom sheet state
+                          setStateBottomSheet(() {});
+                          
+                          //  Close the bottom sheet
+                          Navigator.pop(modalcontext); 
                         },
                         backgroundColor: Colors.grey[100],
                         selectedColor: const Color(0xFF2B6E3B),
@@ -630,11 +661,19 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
   // ============= CONTENT =============
   Widget _buildContent(bool isMobile) {
     if (_isLoading) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32.0),
-          child: CircularProgressIndicator(),
-        ),
+      return const CommonLoading(
+        size: 42,
+        message: 'Loading favourites...',
+        height: 300,
+      );
+    }
+
+    if (_loadError != null) {
+      return CommonError(
+        height: 300,
+        title: 'Failed to load favourites',
+        message: _loadError!,
+        onRetry: _loadFavorites,
       );
     }
 
@@ -652,7 +691,7 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
             const SizedBox(height: 8),
             TextButton(
               onPressed: () {
-                Navigator.pushReplacementNamed(context, '/categories');
+                context.go('/category');
               },
               child: const Text(
                 'Browse Products',
@@ -747,13 +786,7 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                ProductDetailPage(productId: product.productId),
-          ),
-        );
+        context.go('/product/${product.productId}');
       },
       child: Card(
         elevation: 2,
@@ -911,14 +944,7 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
                               ),
                             ),
                             onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ProductDetailPage(
-                                    productId: product.productId,
-                                  ),
-                                ),
-                              );
+                              context.go('/product/${product.productId}');
                             },
                             child: Expanded(
                               child: Row(
@@ -966,14 +992,7 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
                           ),
                         ),
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ProductDetailPage(
-                                productId: product.productId,
-                              ),
-                            ),
-                          );
+                          context.go('/product/${product.productId}');
                         },
                         child: Text(
                           "View Details",
@@ -1002,13 +1021,7 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                ProductDetailPage(productId: product.productId),
-          ),
-        );
+        context.go('/product/${product.productId}');
       },
       child: Container(
         padding: EdgeInsets.symmetric(vertical: isMobile ? 14 : 16),
@@ -1098,14 +1111,7 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
                           ),
                         ),
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ProductDetailPage(
-                                productId: product.productId,
-                              ),
-                            ),
-                          );
+                          context.go('/product/${product.productId}');
                         },
                         child: Text(
                           "View Details",
@@ -1341,14 +1347,24 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
             product.category.toLowerCase().contains(_searchQuery.toLowerCase());
       }).toList();
     }
+    
     // Filter by category
     if (_selectedFilter != 'All') {
       filtered = filtered.where((favorite) {
         final product = favorite.product;
         if (product == null) return false;
-        return product.category == _selectedFilter;
+
+        // Standardize both strings for comparison
+        final productCat = product.category.trim().toLowerCase();
+        final selectedCat = _selectedFilter.trim().toLowerCase();
+        
+        // Exact match OR partial match (e.g., "Bag" matches "Bags")
+        return productCat == selectedCat || 
+               productCat.contains(selectedCat) || 
+               selectedCat.contains(productCat);
       }).toList();
     }
+    
     // Sort
     filtered = _sortFavorites(filtered);
     return filtered;
