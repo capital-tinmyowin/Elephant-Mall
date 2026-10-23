@@ -1,8 +1,10 @@
+import 'package:elephant_mall/models/business_contact.dart';
 import 'package:elephant_mall/services/auth_service.dart';
 import 'package:elephant_mall/view/common/loading_widget.dart';
 import 'package:elephant_mall/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -221,6 +223,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   _buildProductInfo(product),
                   const SizedBox(height: 16),
                   _buildActionButtons(product),
+                  _buildBusinessContacts(product), // Add this
                   const SizedBox(height: 16),
                   _buildDescription(product),
                   _buildSellerInfo(product),
@@ -252,6 +255,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                             _buildProductInfo(product),
                             const SizedBox(height: 16),
                             _buildActionButtons(product),
+                            _buildBusinessContacts(product), // Add this
                             const SizedBox(height: 16),
                             _buildDescription(product),
                             _buildSellerInfo(product),
@@ -281,6 +285,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         Center(child: _buildProductGallery(product)),
         const SizedBox(height: 16),
         _buildActionButtons(product),
+        _buildBusinessContacts(product), //  Add this
         const SizedBox(height: 16),
         _buildDescription(product),
         const SizedBox(height: 16),
@@ -785,6 +790,120 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     );
   }
 
+  Widget _buildBusinessContacts(Product product) {
+    final contacts = product.businessContacts;
+    if (contacts.isEmpty) return const SizedBox.shrink();
+
+    // Create a map to hold only ONE contact per type (preferring primary)
+    final Map<String, BusinessContact> uniqueContacts = {};
+    for (var contact in contacts) {
+      final type = contact.type.toLowerCase();
+      if (type == 'phone' ||
+          type == 'messenger' ||
+          type == 'telegram' ||
+          type == 'viber') {
+        if (!uniqueContacts.containsKey(type) || contact.isPrimary) {
+          uniqueContacts[type] = contact;
+        }
+      }
+    }
+
+    if (uniqueContacts.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.blue[50], // Light blue background like the photo
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue[200]!),
+      ),
+      child: Wrap(
+        spacing: 16,
+        runSpacing: 8,
+        alignment: WrapAlignment.center,
+        children: [
+          if (uniqueContacts.containsKey('phone'))
+            _contactIcon(
+              Icons.phone,
+              Colors.green,
+              'Phone',
+              uniqueContacts['phone']!,
+            ),
+          if (uniqueContacts.containsKey('messenger'))
+            _contactIcon(
+              FontAwesomeIcons.facebookMessenger,
+              Colors.blue,
+              'Messenger',
+              uniqueContacts['messenger']!,
+            ),
+          if (uniqueContacts.containsKey('telegram'))
+            _contactIcon(
+              FontAwesomeIcons.telegram,
+              Colors.blue[700]!,
+              'Telegram',
+              uniqueContacts['telegram']!,
+            ),
+          if (uniqueContacts.containsKey('viber'))
+            _contactIcon(
+              FontAwesomeIcons.viber,
+              Colors.purple,
+              'Viber',
+              uniqueContacts['viber']!,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _contactIcon(
+    dynamic icon,
+    Color color,
+    String label,
+    BusinessContact contact,
+  ) {
+    return InkWell(
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Contact via $label'),
+            content: SelectableText(contact.value),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 🔥 Check if it's FontAwesome or standard Material icon
+            icon is FaIconData
+                ? FaIcon(icon, color: color, size: 20)
+                : Icon(icon as IconData, color: color, size: 20),
+
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ============= DESCRIPTION =============
   Widget _buildDescription(Product product) {
     final desc =
@@ -957,8 +1076,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       InkWell(
                         onTap: () {
                           context.go(
-                  '/seller/${product.userId}?name=${Uri.encodeComponent(sellerName)}',
-                );
+                            '/seller/${product.userId}?name=${Uri.encodeComponent(sellerName)}',
+                          );
                         },
                         child: Text(
                           sellerName,

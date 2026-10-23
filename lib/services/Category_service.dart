@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:elephant_mall/models/business_contact.dart';
 import 'package:elephant_mall/models/productImage.dart';
 import 'package:elephant_mall/models/product_variant.dart';
 import 'package:flutter/material.dart';
@@ -387,6 +388,13 @@ class ApiService extends ChangeNotifier {
         }
       }
     }
+    List<BusinessContact> businessContacts = [];
+    if (json['businesscontact'] is List) {
+      businessContacts = (json['businesscontact'] as List)
+          .whereType<Map<String, dynamic>>()
+          .map((c) => BusinessContact.fromJson(c))
+          .toList();
+    }
 
     return Product(
       productId: productId,
@@ -404,6 +412,7 @@ class ApiService extends ChangeNotifier {
       productImages: productImages,
       variants: variants,
       colors: const [],
+      businessContacts: businessContacts,
     );
   }
 

@@ -1,3 +1,4 @@
+import 'package:elephant_mall/models/business_contact.dart';
 import 'package:elephant_mall/models/productImage.dart';
 import 'package:elephant_mall/models/product_variant.dart';
 import '../services/Category_service.dart';
@@ -37,6 +38,7 @@ class Product {
   final List<ProductVariant>? variants;
   final List<String> colors;
   final bool isNew;
+  final List<BusinessContact> businessContacts;
 
   Product({
     this.productId = 0,
@@ -57,6 +59,7 @@ class Product {
     this.variants,
     this.colors = const [],
     this.isNew = false,
+    this.businessContacts = const [],
   });
 
   // ============= IMAGE GETTERS =============
@@ -172,6 +175,15 @@ class Product {
           .map((v) => ProductVariant.fromJson(v))
           .toList();
     }
+
+    List<BusinessContact> contacts = [];
+    if (json['businesscontact'] is List) {
+      contacts = (json['businesscontact'] as List)
+          .whereType<Map<String, dynamic>>()
+          .map((c) => BusinessContact.fromJson(c))
+          .toList();
+    }
+
     return Product(
       productId: productId,
       productCode: productCode,
@@ -188,6 +200,7 @@ class Product {
       productImages: productImages,
       variants: variants,
       colors: colors,
+      businessContacts: contacts,
     );
   }
 
