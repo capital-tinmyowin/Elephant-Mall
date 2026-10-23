@@ -9,6 +9,7 @@ import '../models/product_variant.dart';
 import '../models/sell_product_model.dart';
 import '../models/business_contact.dart';
 import '../services/auth_service.dart';
+import 'package:http_parser/http_parser.dart'; // for MediaType
 
 class ProductApiResponse {
   final bool success;
@@ -148,9 +149,7 @@ class ProductService {
           client.close();
         }
       } else {
-        final headers = <String, String>{
-          'Accept': 'application/json',
-        };
+        final headers = <String, String>{'Accept': 'application/json'};
 
         final cookie = authService.authCookie;
         if (cookie != null && cookie.isNotEmpty) {
@@ -188,9 +187,7 @@ class ProductService {
         final groupId = int.tryParse(rawId.toString());
 
         if (groupId == null) {
-          throw FormatException(
-            'Invalid contact group ID: $rawId',
-          );
+          throw FormatException('Invalid contact group ID: $rawId');
         }
 
         return BuyerContactMethod(
@@ -369,13 +366,34 @@ class ProductService {
     final request = http.MultipartRequest('POST', url);
 
     request.headers['Accept'] = 'application/json';
-
     request.fields['product'] = jsonEncode(product);
+
+    // Attach images 
+    int imageIndex = 0;
+    for (final bytes in imageBytes) {
+      if (bytes != null && bytes.isNotEmpty) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'images', 
+            bytes,
+            filename: 'image_$imageIndex.jpg',
+            contentType: MediaType('image', 'jpeg'), 
+          ),
+        );
+        imageIndex++;
+      }
+    }
 
     debugPrint('========== CREATE API REQUEST ==========');
     debugPrint('Method: POST');
     debugPrint('URL: $url');
     debugPrint('Fields: ${request.fields}');
+    debugPrint('Number of image files attached: ${request.files.length}');
+    for (final f in request.files) {
+      debugPrint(
+        '  → file field="${f.field}", filename="${f.filename}", length=${f.length}',
+      );
+    }
     debugPrint('========================================');
 
     try {

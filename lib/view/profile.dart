@@ -9,6 +9,8 @@ import '../services/auth_service.dart';
 import 'myListing.dart';
 import 'package:provider/provider.dart';
 import 'sellerListing.dart';
+import '../services/profile_service.dart';
+import '../models/profile_model.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -21,28 +23,32 @@ class _ProfilePageState extends State<ProfilePage> {
   int selectedMenu = 0;
   final ImagePicker _imagePicker = ImagePicker();
 
-  // PROFILE DATA
+  String? _avatarUrl;
+  String? _coverUrl;
+  bool _isLoadingProfile = false;
+
+  // Profile data starts empty and is populated from the profile API.
+  // About Me remains local and is intentionally not bound to the API.
   Map<String, dynamic> profileData = {
     "personal": {
-      "fullName": "Test User",
-      "email": "user@example.com",
-      "phone": "+95 9 123 456 789",
-      "dateOfBirth": "May 12, 1995",
-      "gender": "Female",
-      "joinedOn": "Aug 10, 2022",
-      "location": "Yangon, Myanmar",
-      "accountTypes": ["Seller", "User", "Purchaser"],
+      "fullName": "",
+      "email": "",
+      "phone": "",
+      "dateOfBirth": "",
+      "gender": "",
+      "joinedOn": "",
+      "location": "",
+      "accountTypes": <String>[],
     },
     "about": {
       "description":
           "I love fashion, lifestyle products, and finding high-quality items for everyday life.",
     },
     "business": {
-      "shopName": "User's Collection",
-      "businessType": "Individual Seller",
-      "businessLocation": "Yangon, Myanmar",
-      "businessDescription":
-          "We offer carefully selected fashion and lifestyle products with great quality and customer service.",
+      "shopName": "",
+      "businessType": "",
+      "businessLocation": "",
+      "businessDescription": "",
     },
   };
 
@@ -132,6 +138,81 @@ class _ProfilePageState extends State<ProfilePage> {
     businessDescriptionController = TextEditingController(
       text: businessData["businessDescription"] ?? "",
     );
+
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    if (mounted) {
+      setState(() => _isLoadingProfile = true);
+    }
+
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final ProfileModel result = await ProfileService(
+        authService: authService,
+      ).fetchProfile();
+
+      if (!mounted) return;
+
+      final roles = result.roles.map((role) {
+        if (role.isEmpty) return role;
+        return role[0].toUpperCase() + role.substring(1);
+      }).toList();
+
+      final fullName = result.name.trim().isNotEmpty
+          ? result.name.trim()
+          : result.userName;
+
+      final personalData = <String, dynamic>{
+        'fullName': fullName,
+        'email': result.email,
+        'phone': result.phone,
+        'dateOfBirth': result.dateOfBirth,
+        'gender': result.gender,
+        'joinedOn': result.createdDate,
+        'location': result.location,
+        'accountTypes': roles,
+      };
+
+      final businessData = <String, dynamic>{
+        'shopName': result.shopName,
+        'businessType': result.businessType,
+        'businessLocation': result.businessLocation,
+        'businessDescription': result.businessDescription,
+      };
+
+      setState(() {
+        profileData['personal'] = personalData;
+        profileData['business'] = businessData;
+        _avatarUrl = _imageUrl(result.avatarUrl);
+        _coverUrl = _imageUrl(result.coverUrl);
+
+        fullNameController.text = fullName;
+        emailController.text = result.email;
+        phoneController.text = result.phone;
+        dateOfBirthController.text = result.dateOfBirth;
+        genderController.text = result.gender;
+        joinedOnController.text = result.createdDate;
+        locationController.text = result.location;
+        accountTypesController.text = roles.join(', ');
+
+        shopNameController.text = result.shopName;
+        businessTypeController.text = result.businessType;
+        businessLocationController.text = result.businessLocation;
+        businessDescriptionController.text = result.businessDescription;
+        _isLoadingProfile = false;
+      });
+    } catch (e, stackTrace) {
+      debugPrint('Unable to load profile: $e');
+      debugPrint('$stackTrace');
+      if (!mounted) return;
+
+      setState(() => _isLoadingProfile = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to load profile: $e')),
+      );
+    }
   }
 
   @override
@@ -163,9 +244,7 @@ class _ProfilePageState extends State<ProfilePage> {
       );
 
       if (image != null) {
-        setState(() {
-          _profileImage = image;
-        });
+        await _uploadProfileImage(image);
       }
     } catch (e) {
       if (!mounted) return;
@@ -174,6 +253,105 @@ class _ProfilePageState extends State<ProfilePage> {
         context,
       ).showSnackBar(SnackBar(content: Text("Unable to select image: $e")));
     }
+  }
+
+
+  Future<void> pickCoverImage(ImageSource source) async {
+    try {
+      final image = await _imagePicker.pickImage(
+        source: source,
+        imageQuality: 85,
+        maxWidth: 1800,
+        maxHeight: 1000,
+      );
+      if (image == null || !mounted) return;
+
+      setState(() => _isLoadingProfile = true);
+      final authService = Provider.of<AuthService>(context, listen: false);
+      await ProfileService(authService: authService).uploadCover(image);
+      if (!mounted) return;
+      await _loadProfile();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cover photo uploaded successfully.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingProfile = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to upload cover photo: $e')),
+      );
+    }
+  }
+
+  Future<void> _uploadProfileImage(XFile image) async {
+    try {
+      setState(() {
+        _profileImage = image;
+        _isLoadingProfile = true;
+      });
+      final authService = Provider.of<AuthService>(context, listen: false);
+      await ProfileService(authService: authService).uploadAvatar(image);
+      if (!mounted) return;
+      await _loadProfile();
+      if (!mounted) return;
+      setState(() => _profileImage = null);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile photo uploaded successfully.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingProfile = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to upload profile photo: $e')),
+      );
+    }
+  }
+
+  String? _imageUrl(String? value) {
+    final raw = value?.trim() ?? '';
+    if (raw.isEmpty || raw.toLowerCase() == 'null') return null;
+    if (raw.startsWith('https://') || raw.startsWith('http://')) return raw;
+    if (raw.startsWith('//')) return 'https:$raw';
+    if (raw.startsWith('/')) {
+      return 'https://www.capital-sys.net/CKMMallAPI$raw';
+    }
+    return 'https://www.capital-sys.net/CKMMallAPI/$raw';
+  }
+
+  void showCoverPickerDialog() {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Wrap(
+          children: [
+            const ListTile(
+              title: Text('Change Cover Photo',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from Gallery'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                pickCoverImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Take Photo'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                pickCoverImage(ImageSource.camera);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // IMAGE SOURCE DIALOG
@@ -381,23 +559,24 @@ class _ProfilePageState extends State<ProfilePage> {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(10),
                 ),
-                child: Image.asset(
-                  "lib/uploads/logo.png",
-                  height: 135,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 135,
-                      color: const Color(0xffE5E5E5),
-                      child: const Icon(
-                        Icons.image_outlined,
-                        size: 45,
-                        color: Colors.grey,
+                child: _coverUrl != null && _coverUrl!.isNotEmpty
+                    ? Image.network(
+                        _coverUrl!,
+                        height: 135,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            height: 135,
+                            color: Colors.white,
+                          );
+                        },
+                      )
+                    : Container(
+                        height: 135,
+                        width: double.infinity,
+                        color: Colors.white,
                       ),
-                    );
-                  },
-                ),
               ),
 
               // PROFILE AVATAR
@@ -408,16 +587,22 @@ class _ProfilePageState extends State<ProfilePage> {
                 right: 0,
                 bottom: -45,
                 child: Align(
-                  alignment: isMobile ? Alignment.centerLeft : Alignment.center,
-                  child: Padding(
-                    padding: EdgeInsets.only(left: isMobile ? 20 : 0),
-                    child: buildProfileAvatar(),
-                  ),
+                  alignment: Alignment.center,
+                  child: buildProfileAvatar(),
                 ),
               ),
 
               // CAMERA BUTTON
-              Positioned(right: 15, bottom: -5, child: buildCameraButton()),
+              Positioned(
+                right: 10,
+                top: 10,
+                child: buildCameraButton(onPressed: showCoverPickerDialog),
+              ),
+              Positioned(
+                right: 15,
+                bottom: -5,
+                child: buildCameraButton(onPressed: showImagePickerDialog),
+              ),
             ],
           ),
 
@@ -427,9 +612,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Padding(
             padding: EdgeInsets.symmetric(horizontal: isMobile ? 20 : 10),
             child: Column(
-              crossAxisAlignment: isMobile
-                  ? CrossAxisAlignment.start
-                  : CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
                   personal["fullName"] ?? "",
@@ -539,31 +722,32 @@ class _ProfilePageState extends State<ProfilePage> {
         border: Border.all(color: Colors.orange, width: 2),
       ),
       child: ClipOval(
-        child: _profileImage != null
-            ? kIsWeb
-                  ? Image.network(_profileImage!.path, fit: BoxFit.cover)
-                  : Image.file(File(_profileImage!.path), fit: BoxFit.cover)
-            : Image.asset(
-                "assets/avatar.jpg",
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: const Color(0xffF5F5F5),
-                    child: const Icon(
+        child: ClipOval(
+          child: _profileImage != null
+              ? kIsWeb
+                    ? Image.network(_profileImage!.path, fit: BoxFit.cover)
+                    : Image.file(File(_profileImage!.path), fit: BoxFit.cover)
+              : (_avatarUrl != null && _avatarUrl!.isNotEmpty)
+              ? Image.network(
+                  _avatarUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(
                       Icons.person,
                       size: 50,
                       color: Colors.grey,
-                    ),
-                  );
-                },
-              ),
+                    );
+                  },
+                )
+              : Image.asset('assets/avatar.jpg', fit: BoxFit.cover),
+        ),
       ),
     );
   }
 
   // CAMERA BUTTON
 
-  Widget buildCameraButton() {
+  Widget buildCameraButton({required VoidCallback onPressed}) {
     return Container(
       width: 38,
       height: 38,
@@ -575,7 +759,7 @@ class _ProfilePageState extends State<ProfilePage> {
       child: IconButton(
         padding: EdgeInsets.zero,
         icon: const Icon(Icons.camera_alt_outlined, size: 20),
-        onPressed: showImagePickerDialog,
+        onPressed: onPressed,
       ),
     );
   }
@@ -628,6 +812,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
           print("========================================");
 
+
           // Navigator.push(
           //   context,
           //   MaterialPageRoute(
@@ -638,8 +823,8 @@ class _ProfilePageState extends State<ProfilePage> {
           //   ),
           // );
           context.go(
-                  '/my-store/${currentUser.id}?name=${Uri.encodeComponent(currentUser.username)}',
-                );
+            '/seller-store/${currentUser.id}?name=${Uri.encodeComponent(currentUser.username)}',
+          );
           return;
         }
       },
@@ -686,6 +871,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (_isLoadingProfile) const LinearProgressIndicator(),
         const Text(
           "My Profile",
           style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
