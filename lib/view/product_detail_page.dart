@@ -8,6 +8,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/product.dart';
 import '../services/Category_service.dart';
 import 'common/footer.dart';
@@ -814,9 +815,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       margin: const EdgeInsets.symmetric(vertical: 16),
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.blue[50], // Light blue background like the photo
+        // color: Colors.blue[50], // Light blue background like the photo
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.blue[200]!),
+        // border: Border.all(color: Colors.blue[200]!),
       ),
       child: Wrap(
         spacing: 16,
@@ -863,20 +864,104 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     BusinessContact contact,
   ) {
     return InkWell(
-      onTap: () {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Contact via $label'),
-            content: SelectableText(contact.value),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
-              ),
-            ],
-          ),
-        );
+      onTap: () async {
+        Uri? uri;
+        // Build the corresponding link based on the contact type
+        final type = contact.type.toLowerCase();
+        final value = contact.value.trim();
+
+        if (type == 'messenger') {
+          String cleanValue = value.trim();
+
+          // 1. If the user pasted a full Facebook URL, extract just the username part
+          if (cleanValue.contains('facebook.com/')) {
+            cleanValue = cleanValue.split('facebook.com/').last;
+          }
+
+          // 2. If they pasted a URL with a profile ID (e.g. profile.php?id=12345)
+          if (cleanValue.contains('profile.php?id=')) {
+            cleanValue = cleanValue.split('profile.php?id=').last;
+            // For numeric IDs, m.me works directly: https://m.me/12345
+          }
+
+          // 3. Remove any extra slashes or query parameters
+          if (cleanValue.contains('?')) {
+            cleanValue = cleanValue.split('?').first;
+          }
+          if (cleanValue.endsWith('/')) {
+            cleanValue = cleanValue.substring(0, cleanValue.length - 1);
+          }
+
+          // 4. (Optional) If it still has spaces (like "Saung Thet Ngon Oo"),
+          // m.me will fail. But you can try replacing spaces with dots just in case.
+          // However, it's better to enforce the database to store the correct username.
+
+          uri = Uri.parse('https://m.me/$cleanValue');
+
+          // DEBUG: Print to see what is happening
+          print('Original value: $value');
+          print('Cleaned username: $cleanValue');
+          print('Generated URL: $uri');
+        } else if (type == 'telegram') {
+          // Telegram: if value is a phone number (+95...), use t.me/+95...
+          // If it's a username, use t.me/username
+          if (value.startsWith('+')) {
+            uri = Uri.parse('https://t.me/$value');
+          } else {
+            // Remove possible @ symbol
+            final username = value.startsWith('@') ? value.substring(1) : value;
+            uri = Uri.parse('https://t.me/$username');
+          }
+        } else if (type == 'viber') {
+          // 1. Clean the phone number: remove spaces, dashes, and the leading '+'
+          String cleanPhone = value.replaceAll(RegExp(r'[\s\-\+]'), '');
+
+          // 2. Viber deep link format for mobile
+          // Note: The '+' sign is usually removed for the number parameter in Viber links
+          uri = Uri.parse('viber://chat?number=$cleanPhone');
+
+          // DEBUG: Print to verify the generated link
+          print('Original Viber value: $value');
+          print('Cleaned Viber phone: $cleanPhone');
+          print('Generated Viber URI: $uri');
+        } else {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text('Contact via $label'),
+              content: SelectableText(contact.value),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
+        // Launch the link
+        try {
+          final launched = await launchUrl(
+            uri,
+            mode: LaunchMode.externalApplication, // Open with external app
+            webOnlyWindowName: '_blank', // Open in a new tab on web
+          );
+          if (!launched) {
+            // If launch fails, show a prompt
+            if (mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('Could not open $label')));
+            }
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Error: $e')));
+          }
+        }
       },
       borderRadius: BorderRadius.circular(8),
       child: Padding(
@@ -884,7 +969,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 🔥 Check if it's FontAwesome or standard Material icon
+            //  Check if it's FontAwesome or standard Material icon
             icon is FaIconData
                 ? FaIcon(icon, color: color, size: 20)
                 : Icon(icon as IconData, color: color, size: 20),
@@ -1213,7 +1298,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                             Radius.circular(16),
                           ),
                           child: _buildImage(
-                            sellerProduct.proxiedImageUrl,
+                            sellerProduct.image,
                             double.infinity,
                             double.infinity,
                           ),
