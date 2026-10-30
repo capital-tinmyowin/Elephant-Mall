@@ -2919,7 +2919,8 @@ class _SellPageState extends State<SellPage> {
                           businessContactGroupId: groupId,
                           categoryIds: selectedCategoryIds,
                           variants: variantsToSend, // ← uses synthetic list
-                          images: imagesToKeep,
+                          images: imagesToKeep, // existing images still kept
+                          imageBytes: newImageBytes,
                           businessContacts: businessContacts,
                         );
 
