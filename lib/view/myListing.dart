@@ -1760,10 +1760,7 @@ class _SellerStorePageState extends State<SellerStorePage> {
       ],
     );
   }
-
-  // ============================================================
   // SINGLE PRODUCT SECTION
-  // ============================================================
 
   Widget buildProductSection({
     required String title,
@@ -1773,9 +1770,7 @@ class _SellerStorePageState extends State<SellerStorePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ======================================================
         // TITLE + VIEW ALL
-        // ======================================================
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -1816,9 +1811,7 @@ class _SellerStorePageState extends State<SellerStorePage> {
 
         const SizedBox(height: 5),
 
-        // ======================================================
         // HORIZONTAL PRODUCTS
-        // ======================================================
         SizedBox(
           height: mobile ? 150 : 205,
           child: ListView.separated(
@@ -1842,9 +1835,7 @@ class _SellerStorePageState extends State<SellerStorePage> {
     );
   }
 
-  // ============================================================
   // SMALL PRODUCT CARD
-  // ============================================================
 
   Widget buildSmallProductCard(Product product, bool mobile) {
     return Container(
@@ -1857,18 +1848,14 @@ class _SellerStorePageState extends State<SellerStorePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ======================================================
           // IMAGE
-          // ======================================================
           SizedBox(
             height: mobile ? 85 : 125,
             width: double.infinity,
             child: _buildProductImage(product.imageUrl, mobile),
           ),
 
-          // ======================================================
           // NAME + PRICE
-          // ======================================================
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 3, 4, 0),
             child: Column(
@@ -2009,7 +1996,6 @@ class _SellerStorePageState extends State<SellerStorePage> {
       bool success;
 
       if (isFavourite) {
-        // Currently favourite -> remove it.
         success = await _service.removeFavourite(
           authService: authService,
           productId: productId,
@@ -2025,7 +2011,6 @@ class _SellerStorePageState extends State<SellerStorePage> {
           });
         }
       } else {
-        // Currently not favourite -> add it.
         success = await _service.addFavourite(
           authService: authService,
           productId: productId,
@@ -2058,7 +2043,14 @@ class _SellerStorePageState extends State<SellerStorePage> {
     debugPrint('Product Name: ${product.productName}');
     debugPrint('==============================================');
 
-    context.go('/sell/${product.productId}');
+    final id = product.productId;
+    if (id == null) {
+      debugPrint('Cannot edit: productId is null');
+      return;
+    }
+
+    // Use GoRouter instead of Navigator.push
+    context.push('/sell?productId=$id');
   }
 
   // void openProduct(Product product) {

@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'sellerListing.dart';
 import '../services/profile_service.dart';
 import '../models/profile_model.dart';
+import 'package:provider/provider.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -98,6 +99,9 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ensureAuthenticated();
+    });
     final personalData = profileData["personal"];
     final aboutData = profileData["about"];
     final businessData = profileData["business"];
@@ -209,9 +213,9 @@ class _ProfilePageState extends State<ProfilePage> {
       if (!mounted) return;
 
       setState(() => _isLoadingProfile = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unable to load profile: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Unable to load profile: $e')));
     }
   }
 
@@ -231,6 +235,73 @@ class _ProfilePageState extends State<ProfilePage> {
     businessLocationController.dispose();
     businessDescriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _ensureAuthenticated() async {
+    if (!mounted) return;
+
+    final authService = context.read<AuthService>();
+    final currentUser = authService.currentUser;
+
+    if (currentUser == null) {
+      await _showLoginRequiredDialog();
+      return;
+    }
+
+    // // Logged in → load profile
+    // await _loadProfile();
+  }
+
+  Future<void> _showLoginRequiredDialog() async {
+    if (!mounted) return;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xfffdfaf4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.lock_outline, color: Color(0xFFC77C2E), size: 28),
+              SizedBox(width: 10),
+              Text(
+                'Login Required',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Your session has expired or you are not logged in.\n\n'
+            'Please login to continue.',
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFC77C2E),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                if (!mounted) return;
+                context.go('/login');
+              },
+              child: const Text(
+                'Login',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // CAMERA / GALLERY
@@ -254,7 +325,6 @@ class _ProfilePageState extends State<ProfilePage> {
       ).showSnackBar(SnackBar(content: Text("Unable to select image: $e")));
     }
   }
-
 
   Future<void> pickCoverImage(ImageSource source) async {
     try {
@@ -329,8 +399,10 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Wrap(
           children: [
             const ListTile(
-              title: Text('Change Cover Photo',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              title: Text(
+                'Change Cover Photo',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
@@ -566,10 +638,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         width: double.infinity,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            height: 135,
-                            color: Colors.white,
-                          );
+                          return Container(height: 135, color: Colors.white);
                         },
                       )
                     : Container(
@@ -812,7 +881,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
           print("========================================");
 
-
           // Navigator.push(
           //   context,
           //   MaterialPageRoute(
@@ -1020,6 +1088,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   "Joined On",
                   joinedOnController,
                   Icons.access_time_outlined,
+                  enabled: false,
                 ),
 
                 buildInput(
@@ -1033,6 +1102,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   accountTypesController,
                   Icons.sell_outlined,
                   hintText: "Seller, User, Purchaser",
+                  enabled: false,
                 ),
               ],
             );
@@ -1137,28 +1207,52 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // UPDATE PERSONAL
-  void updatePersonalInformation() {
-    final accountTypes = accountTypesController.text
-        .split(",")
-        .map((item) => item.trim())
-        .where((item) => item.isNotEmpty)
-        .toList();
+  Future<void> updatePersonalInformation() async {
+    final authService = context.read<AuthService>();
+    final currentUser = authService.currentUser;
 
-    setState(() {
-      personal["fullName"] = fullNameController.text.trim();
-      personal["email"] = emailController.text.trim();
-      personal["phone"] = phoneController.text.trim();
-      personal["dateOfBirth"] = dateOfBirthController.text.trim();
-      personal["gender"] = genderController.text.trim();
-      personal["joinedOn"] = joinedOnController.text.trim();
-      personal["location"] = locationController.text.trim();
-      personal["accountTypes"] = accountTypes;
+    if (currentUser == null) {
+      showUpdateMessage('Please login first.');
+      return;
+    }
 
-      isEditingPersonal = false;
-    });
+    final userId = currentUser.id;
 
-    showUpdateMessage("Personal information updated");
+    setState(() => _isLoadingProfile = true);
+
+    try {
+      await ProfileService(authService: authService).updatePersonalInfo(
+        userId: userId,
+        fullName: fullNameController.text.trim(),
+        email: emailController.text.trim(),
+        phone: phoneController.text.trim(),
+        dateOfBirth: dateOfBirthController.text.trim(),
+        gender: genderController.text.trim(),
+        location: locationController.text.trim(),
+      );
+
+      if (!mounted) return;
+
+      // Update local state only for editable fields
+      setState(() {
+        personal['fullName'] = fullNameController.text.trim();
+        personal['email'] = emailController.text.trim();
+        personal['phone'] = phoneController.text.trim();
+        personal['dateOfBirth'] = dateOfBirthController.text.trim();
+        personal['gender'] = genderController.text.trim();
+        personal['location'] = locationController.text.trim();
+        isEditingPersonal = false;
+        _isLoadingProfile = false;
+      });
+
+      showUpdateMessage('Personal information updated');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingProfile = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Update failed: $e')));
+    }
   }
 
   // CANCEL PERSONAL
@@ -1314,35 +1408,33 @@ class _ProfilePageState extends State<ProfilePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // const SizedBox(height: 15),
+
+        // Container(
+        //   width: 55,
+        //   height: 55,
+        //   decoration: const BoxDecoration(
+        //     shape: BoxShape.circle,
+        //     color: Color(0xfffff2e8),
+        //   ),
+        //   child: const Icon(
+        //     Icons.person_outline,
+        //     color: Colors.orange,
+        //     size: 30,
+        //   ),
+        // ),
+
+        // const SizedBox(height: 25),
+
+        // const Text(
+        //   "Tell others about yourself and your business.",
+        //   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+        // ),
         const SizedBox(height: 15),
 
-        Container(
-          width: 55,
-          height: 55,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Color(0xfffff2e8),
-          ),
-          child: const Icon(
-            Icons.person_outline,
-            color: Colors.orange,
-            size: 30,
-          ),
-        ),
+        // Divider(color: Colors.grey.shade200),
 
-        const SizedBox(height: 25),
-
-        const Text(
-          "Tell others about yourself and your business.",
-          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-        ),
-
-        const SizedBox(height: 15),
-
-        Divider(color: Colors.grey.shade200),
-
-        const SizedBox(height: 15),
-
+        // const SizedBox(height: 15),
         Text(
           about["description"] ?? "",
           style: const TextStyle(fontSize: 13, height: 1.6),
@@ -1491,19 +1583,52 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // UPDATE BUSINESS
-  void updateBusinessInformation() {
-    setState(() {
-      business["shopName"] = shopNameController.text.trim();
-      business["businessType"] = businessTypeController.text.trim();
-      business["businessLocation"] = businessLocationController.text.trim();
-      business["businessDescription"] = businessDescriptionController.text
-          .trim();
+  Future<void> updateBusinessInformation() async {
+    final authService = context.read<AuthService>();
+    final currentUser = authService.currentUser;
 
-      isEditingBusiness = false;
-    });
+    if (currentUser == null) {
+      showUpdateMessage('Please login first.');
+      return;
+    }
 
-    showUpdateMessage("Business information updated");
+    final userId = int.tryParse(currentUser.id.toString()) ?? 0;
+    if (userId == 0) {
+      showUpdateMessage('Invalid user. Please login again.');
+      return;
+    }
+
+    setState(() => _isLoadingProfile = true);
+
+    try {
+      await ProfileService(authService: authService).updateBusinessInfo(
+        userId: userId,
+        shopName: shopNameController.text.trim(),
+        businessType: businessTypeController.text.trim(),
+        businessLocation: businessLocationController.text.trim(),
+        businessDescription: businessDescriptionController.text.trim(),
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        business['shopName'] = shopNameController.text.trim();
+        business['businessType'] = businessTypeController.text.trim();
+        business['businessLocation'] = businessLocationController.text.trim();
+        business['businessDescription'] = businessDescriptionController.text
+            .trim();
+        isEditingBusiness = false;
+        _isLoadingProfile = false;
+      });
+
+      showUpdateMessage('Business information updated');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingProfile = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Update failed: $e')));
+    }
   }
 
   // CANCEL BUSINESS
@@ -1526,12 +1651,14 @@ class _ProfilePageState extends State<ProfilePage> {
     IconData icon, {
     TextInputType? keyboardType,
     String? hintText,
+    bool enabled = true,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
+        enabled: enabled,
         decoration: InputDecoration(
           labelText: label,
           hintText: hintText,

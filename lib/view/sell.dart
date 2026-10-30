@@ -69,6 +69,29 @@ class ThousandsSeparatorInputFormatter extends TextInputFormatter {
   }
 }
 
+class ProductImageSlot {
+  final int? id;
+  final String? imageUrl;
+  final Uint8List? bytes;
+  final int sortOrder;
+
+  const ProductImageSlot({
+    this.id,
+    this.imageUrl,
+    this.bytes,
+    this.sortOrder = 1,
+  });
+
+  bool get isEmpty =>
+      (imageUrl == null || imageUrl!.isEmpty) &&
+      (bytes == null || bytes!.isEmpty);
+
+  bool get isExisting =>
+      id != null && id! > 0 && imageUrl != null && imageUrl!.isNotEmpty;
+
+  bool get isNew => bytes != null && bytes!.isNotEmpty;
+}
+
 /// Helper to parse price that may contain commas
 double? parsePrice(String text) {
   if (text.trim().isEmpty) return null;
@@ -458,7 +481,10 @@ class _SellPageState extends State<SellPage> {
   List<Category> categories = [];
   List<int> selectedCategoryIds = [];
   List<ProductVariant> variants = [];
-  List<Uint8List?> images = List.generate(10, (_) => null);
+  List<ProductImageSlot> imageSlots = List.generate(
+    10,
+    (i) => ProductImageSlot(sortOrder: i + 1),
+  );
   final ImagePicker picker = ImagePicker();
   bool isActive = true;
 
@@ -761,9 +787,23 @@ class _SellPageState extends State<SellPage> {
         qtyController.text = product.quantity.toString();
       }
 
+      final loaded = List<ProductImageSlot>.generate(
+        10,
+        (i) => ProductImageSlot(sortOrder: i + 1),
+      );
+
+      for (int i = 0; i < product.images.length && i < 10; i++) {
+        final img = product.images[i];
+        loaded[i] = ProductImageSlot(
+          id: img.id,
+          imageUrl: img.imageUrl,
+          sortOrder: img.sortOrder > 0 ? img.sortOrder : (i + 1),
+        );
+      }
+
       setState(() {
         selectedCategoryIds = List<int>.from(product.categoryIds);
-
+        imageSlots = loaded;
         // Keep variants list empty when there was only one variant
         // so the simple Price/SKU/Qty fields remain enabled.
         variants = loadedVariants.length == 1
@@ -784,12 +824,6 @@ class _SellPageState extends State<SellPage> {
       debugPrint('Load product error: $e');
       await _handleApiError(e);
     }
-  }
-
-  void _removeImage(int index) {
-    setState(() {
-      images[index] = null;
-    });
   }
 
   Future<void> loadCategories() async {
@@ -904,22 +938,37 @@ class _SellPageState extends State<SellPage> {
   }
 
   Widget _imageBox(int index) {
+    final slot = imageSlots[index];
+
+    final Widget content;
+    if (slot.bytes != null) {
+      content = Image.memory(slot.bytes!, fit: BoxFit.cover);
+    } else if (slot.imageUrl != null && slot.imageUrl!.isNotEmpty) {
+      content = Image.network(
+        slot.imageUrl!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) =>
+            const Icon(Icons.broken_image, color: Colors.grey),
+      );
+    } else {
+      content = const Center(child: Icon(Icons.image, color: Colors.grey));
+    }
+
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey.shade300),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: images[index] != null
-          ? Stack(
+      child: slot.isEmpty
+          ? content
+          : Stack(
               children: [
                 Positioned.fill(
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(6),
-                    child: Image.memory(images[index]!, fit: BoxFit.cover),
+                    child: content,
                   ),
                 ),
-
-                /// Remove button
                 Positioned(
                   top: 0,
                   right: 0,
@@ -941,9 +990,14 @@ class _SellPageState extends State<SellPage> {
                   ),
                 ),
               ],
-            )
-          : const Center(child: Icon(Icons.image, color: Colors.grey)),
+            ),
     );
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      imageSlots[index] = ProductImageSlot(sortOrder: index + 1);
+    });
   }
 
   void _onNewBuyerMethodChanged(bool newValue) {
@@ -1002,15 +1056,17 @@ class _SellPageState extends State<SellPage> {
     final bytes = await image.readAsBytes();
 
     setState(() {
-      int emptyIndex = images.indexWhere((img) => img == null);
-
-      if (emptyIndex != -1) {
-        images[emptyIndex] = bytes;
-      } else {
+      final emptyIndex = imageSlots.indexWhere((s) => s.isEmpty);
+      if (emptyIndex == -1) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Maximum number of photos reached')),
         );
+        return;
       }
+      imageSlots[emptyIndex] = ProductImageSlot(
+        bytes: bytes,
+        sortOrder: emptyIndex + 1,
+      );
     });
   }
 
@@ -2800,6 +2856,24 @@ class _SellPageState extends State<SellPage> {
                       ];
                     }
 
+                    // Existing images the user kept (for UPDATE → pImageList)
+                    final List<Map<String, dynamic>> imagesToKeep = [];
+                    for (final slot in imageSlots) {
+                      if (slot.isExisting) {
+                        imagesToKeep.add({
+                          'id': slot.id,
+                          'productId': _productId,
+                          'imageUrl': slot.imageUrl,
+                          'sortOrder': slot.sortOrder,
+                        });
+                      }
+                    }
+
+                    // New images only (bytes for CREATE / optional UPDATE upload)
+                    final List<Uint8List?> newImageBytes = imageSlots
+                        .map((s) => s.isNew ? s.bytes : null)
+                        .toList();
+
                     setState(() {
                       isSubmitting = true;
                     });
@@ -2845,7 +2919,7 @@ class _SellPageState extends State<SellPage> {
                           businessContactGroupId: groupId,
                           categoryIds: selectedCategoryIds,
                           variants: variantsToSend, // ← uses synthetic list
-                          images: [],
+                          images: imagesToKeep,
                           businessContacts: businessContacts,
                         );
 
@@ -2873,7 +2947,7 @@ class _SellPageState extends State<SellPage> {
                           categoryIds: selectedCategoryIds,
                           variants: variantsToSend, // ← uses synthetic list
                           images: [],
-                          imageBytes: images,
+                          imageBytes: newImageBytes,
                           businessContacts: businessContacts,
                         );
 
@@ -2955,7 +3029,10 @@ class _SellPageState extends State<SellPage> {
                       locationController.clear();
 
                       setState(() {
-                        images = List.generate(10, (_) => null);
+                        imageSlots = List.generate(
+                          10,
+                          (i) => ProductImageSlot(sortOrder: i + 1),
+                        );
                         selectedCategoryIds.clear();
                         variants.clear();
                       });

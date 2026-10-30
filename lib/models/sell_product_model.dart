@@ -25,8 +25,7 @@ class SellProductModel {
   final List<int> categoryIds;
   final List<ProductVariant> variants;
 
-  final List<String> imageUrls;
-
+  final List<ProductImageItem> images;
   SellProductModel({
     required this.productId,
     required this.productCode,
@@ -47,7 +46,7 @@ class SellProductModel {
     required this.viber,
     required this.categoryIds,
     required this.variants,
-    required this.imageUrls,
+    required this.images,
   });
 
   factory SellProductModel.fromJson(Map<String, dynamic> json) {
@@ -124,20 +123,30 @@ class SellProductModel {
 
     // IMAGES
 
-    final List<String> imageUrls = [];
+    // IMAGES
+    final List<ProductImageItem> images = [];
 
     final imageList = json['pImageList'];
-
     if (imageList is List) {
       for (final item in imageList) {
-        if (item is Map<String, dynamic>) {
-          final imageUrl = item['imageUrl']?.toString() ?? '';
+        if (item is Map) {
+          final map = Map<String, dynamic>.from(item);
+          final imageUrl = map['imageUrl']?.toString() ?? '';
+          final id = int.tryParse(map['id']?.toString() ?? '') ?? 0;
 
           if (imageUrl.isNotEmpty) {
-            imageUrls.add(imageUrl);
+            images.add(
+              ProductImageItem(
+                id: id,
+                imageUrl: imageUrl,
+                sortOrder:
+                    int.tryParse(map['sortOrder']?.toString() ?? '') ?? 0,
+              ),
+            );
           }
         }
       }
+      images.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
     }
 
     // BUSINESS CONTACTS
@@ -249,7 +258,19 @@ class SellProductModel {
 
       variants: variants,
 
-      imageUrls: imageUrls,
+      images: images,
     );
   }
+}
+
+class ProductImageItem {
+  final int id;
+  final String imageUrl;
+  final int sortOrder;
+
+  const ProductImageItem({
+    required this.id,
+    required this.imageUrl,
+    required this.sortOrder,
+  });
 }

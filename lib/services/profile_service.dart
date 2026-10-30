@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../models/profile_model.dart';
 import 'auth_service.dart';
+import 'package:http_parser/http_parser.dart'; // for MediaType
 
 class ProfileService {
   static const String _profileUrl =
@@ -127,16 +128,19 @@ class ProfileService {
       throw Exception('The selected image is empty.');
     }
 
-    final request = http.MultipartRequest('POST', url);
+    final originalName = image.name.trim();
+    final filename =
+        (originalName.isNotEmpty && !originalName.startsWith('blob:'))
+        ? originalName
+        : 'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
+    final request = http.MultipartRequest('POST', url);
     request.headers['Accept'] = 'application/json';
 
-    // Match the authentication pattern used in ProductService.
     if (kIsWeb) {
       debugPrint('PROFILE UPLOAD AUTH: Browser credentials enabled.');
     } else {
       final cookie = authService.authCookie;
-
       if (cookie != null && cookie.isNotEmpty) {
         request.headers['Cookie'] = cookie;
         debugPrint('PROFILE UPLOAD AUTH: Cookie attached.');
@@ -145,16 +149,20 @@ class ProfileService {
       }
     }
 
-    // Match Postman: Body -> form-data -> avatar/cover -> File.
     request.files.add(
-      http.MultipartFile.fromBytes(fieldName, imageBytes, filename: image.name),
+      http.MultipartFile.fromBytes(
+        fieldName, // "avatar" or "cover"
+        imageBytes,
+        filename: filename,
+        contentType: MediaType('image', 'jpeg'),
+      ),
     );
 
     debugPrint('========== PROFILE IMAGE UPLOAD REQUEST ==========');
     debugPrint('Method: ${request.method}');
     debugPrint('URL: $url');
     debugPrint('Form field: $fieldName');
-    debugPrint('Filename: ${image.name}');
+    debugPrint('Filename: $filename');
     debugPrint('File size: ${imageBytes.length} bytes');
     debugPrint('Multipart file count: ${request.files.length}');
     debugPrint('===================================================');
@@ -163,9 +171,7 @@ class ProfileService {
       late http.Response response;
 
       if (kIsWeb) {
-        final client = BrowserClient();
-        client.withCredentials = true;
-
+        final client = BrowserClient()..withCredentials = true;
         try {
           final streamedResponse = await client.send(request);
           response = await http.Response.fromStream(streamedResponse);
@@ -174,7 +180,6 @@ class ProfileService {
         }
       } else {
         final client = http.Client();
-
         try {
           final streamedResponse = await client.send(request);
           response = await http.Response.fromStream(streamedResponse);
@@ -216,12 +221,171 @@ class ProfileService {
       debugPrint('Error: $e');
       debugPrint('Stack trace: $stackTrace');
       debugPrint('================================================');
-
       rethrow;
     }
   }
 
-  // ============================================================
+  Future<Map<String, dynamic>> updateBusinessInfo({
+    required int userId,
+    required String shopName,
+    required String businessType,
+    required String businessLocation,
+    required String businessDescription,
+  }) async {
+    // final url = Uri.parse(
+    //   'https://www.capital-sys.net/CKMMallAPI/api/User/UpdateBusinessInfo',
+    // );
+    final url = Uri.parse(
+      'https://www.capital-sys.net/CKMMallAPI/api/User/UpdateBusinessInfo/$userId',
+    );
+
+    final body = jsonEncode({
+      'shopName': shopName,
+      'businessType': businessType,
+      'businessLocation': businessLocation,
+      'businessDescription': businessDescription,
+    });
+
+    debugPrint('========== UPDATE BUSINESS REQUEST ==========');
+    debugPrint('URL: $url');
+    debugPrint('Body: $body');
+    debugPrint('=============================================');
+
+    late http.Response response;
+
+    if (kIsWeb) {
+      final client = BrowserClient()..withCredentials = true;
+      try {
+        response = await client.put(
+          url,
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: body,
+        );
+      } finally {
+        client.close();
+      }
+    } else {
+      final headers = <String, String>{
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      };
+      final cookie = authService.authCookie;
+      if (cookie != null && cookie.isNotEmpty) {
+        headers['Cookie'] = cookie;
+      }
+      final client = http.Client();
+      try {
+        response = await client.put(url, headers: headers, body: body);
+      } finally {
+        client.close();
+      }
+    }
+
+    debugPrint('UPDATE BUSINESS STATUS: ${response.statusCode}');
+    debugPrint('UPDATE BUSINESS BODY: ${response.body}');
+
+    if (response.statusCode == 401) {
+      throw Exception('Unauthorized (401). Please log in again.');
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Failed to update business info (${response.statusCode}): ${response.body}',
+      );
+    }
+
+    if (response.body.trim().isEmpty) {
+      return {'success': true};
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) return decoded;
+    return {'data': decoded};
+  }
+
+  Future<Map<String, dynamic>> updatePersonalInfo({
+    required int userId,
+    required String fullName,
+    required String email,
+    required String phone,
+    required String dateOfBirth,
+    required String gender,
+    required String location,
+  }) async {
+    final url = Uri.parse(
+      'https://www.capital-sys.net/CKMMallAPI/api/profile/$userId/personal',
+    );
+
+    final body = jsonEncode({
+      'fullName': fullName,
+      'email': email,
+      'phone': phone,
+      'dateOfBirth': dateOfBirth,
+      'gender': gender,
+      'location': location,
+    });
+
+    debugPrint('========== UPDATE PERSONAL REQUEST ==========');
+    debugPrint('URL: $url');
+    debugPrint('Body: $body');
+    debugPrint('=============================================');
+
+    late http.Response response;
+
+    if (kIsWeb) {
+      final client = BrowserClient()..withCredentials = true;
+      try {
+        response = await client.put(
+          url,
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: body,
+        );
+      } finally {
+        client.close();
+      }
+    } else {
+      final headers = <String, String>{
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      };
+      final cookie = authService.authCookie;
+      if (cookie != null && cookie.isNotEmpty) {
+        headers['Cookie'] = cookie;
+      }
+      final client = http.Client();
+      try {
+        response = await client.put(url, headers: headers, body: body);
+      } finally {
+        client.close();
+      }
+    }
+
+    debugPrint('UPDATE PERSONAL STATUS: ${response.statusCode}');
+    debugPrint('UPDATE PERSONAL BODY: ${response.body}');
+
+    if (response.statusCode == 401) {
+      throw Exception('Unauthorized (401). Please log in again.');
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Failed to update personal info (${response.statusCode}): ${response.body}',
+      );
+    }
+
+    if (response.body.trim().isEmpty) {
+      return {'success': true};
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) return decoded;
+    return {'data': decoded};
+  }
+
   // LOG AND PARSE UPLOAD RESPONSE
   // ============================================================
   Map<String, dynamic> _parseUploadResponse(

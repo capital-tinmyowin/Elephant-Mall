@@ -49,27 +49,36 @@ class MyApp extends StatelessWidget {
       routes: [
         GoRoute(
           path: '/',
-          pageBuilder: (context, state) => NoTransitionPage(child: const HomePage()),
+          pageBuilder: (context, state) =>
+              NoTransitionPage(child: const HomePage()),
         ),
         GoRoute(
           path: '/login',
-          pageBuilder: (context, state) => NoTransitionPage(child: const LoginPage()),
+          pageBuilder: (context, state) =>
+              NoTransitionPage(child: const LoginPage()),
         ),
         GoRoute(
           path: '/signup',
-          pageBuilder: (context, state) => NoTransitionPage(child: const RegisterPage()),
+          pageBuilder: (context, state) =>
+              NoTransitionPage(child: const RegisterPage()),
         ),
         GoRoute(
           path: '/profile',
-          pageBuilder: (context, state) => NoTransitionPage(child: const ProfilePage()),
+          pageBuilder: (context, state) =>
+              NoTransitionPage(child: const ProfilePage()),
         ),
         GoRoute(
           path: '/favourites',
-          pageBuilder: (context, state) => NoTransitionPage(child: const MyFavouritePage()),
+          pageBuilder: (context, state) =>
+              NoTransitionPage(child: const MyFavouritePage()),
         ),
         GoRoute(
           path: '/sell',
-          pageBuilder: (context, state) => NoTransitionPage(child: const SellPage()),
+          pageBuilder: (context, state) {
+            final productIdStr = state.uri.queryParameters['productId'];
+            final productId = int.tryParse(productIdStr ?? '');
+            return NoTransitionPage(child: SellPage(productId: productId));
+          },
         ),
         GoRoute(
           path: '/sell/:id',
@@ -80,31 +89,43 @@ class MyApp extends StatelessWidget {
         ),
         GoRoute(
           path: '/category',
-          pageBuilder: (context, state) => NoTransitionPage(child: const CategoryPage()),
+          pageBuilder: (context, state) =>
+              NoTransitionPage(child: const CategoryPage()),
         ),
         GoRoute(
           path: '/sale',
-          pageBuilder: (context, state) => NoTransitionPage(child: const SalePage()),
+          pageBuilder: (context, state) =>
+              NoTransitionPage(child: const SalePage()),
         ),
         GoRoute(
           path: '/new-in',
-          pageBuilder: (context, state) => NoTransitionPage(child: const NewInPage()),
+          pageBuilder: (context, state) =>
+              NoTransitionPage(child: const NewInPage()),
         ),
-        
+
         // Product Detail (e.g. /product/123)
         GoRoute(
           path: '/product/:id',
           pageBuilder: (context, state) {
-            final productId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
-            return NoTransitionPage(child: ProductDetailPage(productId: productId));
+            final productId =
+                int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+            return NoTransitionPage(
+              child: ProductDetailPage(productId: productId),
+            );
           },
         ),
         GoRoute(
           path: '/seller/:id',
           pageBuilder: (context, state) {
-            final sellerId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+            final sellerId =
+                int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
             final sellerName = state.uri.queryParameters['name'] ?? '';
-            return NoTransitionPage(child: SellerListingPage(sellerId: sellerId, sellerName: sellerName));
+            return NoTransitionPage(
+              child: SellerListingPage(
+                sellerId: sellerId,
+                sellerName: sellerName,
+              ),
+            );
           },
         ),
 
@@ -112,8 +133,10 @@ class MyApp extends StatelessWidget {
         GoRoute(
           path: '/category/:id',
           pageBuilder: (context, state) {
-            final categoryId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
-            final categoryName = state.uri.queryParameters['name'] ?? 'Category';
+            final categoryId =
+                int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+            final categoryName =
+                state.uri.queryParameters['name'] ?? 'Category';
             return NoTransitionPage(
               child: CategoryDetailPage(
                 categoryId: categoryId,
@@ -127,9 +150,15 @@ class MyApp extends StatelessWidget {
         GoRoute(
           path: '/my-store/:id',
           pageBuilder: (context, state) {
-            final sellerId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+            final sellerId =
+                int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
             final sellerName = state.uri.queryParameters['name'] ?? '';
-            return NoTransitionPage(child: SellerStorePage(sellerId: sellerId, sellerName: sellerName));
+            return NoTransitionPage(
+              child: SellerStorePage(
+                sellerId: sellerId,
+                sellerName: sellerName,
+              ),
+            );
           },
         ),
       ],
