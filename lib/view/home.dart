@@ -455,7 +455,7 @@ class _HomePageState extends State<HomePage> {
                               );
                             },
                             child: AppImage(
-                              imageUrl: ApiService.getProxiedImageUrl(item.photoPath),
+                              imageUrl: item.photoPath,
                               height: 90,
                               width: 80,
                               fit: BoxFit.cover,

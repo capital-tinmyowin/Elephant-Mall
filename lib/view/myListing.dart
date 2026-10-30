@@ -2053,22 +2053,22 @@ class _SellerStorePageState extends State<SellerStorePage> {
     context.push('/sell?productId=$id');
   }
 
-  void openProduct(Product product) {
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            ProductDetailPage(
-              // IMPORTANT:
-              // Product model has productId,
-              // not productCode.
-              productId: product.productId,
-            ),
-        transitionDuration: Duration.zero,
-        reverseTransitionDuration: Duration.zero,
-      ),
-    );
-  }
+  // void openProduct(Product product) {
+  //   Navigator.push(
+  //     context,
+  //     PageRouteBuilder(
+  //       pageBuilder: (context, animation, secondaryAnimation) =>
+  //           ProductDetailPage(
+  //             // IMPORTANT:
+  //             // Product model has productId,
+  //             // not productCode.
+  //             productId: product.productId,
+  //           ),
+  //       transitionDuration: Duration.zero,
+  //       reverseTransitionDuration: Duration.zero,
+  //     ),
+  //   );
+  // }
 
   // VIEW ALL
 

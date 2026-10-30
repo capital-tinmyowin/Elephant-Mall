@@ -732,7 +732,7 @@ class _CategoryPageState extends State<CategoryPage> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: AppImage(
-                  imageUrl: ApiService.getProxiedImageUrl(category.photoPath),
+                  imageUrl: category.photoPath,
                   height: 90,
                   width: 90,
                   fit: BoxFit.cover,
@@ -1018,7 +1018,7 @@ class _CategoryPageState extends State<CategoryPage> {
   // ============= TRENDING ITEM =============
   Widget _buildTrendingItem(Product product, bool isCompact) {
     final bool isMobile = MediaQuery.of(context).size.width < 768;
-
+      // print(product.image);
     return GestureDetector(
       onTap: () {
         context.go('/product/${product.productId}');
@@ -1044,9 +1044,9 @@ class _CategoryPageState extends State<CategoryPage> {
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: AppImage(
-                imageUrl: product.proxiedImageUrl,
+                imageUrl: product.image,
                 height: isMobile ? 110 : 80,
-                // width: isMobile ? 110 : 80,
+                width: isMobile ? 110 : 80,
                 fit: BoxFit.cover,
               ),
             ),
