@@ -368,16 +368,16 @@ class ProductService {
     request.headers['Accept'] = 'application/json';
     request.fields['product'] = jsonEncode(product);
 
-    // Attach images 
+    // Attach images
     int imageIndex = 0;
     for (final bytes in imageBytes) {
       if (bytes != null && bytes.isNotEmpty) {
         request.files.add(
           http.MultipartFile.fromBytes(
-            'images', 
+            'images',
             bytes,
             filename: 'image_$imageIndex.jpg',
-            contentType: MediaType('image', 'jpeg'), 
+            contentType: MediaType('image', 'jpeg'),
           ),
         );
         imageIndex++;
@@ -537,6 +537,7 @@ class ProductService {
     required List<ProductVariant> variants,
     required List<Map<String, dynamic>> images,
     required List<Map<String, dynamic>> businessContacts,
+    List<Uint8List?> imageBytes = const [],
   }) async {
     final url = Uri.parse(
       'https://www.capital-sys.net/CKMMallAPI/api/Product/UpdateProduct/$productId',
@@ -599,6 +600,24 @@ class ProductService {
 
     request.headers['Accept'] = 'application/json';
     request.fields['product'] = jsonEncode(product);
+
+    // New images (same field name as create)
+    int imageIndex = 0;
+    for (final bytes in imageBytes) {
+      if (bytes != null && bytes.isNotEmpty) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'images',
+            bytes,
+            filename: 'image_$imageIndex.jpg',
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        );
+        imageIndex++;
+      }
+    }
+
+    debugPrint('Number of new image files: ${request.files.length}');
 
     debugPrint('========== UPDATE API REQUEST ==========');
     debugPrint('Method: ${request.method}');
