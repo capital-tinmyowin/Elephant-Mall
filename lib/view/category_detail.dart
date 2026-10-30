@@ -153,6 +153,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
             photoPath: '',
           ),
         );
+        print(currentCat.photoPath);
         return Container(
           width: double.infinity,
           margin: EdgeInsets.symmetric(
@@ -288,7 +289,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: AppImage(
-                          imageUrl: ApiService.getProxiedImageUrl(currentCat.photoPath),
+                          imageUrl: currentCat.photoPath,
                           height: 130,
                           width: 300, // Adjusted width
                           fit: BoxFit.cover,
@@ -1254,7 +1255,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                       bottomLeft: Radius.circular(12),
                     ),
                     child: AppImage(
-                      imageUrl: product.proxiedImageUrl,
+                      imageUrl: product.image,
                       width: double.infinity,
                       height: double.infinity,
                       fit: BoxFit.cover,
@@ -1440,7 +1441,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                       top: Radius.circular(12),
                     ),
                     child: AppImage(
-                      imageUrl: product.proxiedImageUrl,
+                      imageUrl: product.image,
                       width: double.infinity,
                       fit: BoxFit.cover,
                     ),

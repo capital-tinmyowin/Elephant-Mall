@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:elephant_mall/models/business_contact.dart';
 import 'package:elephant_mall/models/productImage.dart';
 import 'package:elephant_mall/models/product_variant.dart';
 import 'package:flutter/material.dart';
@@ -158,43 +159,56 @@ class ApiService extends ChangeNotifier {
   }
 
   // ============= IMAGE PROXY =============
-  //   static String getProxiedImageUrl(String originalUrl) {
+  // static String getProxiedImageUrl(String originalUrl) {
   //   if (originalUrl.isEmpty) return '';
+    
   //   if (originalUrl.contains('/image/proxy?url=')) return originalUrl;
   //   if (originalUrl.startsWith('assets/')) return originalUrl;
   //   if (originalUrl.startsWith('images/')) return 'assets/$originalUrl';
 
-  //   // ✅ If it's already a full https URL, just use it — no proxy
-  //   if (originalUrl.startsWith('https://')) return originalUrl;
-  //   if (originalUrl.startsWith('http://'))  return originalUrl;
+  //   // Hosts that DO send CORS headers on Web
+  //   const corsSafeHosts = [
+  //     'picsum.photos',
+  //     'gstatic.com', // encrypted-tbn*.gstatic.com works
+  //     'images.unsplash.com',
+  //     'placehold.co',
+      
+  //   ];
+  //   final lower = originalUrl.toLowerCase();
+  //   if (corsSafeHosts.any(lower.contains)) {
+  //     return originalUrl;
+  //   }
 
-  //   // Only proxy relative paths
-  //   final encodedUrl = Uri.encodeComponent(originalUrl);
-  //   return '$baseUrl/image/proxy?url=$encodedUrl';
+  //   // Everything else → placeholder (since we can't proxy)
+  //   return 'https://picsum.photos/seed/${originalUrl.hashCode.abs()}/400/400';
   // }
   static String getProxiedImageUrl(String originalUrl) {
     if (originalUrl.isEmpty) return '';
-    if (originalUrl.contains('/image/proxy?url=')) return originalUrl;
-    if (originalUrl.startsWith('assets/')) return originalUrl;
-    if (originalUrl.startsWith('images/')) return 'assets/$originalUrl';
-
-    // Hosts that DO send CORS headers on Web
-    const corsSafeHosts = [
-      'picsum.photos',
-      'gstatic.com', // encrypted-tbn*.gstatic.com works
-      'images.unsplash.com',
-      'placehold.co',
+    //  If it's already a full URL, just return it!
+    if (originalUrl.startsWith('http://') || originalUrl.startsWith('https://')) {
+      // Handle the broken path issue in your backend:
+      // Backend sometimes sends: https://www.capital-sys.net/CKMMallAPI/ProductImages/https://...
+      // We extract the real part after the second 'http'
+      final httpsIdx = originalUrl.indexOf('https://', 10); 
+      if (httpsIdx > 0) {
+        return originalUrl.substring(httpsIdx);
+      }
       
-    ];
-    final lower = originalUrl.toLowerCase();
-    if (corsSafeHosts.any(lower.contains)) {
+      final httpIdx = originalUrl.indexOf('http://', 10);
+      if (httpIdx > 0) {
+        return originalUrl.substring(httpIdx);
+      }
+
       return originalUrl;
     }
 
-    // Everything else → placeholder (since we can't proxy)
-    return 'https://picsum.photos/seed/${originalUrl.hashCode.abs()}/400/400';
-  }
+    // If it's an asset
+    if (originalUrl.startsWith('assets/')) return originalUrl;
+    if (originalUrl.startsWith('images/')) return 'assets/$originalUrl';
 
+    // Bare filename → prefix with backend host
+    return 'https://www.capital-sys.net/CKMMallAPI/ProductImages/$originalUrl';
+  }
   // ============= GET LOCAL IMAGE URL =============
   static String getLocalImageUrl(Product product) {
     if (product.image != null && product.image!.isNotEmpty) {
@@ -387,6 +401,13 @@ class ApiService extends ChangeNotifier {
         }
       }
     }
+    List<BusinessContact> businessContacts = [];
+    if (json['businesscontact'] is List) {
+      businessContacts = (json['businesscontact'] as List)
+          .whereType<Map<String, dynamic>>()
+          .map((c) => BusinessContact.fromJson(c))
+          .toList();
+    }
 
     return Product(
       productId: productId,
@@ -404,6 +425,7 @@ class ApiService extends ChangeNotifier {
       productImages: productImages,
       variants: variants,
       colors: const [],
+      businessContacts: businessContacts,
     );
   }
 

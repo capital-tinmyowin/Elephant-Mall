@@ -72,10 +72,10 @@ class AppImage extends StatelessWidget {
         errorWidget: (context, url, error) {
           return _buildErrorWidget();
         },
-        httpHeaders: {
-          'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
-          'Cache-Control': 'no-cache',
-        },
+        // httpHeaders: {
+        //   'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+        //   'Cache-Control': 'no-cache',
+        // },
       ),
     );
   }
