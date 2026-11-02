@@ -42,6 +42,9 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   bool _isGridView = true;
   late int _currentCategoryId;
   late String _currentCategoryName;
+  Set<int> _expandedCategories = {}; // Tracks which parent categories are open
+  Map<int, List<Category>> _loadedSubcategories = {};
+
   int get totalPages {
     final total = _sortedProducts(
       Provider.of<ApiService>(
@@ -153,7 +156,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
             photoPath: '',
           ),
         );
-        print(currentCat.photoPath);
+        // print(currentCat.photoPath);
         return Container(
           width: double.infinity,
           margin: EdgeInsets.symmetric(
@@ -444,7 +447,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                       selected: isSelected,
                       onSelected: (selected) {
                         if (selected) {
-                          // 🔥 URL change + data reload
+                          //  URL change + data reload
                           _switchCategory(cat.categoryId, cat.categoryName);
                         }
                       },
@@ -521,153 +524,149 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
               return Column(
                 children: cats.map((c) {
                   final count = api.categoryCounts[c.categoryId] ?? 0;
-                  return _buildCategoryItem(
-                    c.categoryId,
-                    c.categoryName,
-                    count,
-                  );
+                  return _buildExpandableCategoryItem(c, count, 0); // Call new recursive method
                 }).toList(),
               );
             },
           ),
           const Divider(height: 24),
 
-          const Text(
-            'Filter By',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
+          // const Text(
+          //   'Filter By',
+          //   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          // ),
+          // const SizedBox(height: 16),
 
-          // Size Section with Toggle
-          _buildExpandableSection(
-            title: 'Size',
-            isExpanded: _isSizeExpanded,
-            onToggle: () {
-              setState(() {
-                _isSizeExpanded = !_isSizeExpanded;
-              });
-            },
-            child: Column(
-              children: _sizeOptions.map((size) {
-                final isSelected = _selectedSize == size;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedSize = isSelected ? 'All' : size;
-                    });
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 18,
-                          height: 18,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.rectangle,
-                            borderRadius: BorderRadius.circular(3),
-                            border: Border.all(
-                              color: isSelected
-                                  ? const Color(0xFF2B6E3B)
-                                  : Colors.grey[400]!,
-                              width: 2,
-                            ),
-                            color: isSelected
-                                ? const Color(0xFF2B6E3B)
-                                : Colors.transparent,
-                          ),
-                          child: isSelected
-                              ? const Icon(
-                                  Icons.check,
-                                  size: 14,
-                                  color: Colors.white,
-                                )
-                              : null,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            size,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: isSelected
-                                  ? const Color(0xFF2B6E3B)
-                                  : Colors.black87,
-                              fontWeight: isSelected
-                                  ? FontWeight.w600
-                                  : FontWeight.normal,
-                            ),
-                          ),
-                        ),
-                        if (size != 'All')
-                          Text(
-                            '(${_getSizeCount(size)})',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[500],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
+          // // Size Section with Toggle
+          // _buildExpandableSection(
+          //   title: 'Size',
+          //   isExpanded: _isSizeExpanded,
+          //   onToggle: () {
+          //     setState(() {
+          //       _isSizeExpanded = !_isSizeExpanded;
+          //     });
+          //   },
+          //   child: Column(
+          //     children: _sizeOptions.map((size) {
+          //       final isSelected = _selectedSize == size;
+          //       return GestureDetector(
+          //         onTap: () {
+          //           setState(() {
+          //             _selectedSize = isSelected ? 'All' : size;
+          //           });
+          //         },
+          //         child: Padding(
+          //           padding: const EdgeInsets.symmetric(vertical: 4),
+          //           child: Row(
+          //             children: [
+          //               Container(
+          //                 width: 18,
+          //                 height: 18,
+          //                 decoration: BoxDecoration(
+          //                   shape: BoxShape.rectangle,
+          //                   borderRadius: BorderRadius.circular(3),
+          //                   border: Border.all(
+          //                     color: isSelected
+          //                         ? const Color(0xFF2B6E3B)
+          //                         : Colors.grey[400]!,
+          //                     width: 2,
+          //                   ),
+          //                   color: isSelected
+          //                       ? const Color(0xFF2B6E3B)
+          //                       : Colors.transparent,
+          //                 ),
+          //                 child: isSelected
+          //                     ? const Icon(
+          //                         Icons.check,
+          //                         size: 14,
+          //                         color: Colors.white,
+          //                       )
+          //                     : null,
+          //               ),
+          //               const SizedBox(width: 10),
+          //               Expanded(
+          //                 child: Text(
+          //                   size,
+          //                   style: TextStyle(
+          //                     fontSize: 14,
+          //                     color: isSelected
+          //                         ? const Color(0xFF2B6E3B)
+          //                         : Colors.black87,
+          //                     fontWeight: isSelected
+          //                         ? FontWeight.w600
+          //                         : FontWeight.normal,
+          //                   ),
+          //                 ),
+          //               ),
+          //               if (size != 'All')
+          //                 Text(
+          //                   '(${_getSizeCount(size)})',
+          //                   style: TextStyle(
+          //                     fontSize: 13,
+          //                     color: Colors.grey[500],
+          //                   ),
+          //                 ),
+          //             ],
+          //           ),
+          //         ),
+          //       );
+          //     }).toList(),
+          //   ),
+          // ),
 
           const SizedBox(height: 8),
 
           // Color Section with Toggle
-          _buildExpandableSection(
-            title: 'Color',
-            isExpanded: _isColorExpanded,
-            onToggle: () {
-              setState(() {
-                _isColorExpanded = !_isColorExpanded;
-              });
-            },
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _colorOptions.map((color) {
-                final isSelected = _selectedColor == color;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedColor = color;
-                    });
-                  },
-                  child: Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _getColorValue(color),
-                      border: Border.all(
-                        color: isSelected
-                            ? const Color(0xFF2B6E3B)
-                            : Colors.grey[300]!,
-                        width: isSelected ? 3 : 1,
-                      ),
-                    ),
-                    child: color == 'All'
-                        ? Center(
-                            child: Text(
-                              'A',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                          )
-                        : null,
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 8),
+          // _buildExpandableSection(
+          //   title: 'Color',
+          //   isExpanded: _isColorExpanded,
+          //   onToggle: () {
+          //     setState(() {
+          //       _isColorExpanded = !_isColorExpanded;
+          //     });
+          //   },
+          //   child: Wrap(
+          //     spacing: 8,
+          //     runSpacing: 8,
+          //     children: _colorOptions.map((color) {
+          //       final isSelected = _selectedColor == color;
+          //       return GestureDetector(
+          //         onTap: () {
+          //           setState(() {
+          //             _selectedColor = color;
+          //           });
+          //         },
+          //         child: Container(
+          //           width: 20,
+          //           height: 20,
+          //           decoration: BoxDecoration(
+          //             shape: BoxShape.circle,
+          //             color: _getColorValue(color),
+          //             border: Border.all(
+          //               color: isSelected
+          //                   ? const Color(0xFF2B6E3B)
+          //                   : Colors.grey[300]!,
+          //               width: isSelected ? 3 : 1,
+          //             ),
+          //           ),
+          //           child: color == 'All'
+          //               ? Center(
+          //                   child: Text(
+          //                     'A',
+          //                     style: TextStyle(
+          //                       fontSize: 12,
+          //                       fontWeight: FontWeight.bold,
+          //                       color: Colors.black,
+          //                     ),
+          //                   ),
+          //                 )
+          //               : null,
+          //         ),
+          //       );
+          //     }).toList(),
+          //   ),
+          // ),
+          // const SizedBox(height: 8),
           // Price Range Section with Toggle
           _buildExpandableSection(
             title: 'Price Range',
@@ -817,34 +816,123 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
     }
   }
 
-  Widget _buildCategoryItem(int categoryId, String name, int count) {
-    final isSelected = _currentCategoryName == name;
+  // Widget _buildCategoryItem(int categoryId, String name, int count) {
+  //   final isSelected = _currentCategoryName == name;
 
-    return GestureDetector(
-      onTap: () => _switchCategory(categoryId, name),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              name,
-              style: TextStyle(
-                fontSize: 14,
-                color: isSelected ? const Color(0xFF2B6E3B) : Colors.black87,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
+  //   return GestureDetector(
+  //     onTap: () => _switchCategory(categoryId, name),
+  //     child: Padding(
+  //       padding: const EdgeInsets.symmetric(vertical: 4),
+  //       child: Row(
+  //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //         children: [
+  //           Text(
+  //             name,
+  //             style: TextStyle(
+  //               fontSize: 14,
+  //               color: isSelected ? const Color(0xFF2B6E3B) : Colors.black87,
+  //               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+  //             ),
+  //           ),
+  //           Text(
+  //             count.toString(),
+  //             style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+
+   Widget _buildExpandableCategoryItem(Category cat, int count, int level) {
+    final isSelected = _currentCategoryId == cat.categoryId;
+    final isExpanded = _expandedCategories.contains(cat.categoryId);
+    final subcats = _loadedSubcategories[cat.categoryId] ?? [];
+    final hasSubcats = subcats.isNotEmpty;
+    
+    //CHANGE: Only show arrow if subcategories actually exist
+    final showArrow = hasSubcats; 
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () async {
+            // 1. Navigate/Filter by this category
+            _switchCategory(cat.categoryId, cat.categoryName);
+
+            // 2. Fetch subcategories if not loaded
+            if (!_loadedSubcategories.containsKey(cat.categoryId)) {
+              final subs = await Provider.of<ApiService>(context, listen: false)
+                  .fetchSubcategories(cat.categoryId);
+              setState(() {
+                _loadedSubcategories[cat.categoryId] = subs;
+                // Only expand if it actually has subcategories
+                if (subs.isNotEmpty) {
+                  _expandedCategories.add(cat.categoryId);
+                }
+              });
+            } else {
+              // 3. Toggle expansion ONLY if it has subcategories
+              if (hasSubcats) {
+                setState(() {
+                  if (isExpanded) {
+                    _expandedCategories.remove(cat.categoryId);
+                  } else {
+                    _expandedCategories.add(cat.categoryId);
+                  }
+                });
+              }
+            }
+          },
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: level * 12.0, // Indent based on depth level
+              top: 8,
+              bottom: 8,
+              right: 4,
             ),
-            Text(
-              count.toString(),
-              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    cat.categoryName,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isSelected ? const Color(0xFF2B6E3B) : Colors.black87,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                  ),
+                ),
+                // Count
+                Text(
+                  count.toString(),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                ),
+                const SizedBox(width: 4),
+                
+                // Show Arrow if has subcategories
+                if (showArrow)
+                  Icon(
+                    isExpanded ? Icons.expand_less : Icons.expand_more,
+                    size: 16,
+                    color: Colors.grey[500],
+                  )
+                else
+                  const SizedBox(width: 16), // Empty space so text aligns properly
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+        
+        // Render children recursively if expanded
+        if (isExpanded && hasSubcats)
+          ...subcats.map((subCat) {
+            return _buildExpandableCategoryItem(subCat, 0, level + 1);
+          }),
+      ],
     );
   }
-
   // ============= MOBILE FILTERS =============
   Widget _buildMobileFilters() {
     return Column(

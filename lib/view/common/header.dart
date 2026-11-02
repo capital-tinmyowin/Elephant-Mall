@@ -563,9 +563,46 @@ class CommonBottomBar extends StatelessWidget {
   final int currentIndex;
 
   const CommonBottomBar({super.key, required this.currentIndex});
-
+  void _showLoginRequiredDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Login Required'),
+        content: const Text(
+          'Please sign in to access this feature.',
+          style: TextStyle(fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.go('/login');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2B6E3B),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Sign In'),
+          ),
+        ],
+      ),
+    );
+  }
   void _navigate(BuildContext context, int index) {
     if (index == currentIndex) return;
+    final authService = Provider.of<AuthService>(context, listen: false);
+    
+    if ((index == 3 || index == 4) && !authService.isLoggedIn) {
+      _showLoginRequiredDialog(context);
+      return; // Stop navigation
+    }
     String routeName;
     // Widget page;
 

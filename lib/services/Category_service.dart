@@ -463,7 +463,7 @@ class ApiService extends ChangeNotifier {
         // Fetch products for this category, count them
         try {
           final prodUrl = Uri.parse(
-            'https://www.capital-sys.net/CKMMallAPI/api/category/categoryproduct/$id',
+            'https://www.capital-sys.net/CKMMallAPI/api/Category/categoryproductwithparentId/$id',
           );
           final prodRes = await http
               .get(prodUrl, headers: {'Content-Type': 'application/json'})
@@ -535,6 +535,49 @@ class ApiService extends ChangeNotifier {
       print(' Categories API error: $e');
       return []; //  empty, no mock
     }
+  }
+
+   // ============= SUBCATEGORY FETCHING =============
+  final Map<int, List<Category>> _subcategoriesCache = {};
+  Map<int, List<Category>> get subcategoriesCache => _subcategoriesCache;
+
+  Future<List<Category>> fetchSubcategories(int categoryId) async {
+    // Return from cache if exists
+    if (_subcategoriesCache.containsKey(categoryId)) {
+      return _subcategoriesCache[categoryId]!;
+    }
+
+    try {
+      final url = Uri.parse(
+        'https://www.capital-sys.net/CKMMallAPI/api/Category/getallsubcategoriesbycategoryId/$categoryId',
+      );
+      final response = await http
+          .get(url, headers: {'Content-Type': 'application/json'})
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final dynamic data = json.decode(response.body);
+        List<dynamic> list = [];
+
+        if (data is List) {
+          list = data;
+        } else if (data is Map<String, dynamic> && data['data'] is List) {
+          list = data['data'];
+        }
+
+        // Parse the categories
+        final subs = list
+            .whereType<Map<String, dynamic>>()
+            .map((j) => _parseCategoryFromJson(j))
+            .toList();
+            
+        _subcategoriesCache[categoryId] = subs;
+        return subs;
+      }
+    } catch (e) {
+      print('Error fetching subcategories: $e');
+    }
+    return [];
   }
 
   Category _parseCategoryFromJson(Map<String, dynamic> json) {

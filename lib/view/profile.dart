@@ -23,7 +23,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   int selectedMenu = 0;
   final ImagePicker _imagePicker = ImagePicker();
-
+  
   String? _avatarUrl;
   String? _coverUrl;
   bool _isLoadingProfile = false;
@@ -608,6 +608,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // PROFILE SIDEBAR
   Widget buildProfileSidebar(bool isMobile) {
+    final authService = Provider.of<AuthService>(context, listen: false);
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -755,7 +756,20 @@ class _ProfilePageState extends State<ProfilePage> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             child: InkWell(
               borderRadius: BorderRadius.circular(8),
-              onTap: () {},
+              onTap: () async {
+                await authService.logout(); // Clear session and cookies
+                
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Logged out successfully'),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                  setState(() {});
+                }
+              },
               child: const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 6, vertical: 10),
                 child: Row(
@@ -891,7 +905,7 @@ class _ProfilePageState extends State<ProfilePage> {
           //   ),
           // );
           context.go(
-            '/seller-store/${currentUser.id}?name=${Uri.encodeComponent(currentUser.username)}',
+            '/my-store/${currentUser.id}?name=${Uri.encodeComponent(currentUser.username)}',
           );
           return;
         }
