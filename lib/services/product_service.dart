@@ -554,10 +554,17 @@ class ProductService {
 
     // Existing image metadata
     final pImageList = images.map((image) {
+      final String fullImageUrl = image['imageUrl']?.toString() ?? '';
+
+      // Extract only the image filename from the full URL.
+      final String imageFileName = fullImageUrl.isNotEmpty
+          ? Uri.parse(fullImageUrl).pathSegments.last
+          : '';
+
       return {
         'id': image['id'] ?? 0,
         'productId': productId,
-        'imageUrl': image['imageUrl'] ?? '',
+        'imageUrl': imageFileName,
         'sortOrder': image['sortOrder'] ?? 1,
       };
     }).toList();

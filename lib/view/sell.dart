@@ -2874,6 +2874,37 @@ class _SellPageState extends State<SellPage> {
                         .map((s) => s.isNew ? s.bytes : null)
                         .toList();
 
+                    // ========== DEBUG: image slots + what will be sent ==========
+                    debugPrint(
+                      '========== SELL PAGE IMAGE DEBUG (before update) ==========',
+                    );
+                    debugPrint('Total slots: ${imageSlots.length}');
+                    for (var i = 0; i < imageSlots.length; i++) {
+                      final s = imageSlots[i];
+                      debugPrint(
+                        '  slot[$i] isEmpty=${s.isEmpty} isExisting=${s.isExisting} isNew=${s.isNew} '
+                        'id=${s.id} sortOrder=${s.sortOrder} '
+                        'url=${s.imageUrl} bytesLen=${s.bytes?.length}',
+                      );
+                    }
+                    debugPrint('imagesToKeep count: ${imagesToKeep.length}');
+                    for (var i = 0; i < imagesToKeep.length; i++) {
+                      debugPrint('  keep[$i] ${imagesToKeep[i]}');
+                    }
+                    final newCount = newImageBytes
+                        .where((b) => b != null && b.isNotEmpty)
+                        .length;
+                    debugPrint('newImageBytes non-empty count: $newCount');
+                    for (var i = 0; i < newImageBytes.length; i++) {
+                      final b = newImageBytes[i];
+                      debugPrint(
+                        '  bytes[$i] ${b == null ? "null" : "len=${b.length}"}',
+                      );
+                    }
+                    debugPrint(
+                      '============================================================',
+                    );
+
                     setState(() {
                       isSubmitting = true;
                     });
