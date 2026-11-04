@@ -27,6 +27,9 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
+  final _formKey = GlobalKey<FormState>();
+  String? _apiEmailError;
+  String? _apiPasswordError;
 
   @override
   void initState() {
@@ -42,14 +45,22 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _login() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in all fields'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
+    // if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(
+    //       content: Text('Please fill in all fields'),
+    //       backgroundColor: Colors.orange,
+    //     ),
+    //   );
+    //   return;
+    // }
+    setState(() {
+      _apiEmailError = null;
+      _apiPasswordError = null;
+    });
+
+    if (!_formKey.currentState!.validate()) {
+      return; 
     }
 
     setState(() => _isLoading = true);
@@ -72,22 +83,24 @@ class _LoginPageState extends State<LoginPage> {
         );
         context.go('/');
       } else {
-        final error = authService.errorMessage ?? 'Login failed';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(' $error'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        //  SHOW API ERROR ON THE FIELDS INSTEAD OF SNACKBAR
+        setState(() {
+          final error = authService.errorMessage ?? 'Invalid email or password';
+          
+          // We set the API error on the Email field
+          _apiEmailError = error; 
+          _apiPasswordError = null; 
+        });
+        
+        _formKey.currentState!.validate();
       }
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(' Connection error. Please try again.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      // Show network error on the field too
+      setState(() {
+        _apiEmailError = 'Connection error. Try again.';
+      });
+      _formKey.currentState!.validate();
     }
   }
 
@@ -142,7 +155,9 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               Container(
                                 width: 1,
-                                margin: const EdgeInsets.symmetric(vertical: 50),
+                                margin: const EdgeInsets.symmetric(
+                                  vertical: 50,
+                                ),
                                 color: Colors.grey.shade300,
                               ),
                               Expanded(
@@ -155,11 +170,11 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
             ),
-            // 🔥 Footer - Only on Desktop (NOT mobile)
+            //  Footer - Only on Desktop (NOT mobile)
             if (!isMobile) const CommonFooter(),
           ],
         ),
-        // 🔥 Bottom Bar - Only on Mobile
+        //  Bottom Bar - Only on Mobile
         bottomNavigationBar: isMobile
             ? const CommonBottomBar(currentIndex: 4)
             : null,
@@ -228,7 +243,7 @@ class _LoginPageState extends State<LoginPage> {
       constraints: const BoxConstraints(maxWidth: 400),
       padding: EdgeInsets.symmetric(
         horizontal: isMobile ? 20 : 35,
-        vertical: isMobile ? 30 : 40,
+        vertical: isMobile ? 30 : 20,
       ),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -241,119 +256,165 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            "Welcome",
-            style: TextStyle(
-              fontSize: isMobile ? 30 : 38,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          // const SizedBox(height: 30),
-          _textField(
-            Icons.person_outline,
-            "Email/Username",
-            controller: _emailController,
-          ),
-          const SizedBox(height: 18),
-          _textField(
-            Icons.lock_outline,
-            "Password",
-            obscure: _obscurePassword,
-            controller: _passwordController,
-            suffixIcon: IconButton(
-              icon: Icon(
-                _obscurePassword
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
+      child: Form(
+        key: _formKey,
+        autovalidateMode: AutovalidateMode.disabled,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "Welcome",
+              style: TextStyle(
+                fontSize: isMobile ? 30 : 38,
+                fontWeight: FontWeight.bold,
               ),
-              onPressed: () {
-                setState(() {
-                  _obscurePassword = !_obscurePassword;
-                });
+            ),
+            const SizedBox(height: 10),
+            // 2. EMAIL FIELD WITH VALIDATOR
+            _textField(
+              Icons.person_outline,
+              "Email/Username",
+              controller: _emailController,
+               onChanged: (val) {
+                // Clear BOTH errors when typing in email
+                if (_apiEmailError != null || _apiPasswordError != null) {
+                  setState(() {
+                    _apiEmailError = null;
+                    _apiPasswordError = null;
+                  });
+                }
+              },
+              validator: (value) {
+                if (_apiEmailError != null) {
+                  return _apiEmailError;
+                }
+                if (value == null || value.trim().isEmpty) {
+                  return 'Email is required';
+                }
+                final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                if (!emailRegex.hasMatch(value.trim())) {
+                  return 'Please enter a valid email address';
+                }
+                return null;
               },
             ),
-          ),
-          const SizedBox(height: 25),
-          SizedBox(
-            width: double.infinity,
-            height: 40,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff2f6b2f),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+            const SizedBox(height: 10),
+
+            // 3. PASSWORD FIELD WITH VALIDATOR
+            _textField(
+              Icons.lock_outline,
+              "Password",
+              controller: _passwordController,
+              textInputAction:
+                  TextInputAction.done, // Done shows the "Enter" icon
+              onFieldSubmitted:
+                  _login, //  2. Trigger login when Enter is pressed
+              onChanged: (val) {
+                // Clear BOTH errors when typing in password
+                if (_apiEmailError != null || _apiPasswordError != null) {
+                  setState(() {
+                    _apiEmailError = null;
+                    _apiPasswordError = null;
+                  });
+                }
+              },
+              validator: (value) {
+                 if (value == null || value.isEmpty) {
+                  return 'Password is required';
+                }
+                if (value.length < 6) {
+                  return 'Password must be at least 6 characters';
+                }
+                return null;
+              },
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
                 ),
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
               ),
-              onPressed: _isLoading ? null : _login,
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Text(
-                      "Sign In",
-                      style: TextStyle(fontSize: 22, color: Colors.white),
-                    ),
             ),
-          ),
-          // const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Password reset feature coming soon!'),
-                    duration: Duration(seconds: 2),
+            const SizedBox(height: 15),
+            SizedBox(
+              width: double.infinity,
+              height: 40,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff2f6b2f),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
                   ),
-                );
-              },
-              child: const Text(
-                "Forgot Password?",
-                style: TextStyle(
-                  color: Color(0xffb8860b),
-                  fontWeight: FontWeight.bold,
                 ),
+                onPressed: _isLoading ? null : _login,
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        "Sign In",
+                        style: TextStyle(fontSize: 22, color: Colors.white),
+                      ),
               ),
             ),
-          ),
-          // const SizedBox(height: 15),
-          _socialButton(FontAwesomeIcons.google, "Sign in with Google"),
-          const SizedBox(height: 15),
-          _socialButton(FontAwesomeIcons.apple, "Sign in with Apple"),
-          // const SizedBox(height: 25),
-          Wrap(
-            alignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              const Text(
-                "Don't have an account? ",
-                style: TextStyle(fontSize: 16),
-              ),
-              GestureDetector(
-                onTap: () {
-                  // Navigate to Register page (if exists)
-                  context.go('/signup');
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Password reset feature coming soon!'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
                 },
                 child: const Text(
-                  "Sign Up",
+                  "Forgot Password?",
                   style: TextStyle(
-                    color: Color(0xff2f6b2f),
+                    color: Color(0xffb8860b),
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
                   ),
                 ),
               ),
-            ],
-          ),
-        ],
+            ),
+            _socialButton(FontAwesomeIcons.google, "Sign in with Google"),
+            const SizedBox(height: 5),
+            _socialButton(FontAwesomeIcons.apple, "Sign in with Apple"),
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                const Text(
+                  "Don't have an account? ",
+                  style: TextStyle(fontSize: 16),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    context.go('/signup');
+                  },
+                  child: const Text(
+                    "Sign Up",
+                    style: TextStyle(
+                      color: Color(0xff2f6b2f),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -364,27 +425,51 @@ class _LoginPageState extends State<LoginPage> {
     bool obscure = false,
     required TextEditingController controller,
     Widget? suffixIcon,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+    TextInputAction textInputAction = TextInputAction.next, // Added
+    VoidCallback? onFieldSubmitted,
+    ValueChanged<String>? onChanged,
   }) {
-    return SizedBox(
-      height: 52,
-      child: TextField(
-        controller: controller,
-        obscureText: obscure,
-        decoration: InputDecoration(
-          hintText: hint,
-          prefixIcon: Icon(icon),
-          suffixIcon: suffixIcon,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 15),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(28)),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(28),
+    return Builder(
+      builder: (BuildContext context) {
+        return TextFormField(
+          controller: controller,
+          onChanged: onChanged,
+          obscureText: obscure,
+          keyboardType: keyboardType,
+          validator: validator,
+          textInputAction: textInputAction,
+          onFieldSubmitted: (_) {
+            if (onFieldSubmitted != null) {
+              onFieldSubmitted();
+            }
+          },
+          //  THIS IS THE MAGIC: Validate ONLY this field when you click outside it
+          onTapOutside: (event) {
+            FocusManager.instance.primaryFocus?.unfocus();
+            // Find the specific FormFieldState for this text field and validate it
+            final FormFieldState<String> fieldState = context
+                .findAncestorStateOfType<FormFieldState<String>>()!;
+            fieldState.validate();
+          },
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixIcon: Icon(icon),
+            suffixIcon: suffixIcon,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(28)),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(28),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(28),
+              borderSide: const BorderSide(color: Color(0xff2f6b2f), width: 2),
+            ),
+            errorMaxLines: 1,
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(28),
-            borderSide: const BorderSide(color: Color(0xff2f6b2f), width: 2),
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 

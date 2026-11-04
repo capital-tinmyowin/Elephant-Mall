@@ -525,27 +525,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  String _resolveProductImage(String raw) {
-    if (raw.isEmpty) {
-      return 'https://picsum.photos/seed/home/400/400';
-    }
-    if (raw.startsWith('http://') || raw.startsWith('https://')) {
-      // gstatic, googleusercontent, picsum are CORS-friendly
-      if (raw.contains('gstatic.com') ||
-          raw.contains('picsum.photos') ||
-          raw.contains('googleusercontent.com')) {
-        return raw;
-      }
-      // Everything else → placeholder (replace with your backend proxy URL if you have one)
-      return 'https://picsum.photos/seed/${raw.hashCode.abs()}/400/400';
-    }
-
-    // Bare filename like "PI_1_1_260930192330493.jpg" — prefix with your backend's image host.
-    // Change this prefix once you confirm the folder on the server (e.g. /Uploads/, /Images/).
-    const prefix = 'https://www.capital-sys.net/CKMMallAPI/Uploads/';
-    return '$prefix$raw';
-  }
-
   Widget buildProducts() {
     if (products.isEmpty) {
       return const CommonError(
@@ -601,40 +580,129 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Product Image
-                  // ClipRRect(
-                  //   borderRadius: const BorderRadius.vertical(
-                  //     top: Radius.circular(8),
-                  //   ),
-                  //   child: Image.asset(
-                  //     p.imagePath,
-                  //     height: 120,
-                  //     width: double.infinity,
-                  //     fit: BoxFit.contain,
-                  //     errorBuilder: (context, error, stackTrace) {
-                  //       return const SizedBox(
-                  //         height: 120,
-                  //         child: Center(
-                  //           child: Icon(Icons.image_not_supported, size: 40),
-                  //         ),
-                  //       );
-                  //     },
-                  //   ),
-                  // ),
                   Center(
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(8),
-                      ),
-                      child: AppImage(
-                        imageUrl: p.image,
-                        height: 120,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        borderRadius: 12,
-                      ),
+                    child: Consumer<AuthService>(
+                      builder: (context, authService, child) {
+                        final isLoggedIn = authService.isLoggedIn;
+                        final currentUserId = authService.currentUser?.id;
+
+                        // 1. If not logged in, just show the image
+                        if (!isLoggedIn || currentUserId == null) {
+                          return Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(8),
+                                ),
+                                child: AppImage(
+                                  imageUrl: p.image,
+                                  height: 120,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  borderRadius: 12,
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+
+                        // 2. If logged in, fetch the owner ID
+                        return FutureBuilder<int?>(
+                          // Use read to prevent unnecessary rebuilds
+                          future: context.read<ApiService>().getProductOwnerId(p.productId),
+                          builder: (context, snapshot) {
+                            
+                            // DEBUG PRINT (Look at your console)
+                            // print('Product ID: ${p.productId} | API Owner ID: ${snapshot.data} | Current User ID: $currentUserId');
+
+                            // 3. Compare as Strings to prevent int vs string mismatch
+                            final isOwner = snapshot.hasData && 
+                                            snapshot.data.toString() == currentUserId.toString();
+
+                            return Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(8),
+                                  ),
+                                  child: AppImage(
+                                    imageUrl: p.image,
+                                    height: 120,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    borderRadius: 12,
+                                  ),
+                                ),
+                                
+                                // 4. Show menu if verified owner
+                                if (isOwner)
+                                  Positioned(
+                                    top: 4,
+                                    right: 4,
+                                    child: PopupMenuButton<String>(
+                                      tooltip: 'Product options',
+                                      padding: EdgeInsets.zero,
+                                      iconSize: mobile(context) ? 18 : 22,
+                                      icon: Icon(
+                                        Icons.more_vert,
+                                        color: Colors.black87,
+                                        size: mobile(context) ? 18 : 22,
+                                      ),
+                                      color: Colors.white,
+                                      elevation: 4,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      onSelected: (value) {
+                                        if (value == 'edit') {
+                                          editProduct(p);
+                                        } else if (value == 'delete') {
+                                          deleteProduct(p);
+                                        }
+                                      },
+                                      itemBuilder: (context) => [
+                                        const PopupMenuItem<String>(
+                                          value: 'edit',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.edit_outlined,
+                                                size: 18,
+                                                color: Color(0xff28733D),
+                                              ),
+                                              SizedBox(width: 10),
+                                              Text('Edit'),
+                                            ],
+                                          ),
+                                        ),
+                                        const PopupMenuItem<String>(
+                                          value: 'delete',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.delete_outline,
+                                                size: 18,
+                                                color: Colors.red,
+                                              ),
+                                              SizedBox(width: 10),
+                                              Text(
+                                                'Delete',
+                                                style: TextStyle(color: Colors.red),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
+                        );
+                      },
                     ),
                   ),
+
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -915,5 +983,109 @@ class _HomePageState extends State<HomePage> {
       prev = p;
     }
     return result;
+  }
+
+  void editProduct(Product product) {
+    debugPrint('');
+    debugPrint('==============================================');
+    debugPrint('EDIT PRODUCT');
+    debugPrint('Product ID: ${product.productId}');
+    debugPrint('Product Name: ${product.productName}');
+    debugPrint('==============================================');
+
+    final id = product.productId;
+    if (id == null) {
+      debugPrint('Cannot edit: productId is null');
+      return;
+    }
+
+    // Use GoRouter instead of Navigator.push
+    context.go('/sell?productId=$id');
+  }
+
+  Future<void> deleteProduct(Product product) async {
+    final productId = product.productId;
+
+    if (productId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot delete this product: missing product ID.'),
+        ),
+      );
+      return;
+    }
+
+    // 1. Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Product'),
+        content: Text(
+          'Are you sure you want to delete "${product.productName}"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    // 2. Show loading state (Optional, but good UX)
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+            SizedBox(width: 12),
+            Text('Deleting product...'),
+          ],
+        ),
+        duration: Duration(seconds: 10), // Will be replaced
+      ),
+    );
+
+    // 3. Call the API
+    final apiService = context.read<ApiService>();
+    final isDeleted = await apiService.deleteProductFromServer(productId);
+
+    if (!mounted) return;
+
+    // 4. Remove the loading snackbar
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+    if (isDeleted) {
+      // 5. Success: Update UI
+      setState(() {
+        products.removeWhere((item) => item.productId == productId);
+
+        // Adjust pagination if the current page is now empty
+        if (_currentPage > totalPages) {
+          _currentPage = totalPages;
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Product deleted successfully.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      // 6. Failure: Show error
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to delete product. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }
