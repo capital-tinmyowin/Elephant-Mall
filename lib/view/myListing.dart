@@ -2050,7 +2050,7 @@ class _SellerStorePageState extends State<SellerStorePage> {
     }
 
     // Use GoRouter instead of Navigator.push
-    context.push('/sell?productId=$id');
+    context.go('/sell?productId=$id');
   }
 
   // void openProduct(Product product) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 
@@ -614,14 +615,9 @@ class _SellPageState extends State<SellPage> {
               onPressed: () {
                 // Close popup first
                 Navigator.pop(dialogContext);
-
                 // Then go to LoginPage
                 if (!mounted) return;
-
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
+                context.go('/login');
               },
               child: const Text(
                 "Login",

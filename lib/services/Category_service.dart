@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'package:elephant_mall/models/business_contact.dart';
 import 'package:elephant_mall/models/productImage.dart';
 import 'package:elephant_mall/models/product_variant.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:http/browser_client.dart';
 import 'package:http/http.dart' as http;
 import '../models/Category.dart';
 import '../models/product.dart';
@@ -13,6 +15,7 @@ class ApiService extends ChangeNotifier {
   static String? _authCookie;
   static String? get authCookie => _authCookie;
   static void setAuthCookie(String? cookie) => _authCookie = cookie;
+  final Map<int, int?> _productOwnerCache = {};
 
   final Map<int, int> _categoryCounts = {};
   Map<int, int> get categoryCounts => _categoryCounts;
@@ -650,7 +653,7 @@ class ApiService extends ChangeNotifier {
 
       final data = json.decode(response.body);
 
-      // 🔥 Handle both: single object or list
+      //  Handle both: single object or list
       Map<String, dynamic> mainJson;
       if (data is Map<String, dynamic>) {
         mainJson = data;
@@ -660,11 +663,91 @@ class ApiService extends ChangeNotifier {
         throw Exception('No product found');
       }
 
-      // 🔥 Parse the single product — variants + images come from within
+      //  Parse the single product — variants + images come from within
       return _parseProductFromJson(mainJson);
     } catch (e) {
-      print('❌ Product detail error: $e');
+      print(' Product detail error: $e');
       rethrow;
+    }
+  }
+
+   Future<int?> getProductOwnerId(int productId) async {
+    // 1. Return immediately if cached
+    if (_productOwnerCache.containsKey(productId)) {
+      return _productOwnerCache[productId];
+    }
+
+    try {
+      final url = Uri.parse(
+        'https://www.capital-sys.net/CKMMallAPI/api/Product/GetProductByProductID/$productId',
+      );
+      
+      // Use a plain http get (No notifyListeners needed here)
+      final response = await http.get(url).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final dynamic data = json.decode(response.body);
+        Map<String, dynamic>? productMap;
+        
+        if (data is Map<String, dynamic>) {
+          productMap = data;
+        } else if (data is List && data.isNotEmpty) {
+          productMap = data.first as Map<String, dynamic>;
+        }
+
+        if (productMap != null && productMap['userId'] != null) {
+          final uid = productMap['userId'] is int 
+              ? productMap['userId'] 
+              : int.tryParse(productMap['userId'].toString());
+          
+          _productOwnerCache[productId] = uid;
+          return uid;
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch owner for product $productId: $e');
+    }
+    
+    _productOwnerCache[productId] = null;
+    return null;
+  }
+
+  Future<bool> deleteProductFromServer(int productId) async {
+    try {
+      final url = Uri.parse(
+        'https://www.capital-sys.net/CKMMallAPI/api/Product/DeleteProduct/$productId',
+      );
+
+      debugPrint('📡 Attempting to delete product: $url');
+
+      // Use BrowserClient for web to handle cookies automatically
+      final client = kIsWeb ? (BrowserClient()..withCredentials = true) : http.Client();
+
+      final response = await client.delete(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          // If you are on mobile and need to pass the cookie manually:
+          if (!kIsWeb && authCookie != null) 'Cookie': authCookie!,
+        },
+      ).timeout(const Duration(seconds: 15));
+
+      client.close();
+
+      debugPrint(' Delete response status: ${response.statusCode}');
+      debugPrint(' Delete response body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        // Remove from the local cache so it doesn't show the 3-dots if re-fetched
+        _productOwnerCache.remove(productId);
+        return true;
+      }
+      
+      return false;
+    } catch (e) {
+      debugPrint('❌ Error deleting product: $e');
+      return false;
     }
   }
 

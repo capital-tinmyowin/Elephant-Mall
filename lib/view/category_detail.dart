@@ -1498,7 +1498,186 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   }
 
   // ============= PRODUCT CARD =============
-  Widget _buildProductCard(Product product, bool isMobile) {
+  // Widget _buildProductCard(Product product, bool isMobile) {
+  //   return GestureDetector(
+  //     onTap: () {
+  //       context.go('/product/${product.productId}');
+  //     },
+  //     child: Container(
+  //       decoration: BoxDecoration(
+  //         color: Colors.white,
+  //         borderRadius: BorderRadius.circular(12),
+  //         border: Border.all(color: Colors.grey[200]!),
+  //         boxShadow: [
+  //           BoxShadow(
+  //             color: Colors.black.withOpacity(0.04),
+  //             blurRadius: 8,
+  //             offset: const Offset(0, 2),
+  //           ),
+  //         ],
+  //       ),
+  //       child: Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           // ── Image takes whatever height is left after text ──
+  //           Expanded(
+  //             child: Stack(
+  //               fit: StackFit.expand,
+  //               children: [
+  //                 ClipRRect(
+  //                   borderRadius: const BorderRadius.vertical(
+  //                     top: Radius.circular(12),
+  //                   ),
+  //                   child: AppImage(
+  //                     imageUrl: product.image,
+  //                     width: double.infinity,
+  //                     fit: BoxFit.cover,
+  //                   ),
+  //                 ),
+  //                 // Discount badge
+  //                 if (product.productId % 2 == 0)
+  //                   Positioned(
+  //                     top: 8,
+  //                     left: 8,
+  //                     child: Container(
+  //                       padding: const EdgeInsets.symmetric(
+  //                         horizontal: 8,
+  //                         vertical: 4,
+  //                       ),
+  //                       decoration: BoxDecoration(
+  //                         color: const Color(0xFF2B6E3B),
+  //                         borderRadius: BorderRadius.circular(4),
+  //                       ),
+  //                       child: Text(
+  //                         '${((product.productId % 3) + 1) * 5}% OFF',
+  //                         style: const TextStyle(
+  //                           color: Colors.white,
+  //                           fontSize: 10,
+  //                           fontWeight: FontWeight.bold,
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 // Favorite
+  //                 Positioned(
+  //                   top: 8,
+  //                   right: 8,
+  //                   child: Consumer<AuthService>(
+  //                     builder: (context, authService, child) {
+  //                       final isFav = authService.isFavorite(product.productId);
+  //                       final isLoggedIn = authService.isLoggedIn;
+
+  //                       return GestureDetector(
+  //                         onTap: () async {
+  //                           await FavoriteHelper.toggleFavorite(
+  //                             context,
+  //                             productId: product.productId,
+  //                             isCurrentlyFavorite: isFav,
+  //                           );
+  //                         },
+  //                         child: Container(
+  //                           decoration: const BoxDecoration(
+  //                             color: Colors.white,
+  //                             shape: BoxShape.circle,
+  //                           ),
+  //                           padding: const EdgeInsets.all(6),
+  //                           child: Icon(
+  //                             isFav ? Icons.favorite : Icons.favorite_border,
+  //                             size: isMobile ? 16 : 18,
+  //                             color: isFav ? Colors.red : Colors.grey[700],
+  //                           ),
+  //                         ),
+  //                       );
+  //                     },
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //           // Product Info
+  //           Padding(
+  //             padding: EdgeInsets.fromLTRB(
+  //               isMobile ? 8 : 10,
+  //               isMobile ? 8 : 10,
+  //               isMobile ? 8 : 10,
+  //               isMobile ? 8 : 12,
+  //             ),
+  //             child: Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               mainAxisSize: MainAxisSize.min, // Add this
+  //               children: [
+  //                 Text(
+  //                   product.productName,
+  //                   style: TextStyle(
+  //                     fontSize: isMobile ? 12 : 14,
+  //                     fontWeight: FontWeight.w600,
+  //                     color: Colors.black87,
+  //                   ),
+  //                   maxLines: 1,
+  //                   overflow: TextOverflow.ellipsis,
+  //                 ),
+  //                 SizedBox(height: isMobile ? 4 : 6),
+  //                 Row(
+  //                   children: [
+  //                     Text(
+  //                       '${NumberFormat('#,##0').format(product.price)}MMK',
+  //                       style: TextStyle(
+  //                         fontSize: isMobile ? 13 : 15,
+  //                         fontWeight: FontWeight.bold,
+  //                         color: const Color(0xFF2B6E3B),
+  //                       ),
+  //                     ),
+  //                     const SizedBox(width: 1),
+  //                     if (product.productId % 2 == 0)
+  //                       Text(
+  //                         '${NumberFormat('#,##0').format(product.price * 1.15)}MMK',
+  //                         style: TextStyle(
+  //                           fontSize: isMobile ? 10 : 12,
+  //                           decoration: TextDecoration.lineThrough,
+  //                           color: Colors.grey[500],
+  //                         ),
+  //                       ),
+  //                   ],
+  //                 ),
+
+  //                 SizedBox(height: isMobile ? 6 : 8),
+  //                 SizedBox(
+  //                   width: double.infinity,
+  //                   height: isMobile ? 30 : 34,
+  //                   child: ElevatedButton(
+  //                     onPressed: () {
+  //                       context.go('/product/${product.productId}');
+  //                     },
+  //                     style: ElevatedButton.styleFrom(
+  //                       backgroundColor: Colors.grey[100],
+  //                       foregroundColor: const Color(0xFF2B6E3B),
+  //                       // padding: EdgeInsets.symmetric(
+  //                       //   vertical: isMobile ? 10 : 15,
+  //                       // ),
+  //                       padding: EdgeInsets.zero,
+  //                       shape: RoundedRectangleBorder(
+  //                         borderRadius: BorderRadius.circular(6),
+  //                       ),
+  //                       // minimumSize: Size(double.infinity, isMobile ? 30 : 32),
+  //                     ),
+  //                     child: Text(
+  //                       'View Detail',
+  //                       style: TextStyle(
+  //                         fontSize: isMobile ? 10 : 11,
+  //                         fontWeight: FontWeight.bold,
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+   Widget _buildProductCard(Product product, bool isMobile) {
     return GestureDetector(
       onTap: () {
         context.go('/product/${product.productId}');
@@ -1521,80 +1700,163 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
           children: [
             // ── Image takes whatever height is left after text ──
             Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(12),
-                    ),
-                    child: AppImage(
-                      imageUrl: product.image,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  // Discount badge
-                  if (product.productId % 2 == 0)
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2B6E3B),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '${((product.productId % 3) + 1) * 5}% OFF',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  // Favorite
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Consumer<AuthService>(
-                      builder: (context, authService, child) {
-                        final isFav = authService.isFavorite(product.productId);
-                        final isLoggedIn = authService.isLoggedIn;
+              child: Consumer<AuthService>(
+                builder: (context, authService, child) {
+                  final isLoggedIn = authService.isLoggedIn;
+                  final currentUserId = authService.currentUser?.id;
 
-                        return GestureDetector(
-                          onTap: () async {
-                            await FavoriteHelper.toggleFavorite(
-                              context,
-                              productId: product.productId,
-                              isCurrentlyFavorite: isFav,
-                            );
-                          },
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
+                  // If not logged in, just return the image stack
+                  if (!isLoggedIn || currentUserId == null) {
+                    return Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12),
+                          ),
+                          child: AppImage(
+                            imageUrl: product.image,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  // If logged in, fetch owner ID to check if user is the owner
+                  return FutureBuilder<int?>(
+                    future: context.read<ApiService>().getProductOwnerId(product.productId),
+                    builder: (context, snapshot) {
+                      final isOwner = snapshot.hasData && 
+                                      snapshot.data.toString() == currentUserId.toString();
+
+                      return Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(12),
                             ),
-                            padding: const EdgeInsets.all(6),
-                            child: Icon(
-                              isFav ? Icons.favorite : Icons.favorite_border,
-                              size: isMobile ? 16 : 18,
-                              color: isFav ? Colors.red : Colors.grey[700],
+                            child: AppImage(
+                              imageUrl: product.image,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
                             ),
                           ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
+                          
+                          // Discount badge
+                          if (product.productId % 2 == 0)
+                            Positioned(
+                              bottom: 8,
+                              left: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF2B6E3B),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  '${((product.productId % 3) + 1) * 5}% OFF',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                          //  3-DOT MENU (Only if owner)
+                          if (isOwner)
+                            Positioned(
+                              top: 8,
+                              left: 9, // Placed on the left to avoid conflicting with the favorite heart
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  // color: Colors.white.withOpacity(0.9),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: PopupMenuButton<String>(
+                                  padding: EdgeInsets.zero,
+                                  iconSize: 18,
+                                  icon: const Icon(Icons.more_vert, color: Colors.black87),
+                                  onSelected: (value) {
+                                    if (value == 'edit') {
+                                      context.go('/sell?productId=${product.productId}');
+                                    } else if (value == 'delete') {
+                                      _deleteProduct(context, product);
+                                    }
+                                  },
+                                  itemBuilder: (context) => [
+                                    const PopupMenuItem<String>(
+                                      value: 'edit',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.edit_outlined, size: 18, color: Color(0xff28733D)),
+                                          SizedBox(width: 10),
+                                          Text('Edit'),
+                                        ],
+                                      ),
+                                    ),
+                                    const PopupMenuItem<String>(
+                                      value: 'delete',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                          SizedBox(width: 10),
+                                          Text('Delete', style: TextStyle(color: Colors.red)),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                          // Favorite Heart
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Consumer<AuthService>(
+                              builder: (context, authService, child) {
+                                final isFav = authService.isFavorite(product.productId);
+                                return GestureDetector(
+                                  onTap: () async {
+                                    await FavoriteHelper.toggleFavorite(
+                                      context,
+                                      productId: product.productId,
+                                      isCurrentlyFavorite: isFav,
+                                    );
+                                  },
+                                  child: Container(
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    padding: const EdgeInsets.all(6),
+                                    child: Icon(
+                                      isFav ? Icons.favorite : Icons.favorite_border,
+                                      size: isMobile ? 16 : 18,
+                                      color: isFav ? Colors.red : Colors.grey[700],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
               ),
             ),
-            // Product Info
+            
+            // Product Info ... (Keep your existing code below this)
             Padding(
               padding: EdgeInsets.fromLTRB(
                 isMobile ? 8 : 10,
@@ -1604,7 +1866,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min, // Add this
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     product.productName,
@@ -1627,19 +1889,8 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                           color: const Color(0xFF2B6E3B),
                         ),
                       ),
-                      const SizedBox(width: 1),
-                      if (product.productId % 2 == 0)
-                        Text(
-                          '${NumberFormat('#,##0').format(product.price * 1.15)}MMK',
-                          style: TextStyle(
-                            fontSize: isMobile ? 10 : 12,
-                            decoration: TextDecoration.lineThrough,
-                            color: Colors.grey[500],
-                          ),
-                        ),
                     ],
                   ),
-
                   SizedBox(height: isMobile ? 6 : 8),
                   SizedBox(
                     width: double.infinity,
@@ -1651,14 +1902,10 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey[100],
                         foregroundColor: const Color(0xFF2B6E3B),
-                        // padding: EdgeInsets.symmetric(
-                        //   vertical: isMobile ? 10 : 15,
-                        // ),
                         padding: EdgeInsets.zero,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        // minimumSize: Size(double.infinity, isMobile ? 30 : 32),
                       ),
                       child: Text(
                         'View Detail',
@@ -1830,5 +2077,55 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
       prev = p;
     }
     return result;
+  }
+
+  Future<void> _deleteProduct(BuildContext context, Product product) async {
+    final productId = product.productId;
+    
+    // 1. Confirm
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Product'),
+        content: Text('Are you sure you want to delete "${product.productName}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    // 2. Call API
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Deleting product...'), duration: Duration(seconds: 2)),
+    );
+
+    final apiService = context.read<ApiService>();
+    final isDeleted = await apiService.deleteProductFromServer(productId);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+    if (isDeleted) {
+      // 3. Remove from local list and refresh
+      setState(() {
+        _apiService.products.removeWhere((item) => item.productId == productId);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Product deleted successfully.'), backgroundColor: Colors.green),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to delete product.'), backgroundColor: Colors.red),
+      );
+    }
   }
 }
