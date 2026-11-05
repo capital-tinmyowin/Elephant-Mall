@@ -898,29 +898,22 @@ class _ProfilePageState extends State<ProfilePage> {
         border: Border.all(color: Colors.orange, width: 2),
       ),
       child: ClipOval(
-        child: ClipOval(
-          child: _profileImage != null
-              ? kIsWeb
-                    ? Image.network(_profileImage!.path, fit: BoxFit.cover)
-                    : Image.file(File(_profileImage!.path), fit: BoxFit.cover)
-              : (_avatarUrl != null && _avatarUrl!.isNotEmpty)
-              ? Image.network(
-                  _avatarUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(
-                      Icons.person,
-                      size: 50,
-                      color: Colors.grey,
-                    );
-                  },
-                )
-              : Image.asset('assets/avatar.jpg', fit: BoxFit.cover),
-        ),
+        child: _profileImage != null
+            ? (kIsWeb
+                  ? Image.network(_profileImage!.path, fit: BoxFit.cover)
+                  : Image.file(File(_profileImage!.path), fit: BoxFit.cover))
+            : (_avatarUrl != null && _avatarUrl!.isNotEmpty)
+            ? Image.network(
+                _avatarUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return const SizedBox.expand();
+                },
+              )
+            : const SizedBox.expand(),
       ),
     );
   }
-
   // CAMERA BUTTON
 
   Widget buildCameraButton({required VoidCallback onPressed}) {

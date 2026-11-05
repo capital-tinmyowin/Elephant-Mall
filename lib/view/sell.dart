@@ -607,9 +607,10 @@ class _SellPageState extends State<SellPage> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFC77C2E),
-                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.grey.shade400,
+                disabledForegroundColor: Colors.white70,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
+                  borderRadius: BorderRadius.circular(30),
                 ),
               ),
               onPressed: () {
@@ -2665,7 +2666,7 @@ class _SellPageState extends State<SellPage> {
                 borderRadius: BorderRadius.circular(30),
               ),
             ),
-            onPressed: isSubmitting
+            onPressed: (isSubmitting || !agreedToTerms)
                 ? null
                 : () async {
                     setState(() {
@@ -2713,23 +2714,23 @@ class _SellPageState extends State<SellPage> {
                       return;
                     }
 
-                    if (priceController.text.trim().isEmpty) {
-                      setState(() {
-                        priceError = "Price is required.";
-                      });
-                      return;
-                    }
+                    // if (priceController.text.trim().isEmpty) {
+                    //   setState(() {
+                    //     priceError = "Price is required.";
+                    //   });
+                    //   return;
+                    // }
 
                     // Validate inventory quantity
                     if (variants.isEmpty) {
                       // No variants → normal inventory quantity is required
-                      if (qtyController.text.trim().isEmpty ||
-                          (int.tryParse(qtyController.text) ?? 0) <= 0) {
-                        setState(() {
-                          qtyError = "Quantity is required.";
-                        });
-                        return;
-                      }
+                      // if (qtyController.text.trim().isEmpty ||
+                      //     (int.tryParse(qtyController.text) ?? 0) <= 0) {
+                      //   setState(() {
+                      //     qtyError = "Quantity is required.";
+                      //   });
+                      //   return;
+                      // }
                     } else {
                       // Variants exist → main inventory quantity is not required.
                       // Validate each variant quantity instead.
@@ -2756,17 +2757,29 @@ class _SellPageState extends State<SellPage> {
                       return;
                     }
 
-                    if (locationController.text.trim().isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Location is required.')),
-                      );
-                      return;
-                    }
+                    // if (locationController.text.trim().isEmpty) {
+                    //   ScaffoldMessenger.of(context).showSnackBar(
+                    //     const SnackBar(content: Text('Location is required.')),
+                    //   );
+                    //   return;
+                    // }
 
-                    if (phoneController.text.trim().isEmpty) {
-                      setState(() {
-                        phoneError = "Phone number is required.";
-                      });
+                    // At least ONE contact method is required.
+                    final hasContact =
+                        phoneController.text.trim().isNotEmpty ||
+                        telegramController.text.trim().isNotEmpty ||
+                        viberController.text.trim().isNotEmpty ||
+                        messengerController.text.trim().isNotEmpty;
+
+                    if (!hasContact) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Please enter at least one contact method '
+                            '(Phone, Telegram, Viber, or Messenger).',
+                          ),
+                        ),
+                      );
                       return;
                     }
 
