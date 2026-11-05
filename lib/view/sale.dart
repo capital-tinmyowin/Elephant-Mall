@@ -157,60 +157,6 @@ class _SalePageState extends State<SalePage> {
         m.contains('please login');
   }
 
-  Future<void> _showLoginRequiredDialog() async {
-    if (!mounted) return;
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: const Color(0xfffdfaf4),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Row(
-            children: [
-              Icon(Icons.lock_outline, color: Color(0xFFC77C2E), size: 28),
-              SizedBox(width: 10),
-              Text(
-                'Login Required',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          content: const Text(
-            'Your session has expired or you are not logged in.\n\n'
-            'Please login to continue.',
-            style: TextStyle(fontSize: 16),
-          ),
-          actions: [
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFC77C2E),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
-              ),
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                if (!mounted) return;
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginPage()),
-                );
-              },
-              child: const Text(
-                'Login',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Future<void> _toggleFavourite(SaleModel product) async {
   await FavoriteHelper.toggleFavorite(
     context,

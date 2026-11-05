@@ -32,11 +32,22 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
   bool _agreeToTerms = false;
+  final _formKey = GlobalKey<FormState>();
+  bool _autovalidate = false;
+  final FocusNode _nameFocus = FocusNode();
+  final FocusNode _emailFocus = FocusNode();
+  final FocusNode _passwordFocus = FocusNode();
+  final FocusNode _confirmPasswordFocus = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _apiService = ApiService();
+
+    // _nameFocus.addListener(() { if (!_nameFocus.hasFocus) setState(() => _formKey.currentState?.validate()); });
+    // _emailFocus.addListener(() { if (!_emailFocus.hasFocus) setState(() => _formKey.currentState?.validate()); });
+    // _passwordFocus.addListener(() { if (!_passwordFocus.hasFocus) setState(() => _formKey.currentState?.validate()); });
+    // _confirmPasswordFocus.addListener(() { if (!_confirmPasswordFocus.hasFocus) setState(() => _formKey.currentState?.validate()); });
   }
 
   @override
@@ -45,41 +56,62 @@ class _RegisterPageState extends State<RegisterPage> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _nameFocus.dispose();
+    _emailFocus.dispose();
+    _passwordFocus.dispose();
+    _confirmPasswordFocus.dispose();
     super.dispose();
   }
 
   Future<void> _register() async {
     // Validate fields
-    if (_fullNameController.text.isEmpty ||
-        _emailController.text.isEmpty ||
-        _passwordController.text.isEmpty ||
-        _confirmPasswordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in all fields'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
+    // if (_fullNameController.text.isEmpty ||
+    //     _emailController.text.isEmpty ||
+    //     _passwordController.text.isEmpty ||
+    //     _confirmPasswordController.text.isEmpty) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(
+    //       content: Text('Please fill in all fields'),
+    //       backgroundColor: Colors.orange,
+    //     ),
+    //   );
+    //   return;
+    // }
 
-    if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Passwords do not match'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
+    // if (_passwordController.text != _confirmPasswordController.text) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(
+    //       content: Text('Passwords do not match'),
+    //       backgroundColor: Colors.orange,
+    //     ),
+    //   );
+    //   return;
+    // }
 
-    if (_passwordController.text.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password must be at least 6 characters'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+    // if (_passwordController.text.length < 6) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(
+    //       content: Text('Password must be at least 6 characters'),
+    //       backgroundColor: Colors.orange,
+    //     ),
+    //   );
+    //   return;
+    // }
+
+    // if (!_agreeToTerms) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(
+    //       content: Text('Please agree to the Terms & Conditions'),
+    //       backgroundColor: Colors.orange,
+    //     ),
+    //   );
+    //   return;
+    // }
+    setState(() {
+      _autovalidate = true;
+    });
+
+    if (!_formKey.currentState!.validate()) {
       return;
     }
 
@@ -288,205 +320,246 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ],
       ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              "Create An Account",
-              style: TextStyle(
-                fontSize: isMobile ? 30 : 38,
-                fontWeight: FontWeight.bold,
+      child: Form(
+        key: _formKey,
+        // 1. Validate automatically as user types
+        autovalidateMode: _autovalidate 
+            ? AutovalidateMode.onUserInteraction 
+            : AutovalidateMode.disabled,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Create An Account",
+                style: TextStyle(
+                  fontSize: isMobile ? 30 : 38,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 25),
-            
-            // Full Name Field
-            _textField(
-              Icons.person_outline,
-              "Full Name",
-              controller: _fullNameController,
-            ),
-            const SizedBox(height: 18),
-            
-            // Email Field
-            _textField(
-              Icons.email_outlined,
-              "Email",
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 18),
-            
-            // Password Field with complexity hint
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _textField(
-                  Icons.lock_outline,
-                  "Password",
-                  obscure: _obscurePassword,
-                  controller: _passwordController,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Padding(
-                  padding: const EdgeInsets.only(left: 14),
-                  child: Text(
-                    "Complexity hints, complexity possible",
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            
-            // Confirm Password Field
-            _textField(
-              Icons.lock_outline,
-              "Confirm Password",
-              obscure: _obscureConfirmPassword,
-              controller: _confirmPasswordController,
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscureConfirmPassword
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _obscureConfirmPassword = !_obscureConfirmPassword;
-                  });
+              const SizedBox(height: 25),
+              
+              // Full Name
+              _textField(
+                Icons.person_outline,
+                "Full Name",
+                controller: _fullNameController,
+                focusNode: _nameFocus,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Full name is required';
+                  }
+                  return null;
                 },
               ),
-            ),
-            const SizedBox(height: 16),
-            
-            // Terms & Conditions Checkbox
-            Row(
-              children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Checkbox(
-                    value: _agreeToTerms,
-                    onChanged: (value) {
-                      setState(() {
-                        _agreeToTerms = value ?? false;
-                      });
-                    },
-                    activeColor: const Color(0xff2f6b2f),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _agreeToTerms = !_agreeToTerms;
-                      });
-                    },
-                    child: RichText(
-                      text: TextSpan(
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[700],
-                        ),
-                        children: [
-                          const TextSpan(text: 'I agree to the '),
-                          TextSpan(
-                            text: 'Terms & Conditions',
-                            style: const TextStyle(
-                              color: Color(0xff2f6b2f),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 25),
-            
-            // Create Account Button
-            SizedBox(
-              width: double.infinity,
-              height: 40,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff2f6b2f),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
-                onPressed: _isLoading ? null : _register,
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : const Text(
-                        "Create Account",
-                        style: TextStyle(fontSize: 22, color: Colors.white),
-                      ),
+              const SizedBox(height: 18),
+              
+              // Email
+              _textField(
+                Icons.email_outlined,
+                "Email",
+                controller: _emailController,
+                focusNode: _emailFocus,
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Email is required';
+                  }
+                  if (!value.trim().endsWith('@gmail.com')) {
+                    return 'Email must be a @gmail.com address';
+                  }
+                  return null;
+                },
               ),
-            ),
-            const SizedBox(height: 15),
-            
-            // Social Sign Up Buttons
-            _socialButton(FontAwesomeIcons.google, "Sign up with Google"),
-            const SizedBox(height: 15),
-            _socialButton(FontAwesomeIcons.apple, "Sign up with Apple"),
-            const SizedBox(height: 20),
-            
-            // Already have an account? Sign In
-            Wrap(
-              alignment: WrapAlignment.center,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                const Text(
-                  "Already have an account? ",
-                  style: TextStyle(fontSize: 16),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    context.go('/login');
-                  },
-                  child: const Text(
-                    "Sign In",
-                    style: TextStyle(
-                      color: Color(0xff2f6b2f),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+              const SizedBox(height: 18),
+              
+              // Password
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _textField(
+                    Icons.lock_outline,
+                    "Password",
+                    obscure: _obscurePassword,
+                    controller: _passwordController,
+                    focusNode: _passwordFocus,
+                    textInputAction: TextInputAction.next,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Password is required';
+                      }
+                      if (value.length < 6) {
+                        return 'Must be at least 6 characters';
+                      }
+                      if (!RegExp(r'[0-9]').hasMatch(value)) {
+                        return 'Must include at least one digit';
+                      }
+                      return null;
+                    },
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
                     ),
                   ),
+                  const SizedBox(height: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 14),
+                    child: Text(
+                      "At least 6 characters, include 1 digit",
+                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              
+              // Confirm Password
+              _textField(
+                Icons.lock_outline,
+                "Confirm Password",
+                obscure: _obscureConfirmPassword,
+                controller: _confirmPasswordController,
+                focusNode: _confirmPasswordFocus, 
+                textInputAction: TextInputAction.done, // Done shows Enter icon
+                onFieldSubmitted: _register,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please confirm your password';
+                  }
+                  if (value != _passwordController.text) {
+                    return 'Passwords do not match';
+                  }
+                  return null;
+                },
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureConfirmPassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscureConfirmPassword = !_obscureConfirmPassword;
+                    });
+                  },
                 ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(height: 16),
+              
+              // Terms & Conditions
+              Row(
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: Checkbox(
+                      value: _agreeToTerms,
+                      onChanged: (value) {
+                        setState(() {
+                          _agreeToTerms = value ?? false;
+                        });
+                      },
+                      activeColor: const Color(0xff2f6b2f),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _agreeToTerms = !_agreeToTerms;
+                        });
+                      },
+                      child: RichText(
+                        text: TextSpan(
+                          style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                          children: [
+                            const TextSpan(text: 'I agree to the '),
+                            TextSpan(
+                              text: 'Terms & Conditions',
+                              style: const TextStyle(
+                                color: Color(0xff2f6b2f),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 25),
+              
+              // Create Account Button
+              SizedBox(
+                width: double.infinity,
+                height: 40,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xff2f6b2f),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  onPressed: _isLoading ? null : _register,
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          "Create Account",
+                          style: TextStyle(fontSize: 22, color: Colors.white),
+                        ),
+                ),
+              ),
+              const SizedBox(height: 15),
+              
+              // Socials...
+              _socialButton(FontAwesomeIcons.google, "Sign up with Google"),
+              const SizedBox(height: 15),
+              _socialButton(FontAwesomeIcons.apple, "Sign up with Apple"),
+              const SizedBox(height: 20),
+              
+              // Sign In Link
+              Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  const Text("Already have an account? ", style: TextStyle(fontSize: 16)),
+                  GestureDetector(
+                    onTap: () {
+                      context.go('/login');
+                    },
+                    child: const Text(
+                      "Sign In",
+                      style: TextStyle(
+                        color: Color(0xff2f6b2f),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -499,28 +572,54 @@ class _RegisterPageState extends State<RegisterPage> {
     required TextEditingController controller,
     Widget? suffixIcon,
     TextInputType? keyboardType,
+    String? Function(String?)? validator,
+    TextInputAction textInputAction = TextInputAction.next,
+    VoidCallback? onFieldSubmitted,
+    FocusNode? focusNode,
   }) {
-    return SizedBox(
-      height: 52,
-      child: TextField(
-        controller: controller,
-        obscureText: obscure,
-        keyboardType: keyboardType,
-        decoration: InputDecoration(
-          hintText: hint,
-          prefixIcon: Icon(icon),
-          suffixIcon: suffixIcon,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 15),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(28)),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(28),
+    // We wrap the TextFormField in a Builder to get its specific FormFieldState
+    return Builder(
+      builder: (BuildContext context) {
+        return TextFormField(
+          controller: controller,
+          focusNode: focusNode,
+          obscureText: obscure,
+          keyboardType: keyboardType,
+          validator: validator,
+          textInputAction: textInputAction,
+          onFieldSubmitted: (_) {
+            if (onFieldSubmitted != null) {
+              onFieldSubmitted();
+            }
+          },
+          // THIS IS THE MAGIC: Validate ONLY this field when you click outside it
+          onTapOutside: (event) {
+            // Dismiss the keyboard
+            FocusManager.instance.primaryFocus?.unfocus();
+            
+            // If the user hasn't clicked "Create Account" yet, validate just this field
+            if (!_autovalidate) {
+              final FormFieldState<String> fieldState = context.findAncestorStateOfType<FormFieldState<String>>()!;
+              fieldState.validate();
+            }
+          },
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixIcon: Icon(icon),
+            suffixIcon: suffixIcon,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(28)),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(28),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(28),
+              borderSide: const BorderSide(color: Color(0xff2f6b2f), width: 2),
+            ),
+            errorMaxLines: 2,
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(28),
-            borderSide: const BorderSide(color: Color(0xff2f6b2f), width: 2),
-          ),
-        ),
-      ),
+        );
+      }
     );
   }
 
