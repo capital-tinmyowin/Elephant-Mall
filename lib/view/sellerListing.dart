@@ -632,7 +632,6 @@ class _SellerListingPageState extends State<SellerListingPage> {
                   // Chat Seller
                   GestureDetector(
                     onTap: () {
-                      // TODO: open chat with this seller
                     },
                     child: Container(
                       height: mobile ? 28 : 32,
