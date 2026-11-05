@@ -19,11 +19,7 @@ class SellerListingPage extends StatefulWidget {
   final int? sellerId;
   final String? sellerName;
 
-  const SellerListingPage({
-    super.key,
-    this.sellerId,
-    this.sellerName,
-  });
+  const SellerListingPage({super.key, this.sellerId, this.sellerName});
 
   @override
   State<SellerListingPage> createState() => _SellerListingPageState();
@@ -57,6 +53,13 @@ class _SellerListingPageState extends State<SellerListingPage> {
   SellerInfo? sellerInfo;
   bool sellerInfoLoading = true;
 
+  List<NewInModel> salesProducts = [];
+  bool salesProductsLoading = true;
+  String? salesProductsError;
+
+  bool followLoading = false;
+  int followerCount = 0;
+
   static const int pageSize = 10;
   int _currentPage = 1;
 
@@ -67,6 +70,7 @@ class _SellerListingPageState extends State<SellerListingPage> {
     loadProducts();
     loadCategories();
     loadNewestArrivals();
+    loadSalesProducts();
     _currentPage = 1;
   }
 
@@ -92,8 +96,11 @@ class _SellerListingPageState extends State<SellerListingPage> {
       setState(() {
         sellerInfo = info;
         isFollowing = info.isFollowing;
+        followerCount = info.followerCount;
         sellerInfoLoading = false;
       });
+      debugPrint('API isFollowing: ${info.isFollowing}');
+      debugPrint('UI isFollowing: $isFollowing');
     } catch (e) {
       debugPrint('Seller listing info error: $e');
       if (!mounted) return;
@@ -131,8 +138,9 @@ class _SellerListingPageState extends State<SellerListingPage> {
     });
     try {
       final authService = context.read<AuthService>();
-      final result =
-          await _service.fetchNewestArrivals(authService: authService);
+      final result = await _service.fetchNewestArrivals(
+        authService: authService,
+      );
       if (!mounted) return;
       setState(() {
         newestArrivals = result;
@@ -144,6 +152,38 @@ class _SellerListingPageState extends State<SellerListingPage> {
         newestArrivals = [];
         newestArrivalsLoading = false;
         newestArrivalsError = e.toString();
+      });
+    }
+  }
+
+  Future<void> loadSalesProducts() async {
+    if (!mounted) return;
+
+    setState(() {
+      salesProductsLoading = true;
+      salesProductsError = null;
+    });
+
+    try {
+      final authService = context.read<AuthService>();
+
+      final result = await _service.fetchSalesProducts(
+        authService: authService,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        salesProducts = result;
+        salesProductsLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        salesProducts = [];
+        salesProductsLoading = false;
+        salesProductsError = e.toString();
       });
     }
   }
@@ -190,10 +230,7 @@ class _SellerListingPageState extends State<SellerListingPage> {
     }
   }
 
-  // ============================================================
   // FILTER + PAGING
-  // ============================================================
-
   List<Product> get filteredProducts {
     List<Product> result = List.from(products);
 
@@ -205,8 +242,7 @@ class _SellerListingPageState extends State<SellerListingPage> {
     }
 
     if (selectedCategoryId != null) {
-      result =
-          result.where((p) => p.categoryId == selectedCategoryId).toList();
+      result = result.where((p) => p.categoryId == selectedCategoryId).toList();
     }
 
     double priceOf(Product p) {
@@ -268,10 +304,62 @@ class _SellerListingPageState extends State<SellerListingPage> {
     return null;
   }
 
-  // ============================================================
-  // BUILD
-  // ============================================================
+  Future<void> _toggleFollow() async {
+    if (followLoading || sellerInfoLoading) return;
 
+    final sellerId = widget.sellerId;
+
+    if (sellerId == null) {
+      debugPrint('Seller ID is missing.');
+      return;
+    }
+
+    final authService = context.read<AuthService>();
+
+    // Currently following = call unfollow.
+    // Currently not following = call follow.
+    final shouldFollow = !isFollowing;
+
+    setState(() {
+      followLoading = true;
+    });
+
+    final success = await _service.toggleFollow(
+      authService: authService,
+      sellerId: sellerId,
+      follow: shouldFollow,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      if (success) {
+        isFollowing = shouldFollow;
+
+        if (shouldFollow) {
+          followerCount++;
+        } else if (followerCount > 0) {
+          followerCount--;
+        }
+      }
+
+      followLoading = false;
+    });
+
+    if (!success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            shouldFollow
+                ? 'Unable to follow seller.'
+                : 'Unable to unfollow seller.',
+          ),
+        ),
+      );
+    }
+  }
+
+  // BUILD
   @override
   Widget build(BuildContext context) {
     final mobile = isMobile(context);
@@ -349,28 +437,29 @@ class _SellerListingPageState extends State<SellerListingPage> {
           if (!mobile) const CommonFooter(),
         ],
       ),
-      bottomNavigationBar:
-          mobile ? const CommonBottomBar(currentIndex: 4) : null,
+      bottomNavigationBar: mobile
+          ? const CommonBottomBar(currentIndex: 4)
+          : null,
     );
   }
 
-  // ============================================================
   // HEADER — Follow + Chat Seller (public listing)
-  // ============================================================
 
   Widget buildSellerHeader(bool mobile) {
-    final name = (sellerInfo?.name.isNotEmpty == true)
+    final name = (sellerInfo?.name.trim().isNotEmpty == true)
         ? sellerInfo!.name
+        : (sellerInfo?.userName.trim().isNotEmpty == true)
+        ? sellerInfo!.userName
         : (widget.sellerName ?? 'Seller Store');
 
-    final location = (sellerInfo?.location != null &&
-            sellerInfo!.location!.trim().isNotEmpty)
+    final location = (sellerInfo?.location?.trim().isNotEmpty == true)
         ? sellerInfo!.location!
         : '—';
 
-    final followers = sellerInfo?.followerCount ?? 0;
+    final followers = followerCount;
     final productCount = sellerInfo?.productCount ?? products.length;
     final avatarUrl = sellerInfo?.avatarUrl;
+    final coverUrl = sellerInfo?.coverUrl;
 
     if (sellerInfoLoading) {
       return const SizedBox(
@@ -405,19 +494,18 @@ class _SellerListingPageState extends State<SellerListingPage> {
                 Expanded(flex: 4, child: _headerLeft(name, avatarUrl, mobile)),
                 Expanded(
                   flex: 3,
-                  child:
-                      _headerStats(location, followers, productCount, mobile),
+                  child: _headerStats(
+                    location,
+                    followers,
+                    productCount,
+                    mobile,
+                  ),
                 ),
                 Expanded(
                   flex: 2,
                   child: Align(
                     alignment: Alignment.centerRight,
-                    child: Image.asset(
-                      'assets/seller_banner.png',
-                      height: 90,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                    ),
+                    child: _buildCoverImage(coverUrl),
                   ),
                 ),
               ],
@@ -425,8 +513,33 @@ class _SellerListingPageState extends State<SellerListingPage> {
     );
   }
 
+  Widget _buildCoverImage(String? coverUrl) {
+    final hasCover =
+        coverUrl != null &&
+        coverUrl.trim().isNotEmpty &&
+        (coverUrl.startsWith('http://') || coverUrl.startsWith('https://'));
+
+    if (!hasCover) {
+      return const SizedBox(width: 140, height: 90);
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.network(
+        coverUrl,
+        width: 140,
+        height: 90,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return const SizedBox(width: 140, height: 90);
+        },
+      ),
+    );
+  }
+
   Widget _headerLeft(String name, String? avatarUrl, bool mobile) {
-    final hasAvatar = avatarUrl != null &&
+    final hasAvatar =
+        avatarUrl != null &&
         avatarUrl.trim().isNotEmpty &&
         (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://'));
 
@@ -465,10 +578,9 @@ class _SellerListingPageState extends State<SellerListingPage> {
                 children: [
                   // Follow Seller
                   GestureDetector(
-                    onTap: () {
-                      setState(() => isFollowing = !isFollowing);
-                      // TODO: follow / unfollow API
-                    },
+                    onTap: (followLoading || sellerInfoLoading)
+                        ? null
+                        : _toggleFollow,
                     child: Container(
                       height: mobile ? 28 : 32,
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -481,14 +593,30 @@ class _SellerListingPageState extends State<SellerListingPage> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            isFollowing ? Icons.check : Icons.add,
-                            size: 14,
-                            color: Colors.white,
-                          ),
+                          if (followLoading)
+                            const SizedBox(
+                              width: 13,
+                              height: 13,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          else
+                            Icon(
+                              isFollowing ? Icons.check : Icons.add,
+                              size: 14,
+                              color: Colors.white,
+                            ),
                           const SizedBox(width: 4),
                           Text(
-                            isFollowing ? 'Following' : 'Follow',
+                            followLoading
+                                ? 'Please wait...'
+                                : isFollowing
+                                ? 'Following'
+                                : 'Follow',
                             style: TextStyle(
                               fontSize: mobile ? 11 : 12,
                               fontWeight: FontWeight.bold,
@@ -499,6 +627,7 @@ class _SellerListingPageState extends State<SellerListingPage> {
                       ),
                     ),
                   ),
+
                   const SizedBox(width: 8),
                   // Chat Seller
                   GestureDetector(
@@ -559,10 +688,7 @@ class _SellerListingPageState extends State<SellerListingPage> {
     int productCount,
     bool mobile,
   ) {
-    final style = TextStyle(
-      fontSize: mobile ? 11 : 13,
-      color: Colors.black87,
-    );
+    final style = TextStyle(fontSize: mobile ? 11 : 13, color: Colors.black87);
 
     Widget row(IconData icon, String text) {
       return Padding(
@@ -693,8 +819,9 @@ class _SellerListingPageState extends State<SellerListingPage> {
                       if (value == 'By Category') {
                         selectedCategoryId = null;
                       } else {
-                        final match = categories
-                            .firstWhere((c) => c.categoryName == value);
+                        final match = categories.firstWhere(
+                          (c) => c.categoryName == value,
+                        );
                         selectedCategoryId = match.categoryId;
                       }
                       _currentPage = 1;
@@ -916,8 +1043,7 @@ class _SellerListingPageState extends State<SellerListingPage> {
                             child: CircularProgressIndicator(
                               strokeWidth: 1.8,
                               valueColor: AlwaysStoppedAnimation<Color>(
-                                favouriteProductIds
-                                        .contains(product.productId)
+                                favouriteProductIds.contains(product.productId)
                                     ? Colors.red
                                     : Colors.grey.shade600,
                               ),
@@ -928,8 +1054,8 @@ class _SellerListingPageState extends State<SellerListingPage> {
                                 ? Icons.favorite
                                 : Icons.favorite_border,
                             size: mobile ? 18 : 22,
-                            color: favouriteProductIds
-                                    .contains(product.productId)
+                            color:
+                                favouriteProductIds.contains(product.productId)
                                 ? Colors.red
                                 : Colors.grey.shade600,
                           ),
@@ -1103,10 +1229,7 @@ class _SellerListingPageState extends State<SellerListingPage> {
     );
   }
 
-  List<int?> _visiblePageNumbers({
-    required int current,
-    required int total,
-  }) {
+  List<int?> _visiblePageNumbers({required int current, required int total}) {
     if (total <= 7) {
       return List<int?>.generate(total, (i) => i + 1);
     }
@@ -1136,17 +1259,13 @@ class _SellerListingPageState extends State<SellerListingPage> {
   // ============================================================
 
   Widget buildProductSections(bool mobile) {
-    final sales = products.length > 4
-        ? products.skip(4).take(4).toList()
-        : <Product>[];
-
     if (mobile) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           buildNewestArrivalsSection(true),
           const SizedBox(height: 15),
-          buildProductSection(title: 'Sales', items: sales, mobile: true),
+          buildSalesProductsSection(true),
         ],
       );
     }
@@ -1156,13 +1275,7 @@ class _SellerListingPageState extends State<SellerListingPage> {
       children: [
         Expanded(child: buildNewestArrivalsSection(false)),
         const SizedBox(width: 20),
-        Expanded(
-          child: buildProductSection(
-            title: 'Sales',
-            items: sales,
-            mobile: false,
-          ),
-        ),
+        Expanded(child: buildSalesProductsSection(false)),
       ],
     );
   }
@@ -1225,11 +1338,85 @@ class _SellerListingPageState extends State<SellerListingPage> {
             height: mobile ? 150 : 205,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount:
-                  newestArrivals.length > 4 ? 4 : newestArrivals.length,
+              itemCount: newestArrivals.length > 4 ? 4 : newestArrivals.length,
               separatorBuilder: (_, __) => const SizedBox(width: 5),
               itemBuilder: (context, index) {
                 final item = newestArrivals[index];
+                return SizedBox(
+                  width: mobile ? 135 : 180,
+                  child: buildSmallNewInCard(item, mobile),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget buildSalesProductsSection(bool mobile) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Sales Products',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: mobile ? 20 : 23,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                context.go('/sale');
+              },
+              child: Text(
+                'VIEW ALL',
+                style: TextStyle(
+                  fontSize: mobile ? 10 : 12,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xff28733D),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 5),
+
+        if (salesProductsLoading)
+          const SizedBox(
+            height: 150,
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (salesProductsError != null)
+          SizedBox(
+            height: 100,
+            child: Center(
+              child: TextButton(
+                onPressed: loadSalesProducts,
+                child: const Text('Failed to load. Tap to retry'),
+              ),
+            ),
+          )
+        else if (salesProducts.isEmpty)
+          const SizedBox(
+            height: 100,
+            child: Center(child: Text('No sales products available.')),
+          )
+        else
+          SizedBox(
+            height: mobile ? 150 : 205,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: salesProducts.length > 4 ? 4 : salesProducts.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 5),
+              itemBuilder: (context, index) {
+                final item = salesProducts[index];
+
                 return SizedBox(
                   width: mobile ? 135 : 180,
                   child: buildSmallNewInCard(item, mobile),
