@@ -43,9 +43,37 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+     final authService = Provider.of<AuthService>(context, listen: false);
     // 1. Initialize GoRouter
     final GoRouter router = GoRouter(
       initialLocation: '/',
+      refreshListenable: authService,
+      redirect: (context, state) {
+        final bool isLoggedIn = authService.isLoggedIn;
+        final String currentPath = state.uri.path;
+
+        // Define which routes require the user to be logged in
+        final List<String> protectedRoutes = [
+          '/profile', 
+          '/favourites', 
+          '/sell',
+          '/my-store',
+        ];
+        // Check if the current path starts with any protected route
+        final bool isProtected = protectedRoutes.any((route) => currentPath.startsWith(route));
+
+        // If it's a protected route and they are NOT logged in, force them to /login
+        if (isProtected && !isLoggedIn) {
+          return '/login';
+        }
+
+        // If they are logged in and trying to access /login or /signup, send them home
+        if (isLoggedIn && (currentPath == '/login' || currentPath == '/signup')) {
+          return '/';
+        }
+        // No redirect needed
+        return null;
+      },
       routes: [
         GoRoute(
           path: '/',

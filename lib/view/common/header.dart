@@ -157,26 +157,35 @@ class _CommonHeaderState extends State<CommonHeader> {
                     ),
 
                     const SizedBox(width: 10),
-
-                    if (!isLoggedIn)
-                      GestureDetector(
-                        onTap: () {
-                          context.go('/login');
-                        },
-                        child: const Text(
-                          "Sign In",
-                          style: TextStyle(
-                            color: Color(0xff2f6b2f),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    const SizedBox(width: 10),
-                    // PROFILE BUTTON - Shows Login/Logout based on state
-                    if (isLoggedIn) _buildProfileButton(context, true),
+                    Consumer<AuthService>(
+                      builder: (context, auth, child) {
+                        final isLoggedIn = auth.isLoggedIn;
+                        return Row(
+                          children: [
+                            if (!isLoggedIn)
+                              GestureDetector(
+                                onTap: () {
+                                  context.go('/login');
+                                },
+                                child: const Text(
+                                  "Sign In",
+                                  style: TextStyle(
+                                    color: Color(0xff2f6b2f),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(width: 10),
+                            // PROFILE BUTTON - Shows Login/Logout based on state
+                            if (isLoggedIn) _buildProfileButton(context, true),
+                          ],
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
+
               if (isCompact && _isMenuOpen)
                 Container(
                   width: double.infinity,
@@ -300,9 +309,7 @@ class _CommonHeaderState extends State<CommonHeader> {
           _showLogoutDialog(context);
         } else {
           // Navigate to login page
-          context.go(
-            '/login',
-          );
+          context.go('/login');
         }
       },
       child: Container(
@@ -367,9 +374,7 @@ class _CommonHeaderState extends State<CommonHeader> {
               onTap: () {
                 Navigator.pop(context);
                 // Navigate to profile
-                context.go(
-                  '/profile',
-                );
+                context.go('/profile');
               },
             ),
             _buildLogoutMenuItem(
@@ -378,9 +383,7 @@ class _CommonHeaderState extends State<CommonHeader> {
               onTap: () {
                 Navigator.pop(context);
                 // Navigate to favorites
-                context.go(
-                  '/favourites',
-                );
+                context.go('/favourites');
               },
             ),
             _buildLogoutMenuItem(
@@ -406,9 +409,9 @@ class _CommonHeaderState extends State<CommonHeader> {
               isDestructive: true,
               onTap: () async {
                 Navigator.pop(context); // Close dialog
-                
+
                 await authService.logout(); // Clear session and cookies
-                
+
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -473,9 +476,7 @@ class _CommonHeaderState extends State<CommonHeader> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              context.go(
-                '/login',
-              );
+              context.go('/login');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2B6E3B),
@@ -595,10 +596,11 @@ class CommonBottomBar extends StatelessWidget {
       ),
     );
   }
+
   void _navigate(BuildContext context, int index) {
     if (index == currentIndex) return;
     final authService = Provider.of<AuthService>(context, listen: false);
-    
+
     if ((index == 3 || index == 4) && !authService.isLoggedIn) {
       _showLoginRequiredDialog(context);
       return; // Stop navigation
@@ -634,37 +636,40 @@ class CommonBottomBar extends StatelessWidget {
     context.go(routeName);
   }
 
-
   @override
   Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: currentIndex,
-      onTap: (index) => _navigate(context, index),
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: const Color(0xFFC77C2E),
-      unselectedItemColor: const Color.fromARGB(255, 2, 2, 2),
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined, size: 38),
-          label: "Home",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.grid_view, size: 38),
-          label: "Categories",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.add_circle, size: 45),
-          label: "Sell",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.favorite_border, size: 38),
-          label: "Favorite",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline, size: 38),
-          label: "Profile",
-        ),
-      ],
+    return Consumer<AuthService>(
+      builder: (context, authService, child) {
+        return BottomNavigationBar(
+          currentIndex: currentIndex,
+          onTap: (index) => _navigate(context, index),
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: const Color(0xFFC77C2E),
+          unselectedItemColor: const Color.fromARGB(255, 2, 2, 2),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined, size: 38),
+              label: "Home",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.grid_view, size: 38),
+              label: "Categories",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.add_circle, size: 45),
+              label: "Sell",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.favorite_border, size: 38),
+              label: "Favorite",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline, size: 38),
+              label: "Profile",
+            ),
+          ],
+        );
+      },
     );
   }
 }
