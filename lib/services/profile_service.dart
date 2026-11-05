@@ -236,7 +236,7 @@ class ProfileService {
     //   'https://www.capital-sys.net/CKMMallAPI/api/User/UpdateBusinessInfo',
     // );
     final url = Uri.parse(
-      'https://www.capital-sys.net/CKMMallAPI/api/User/UpdateBusinessInfo/$userId',
+      'https://www.capital-sys.net/CKMMallAPI/api/User/UpdateBusinessInfo',
     );
 
     final body = jsonEncode({
@@ -310,24 +310,27 @@ class ProfileService {
     required String fullName,
     required String email,
     required String phone,
-    required String dateOfBirth,
+    required String role,
+    required String dateOfBirth,  
     required String gender,
     required String location,
   }) async {
     final url = Uri.parse(
-      'https://www.capital-sys.net/CKMMallAPI/api/profile/$userId/personal',
+      'https://www.capital-sys.net/CKMMallAPI/api/User/UpdateUser',
     );
 
     final body = jsonEncode({
-      'fullName': fullName,
+      'userName': fullName,
       'email': email,
       'phone': phone,
+      'role': role,
+      'location': location,
       'dateOfBirth': dateOfBirth,
       'gender': gender,
-      'location': location,
     });
 
     debugPrint('========== UPDATE PERSONAL REQUEST ==========');
+    debugPrint('Method: PUT');
     debugPrint('URL: $url');
     debugPrint('Body: $body');
     debugPrint('=============================================');
@@ -336,10 +339,11 @@ class ProfileService {
 
     if (kIsWeb) {
       final client = BrowserClient()..withCredentials = true;
+
       try {
         response = await client.put(
           url,
-          headers: {
+          headers: const {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
           },
@@ -353,11 +357,14 @@ class ProfileService {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       };
+
       final cookie = authService.authCookie;
       if (cookie != null && cookie.isNotEmpty) {
         headers['Cookie'] = cookie;
       }
+
       final client = http.Client();
+
       try {
         response = await client.put(url, headers: headers, body: body);
       } finally {
@@ -371,9 +378,11 @@ class ProfileService {
     if (response.statusCode == 401) {
       throw Exception('Unauthorized (401). Please log in again.');
     }
+
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception(
-        'Failed to update personal info (${response.statusCode}): ${response.body}',
+        'Failed to update personal info '
+        '(${response.statusCode}): ${response.body}',
       );
     }
 
@@ -381,9 +390,17 @@ class ProfileService {
       return {'success': true};
     }
 
-    final decoded = jsonDecode(response.body);
-    if (decoded is Map<String, dynamic>) return decoded;
-    return {'data': decoded};
+    try {
+      final decoded = jsonDecode(response.body);
+
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+
+      return {'data': decoded};
+    } catch (_) {
+      return {'message': response.body};
+    }
   }
 
   // LOG AND PARSE UPLOAD RESPONSE

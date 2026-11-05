@@ -23,7 +23,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   int selectedMenu = 0;
   final ImagePicker _imagePicker = ImagePicker();
-  
+
   String? _avatarUrl;
   String? _coverUrl;
   bool _isLoadingProfile = false;
@@ -52,6 +52,74 @@ class _ProfilePageState extends State<ProfilePage> {
       "businessDescription": "",
     },
   };
+
+  String _formatDateForDisplay(String? value) {
+    if (value == null || value.trim().isEmpty) return '';
+
+    final date = DateTime.tryParse(value);
+    if (date == null) return value;
+
+    final year = date.year.toString().padLeft(4, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+
+    return '$year-$month-$day';
+  }
+
+  Future<void> _selectDateOfBirth() async {
+    final now = DateTime.now();
+
+    final existingDate = DateTime.tryParse(dateOfBirthController.text.trim());
+
+    final initialDate = existingDate != null && !existingDate.isAfter(now)
+        ? existingDate
+        : DateTime(now.year - 18, now.month, now.day);
+
+    final selectedDate = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(1900),
+      lastDate: now,
+      helpText: 'Select your date of birth',
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFFC77C2E),
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (selectedDate != null && mounted) {
+      final year = selectedDate.year.toString().padLeft(4, '0');
+      final month = selectedDate.month.toString().padLeft(2, '0');
+      final day = selectedDate.day.toString().padLeft(2, '0');
+
+      setState(() {
+        dateOfBirthController.text = '$year-$month-$day';
+      });
+    }
+  }
+
+  String _dateOfBirthForApi() {
+    final value = dateOfBirthController.text.trim();
+
+    if (value.isEmpty) return '';
+
+    final date = DateTime.tryParse(value);
+
+    if (date == null) {
+      throw Exception('Please select a valid date of birth.');
+    }
+
+    return DateTime.utc(date.year, date.month, date.day).toIso8601String();
+  }
 
   // EDIT STATES
   bool isEditingPersonal = false;
@@ -146,6 +214,31 @@ class _ProfilePageState extends State<ProfilePage> {
     _loadProfile();
   }
 
+  Widget buildDateOfBirthInput() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: TextField(
+        controller: dateOfBirthController,
+        readOnly: true, // Prevent manual typing
+        onTap: _selectDateOfBirth, // Open calendar picker
+        decoration: InputDecoration(
+          labelText: 'Date of Birth',
+          hintText: 'Select your date of birth',
+          prefixIcon: const Icon(Icons.calendar_month_outlined),
+          suffixIcon: IconButton(
+            icon: const Icon(Icons.calendar_today_outlined),
+            onPressed: _selectDateOfBirth,
+          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _loadProfile() async {
     if (mounted) {
       setState(() => _isLoadingProfile = true);
@@ -172,7 +265,7 @@ class _ProfilePageState extends State<ProfilePage> {
         'fullName': fullName,
         'email': result.email,
         'phone': result.phone,
-        'dateOfBirth': result.dateOfBirth,
+        'dateOfBirth': _formatDateForDisplay(result.dateOfBirth),
         'gender': result.gender,
         'joinedOn': result.createdDate,
         'location': result.location,
@@ -195,7 +288,7 @@ class _ProfilePageState extends State<ProfilePage> {
         fullNameController.text = fullName;
         emailController.text = result.email;
         phoneController.text = result.phone;
-        dateOfBirthController.text = result.dateOfBirth;
+        dateOfBirthController.text = _formatDateForDisplay(result.dateOfBirth);
         genderController.text = result.gender;
         joinedOnController.text = result.createdDate;
         locationController.text = result.location;
@@ -758,7 +851,7 @@ class _ProfilePageState extends State<ProfilePage> {
               borderRadius: BorderRadius.circular(8),
               onTap: () async {
                 await authService.logout(); // Clear session and cookies
-                
+
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -1086,23 +1179,17 @@ class _ProfilePageState extends State<ProfilePage> {
                   keyboardType: TextInputType.phone,
                 ),
 
-                buildInput(
-                  "Date of Birth",
-                  dateOfBirthController,
-                  Icons.calendar_month_outlined,
-                ),
+                buildDateOfBirthInput(),
 
-                buildInput(
-                  "Gender",
-                  genderController,
-                  Icons.person_add_alt_outlined,
-                ),
+                buildGenderDropdown(),
 
-                buildInput(
-                  "Joined On",
-                  joinedOnController,
-                  Icons.access_time_outlined,
-                  enabled: false,
+                Expanded(
+                  child: buildInput(
+                    "Joined On",
+                    joinedOnController,
+                    Icons.access_time_outlined,
+                    enabled: false,
+                  ),
                 ),
 
                 buildInput(
@@ -1112,11 +1199,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
 
                 buildInput(
-                  "Account Types",
+                  "Account Type",
                   accountTypesController,
                   Icons.sell_outlined,
-                  hintText: "Seller, User, Purchaser",
-                  enabled: false,
+                  hintText: "seller, buyer",
                 ),
               ],
             );
@@ -1136,13 +1222,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   const SizedBox(width: 20),
 
-                  Expanded(
-                    child: buildInput(
-                      "Date of Birth",
-                      dateOfBirthController,
-                      Icons.calendar_month_outlined,
-                    ),
-                  ),
+                  Expanded(child: buildDateOfBirthInput()),
                 ],
               ),
 
@@ -1159,13 +1239,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   const SizedBox(width: 20),
 
-                  Expanded(
-                    child: buildInput(
-                      "Gender",
-                      genderController,
-                      Icons.person_add_alt_outlined,
-                    ),
-                  ),
+                  Expanded(child: buildGenderDropdown()),
                 ],
               ),
 
@@ -1187,6 +1261,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       "Joined On",
                       joinedOnController,
                       Icons.access_time_outlined,
+                      enabled: false,
                     ),
                   ),
                 ],
@@ -1221,6 +1296,45 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // GENDER DROPDOWN
+  Widget buildGenderDropdown() {
+    const genderOptions = ['Male', 'Female', 'Other'];
+
+    // Match API values regardless of capitalization.
+    final currentGender = genderOptions.cast<String?>().firstWhere(
+      (gender) =>
+          gender!.toLowerCase() == genderController.text.trim().toLowerCase(),
+      orElse: () => null,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: DropdownButtonFormField<String>(
+        value: currentGender,
+        isExpanded: true,
+        decoration: InputDecoration(
+          labelText: 'Gender',
+          prefixIcon: const Icon(Icons.person_add_alt_outlined),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 14,
+          ),
+        ),
+        items: genderOptions.map((gender) {
+          return DropdownMenuItem<String>(value: gender, child: Text(gender));
+        }).toList(),
+        onChanged: (value) {
+          if (value == null) return;
+
+          setState(() {
+            genderController.text = value;
+          });
+        },
+      ),
+    );
+  }
+
   Future<void> updatePersonalInformation() async {
     final authService = context.read<AuthService>();
     final currentUser = authService.currentUser;
@@ -1230,24 +1344,42 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
 
-    final userId = currentUser.id;
+    final userId = int.tryParse(currentUser.id.toString());
 
-    setState(() => _isLoadingProfile = true);
+    if (userId == null || userId <= 0) {
+      showUpdateMessage('Invalid user. Please login again.');
+      return;
+    }
+
+    if (fullNameController.text.trim().isEmpty) {
+      showUpdateMessage('Please enter your full name.');
+      return;
+    }
 
     try {
+      setState(() => _isLoadingProfile = true);
+
+      final role = accountTypesController.text
+          .split(',')
+          .map((item) => item.trim().toLowerCase())
+          .where((item) => item.isNotEmpty)
+          .join(', ');
+
+      final dateOfBirth = _dateOfBirthForApi();
+
       await ProfileService(authService: authService).updatePersonalInfo(
         userId: userId,
         fullName: fullNameController.text.trim(),
         email: emailController.text.trim(),
         phone: phoneController.text.trim(),
-        dateOfBirth: dateOfBirthController.text.trim(),
+        role: role,
+        dateOfBirth: dateOfBirth,
         gender: genderController.text.trim(),
         location: locationController.text.trim(),
       );
 
       if (!mounted) return;
 
-      // Update local state only for editable fields
       setState(() {
         personal['fullName'] = fullNameController.text.trim();
         personal['email'] = emailController.text.trim();
@@ -1255,14 +1387,24 @@ class _ProfilePageState extends State<ProfilePage> {
         personal['dateOfBirth'] = dateOfBirthController.text.trim();
         personal['gender'] = genderController.text.trim();
         personal['location'] = locationController.text.trim();
+
+        personal['accountTypes'] = role
+            .split(',')
+            .map((item) => item.trim())
+            .where((item) => item.isNotEmpty)
+            .map((item) => item[0].toUpperCase() + item.substring(1))
+            .toList();
+
         isEditingPersonal = false;
         _isLoadingProfile = false;
       });
 
-      showUpdateMessage('Personal information updated');
+      showUpdateMessage('Personal information updated successfully.');
     } catch (e) {
       if (!mounted) return;
+
       setState(() => _isLoadingProfile = false);
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Update failed: $e')));

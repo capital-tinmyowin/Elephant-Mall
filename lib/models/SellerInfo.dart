@@ -5,16 +5,18 @@ class SellerInfo {
   final int productCount;
   final int followerCount;
   final String? avatarUrl;
+  final String? coverUrl;
   final bool isFollowing;
 
   SellerInfo({
     required this.userName,
     required this.name,
     this.location,
-    this.productCount = 0,
-    this.followerCount = 0,
+    required this.productCount,
+    required this.followerCount,
     this.avatarUrl,
-    this.isFollowing = false,
+    this.coverUrl,
+    required this.isFollowing,
   });
 
   factory SellerInfo.fromJson(Map<String, dynamic> json) {
@@ -22,14 +24,12 @@ class SellerInfo {
       userName: json['userName']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
       location: json['location']?.toString(),
-      productCount: int.tryParse(json['productCount']?.toString() ?? '') ?? 0,
-      followerCount: int.tryParse(
-            json['follwerCount']?.toString() ??
-                json['followerCount']?.toString() ??
-                '',
-          ) ??
-          0,
+      productCount:
+          int.tryParse(json['productCount']?.toString() ?? '') ?? 0,
+      followerCount:
+          int.tryParse(json['follwerCount']?.toString() ?? '') ?? 0,
       avatarUrl: json['avatarUrl']?.toString(),
+      coverUrl: json['coverUrl']?.toString(),
       isFollowing: json['isFollowing'] == true,
     );
   }
