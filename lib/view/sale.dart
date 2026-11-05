@@ -1,3 +1,4 @@
+import 'package:elephant_mall/services/Category_service.dart';
 import 'package:elephant_mall/view/common/favorite_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -158,21 +159,21 @@ class _SalePageState extends State<SalePage> {
   }
 
   Future<void> _toggleFavourite(SaleModel product) async {
-  await FavoriteHelper.toggleFavorite(
-    context,
-    productId: product.productId,
-    isCurrentlyFavorite: product.favourite == 1,
-  );
-  
-  // If the helper was successful, we can optimistically update the NewInModel
-  if (!mounted) return;
-  final authService = Provider.of<AuthService>(context, listen: false);
-  if (authService.isFavorite(product.productId)) {
-    setState(() => product.favourite = 1);
-  } else {
-    setState(() => product.favourite = 0);
+    await FavoriteHelper.toggleFavorite(
+      context,
+      productId: product.productId,
+      isCurrentlyFavorite: product.favourite == 1,
+    );
+
+    // If the helper was successful, we can optimistically update the NewInModel
+    if (!mounted) return;
+    final authService = Provider.of<AuthService>(context, listen: false);
+    if (authService.isFavorite(product.productId)) {
+      setState(() => product.favourite = 1);
+    } else {
+      setState(() => product.favourite = 0);
+    }
   }
-}
 
   // BUILD
 
@@ -683,7 +684,7 @@ class _SalePageState extends State<SalePage> {
                 // DISCOUNT BADGE
                 if (product.discount > 0)
                   Positioned(
-                    top: 5,
+                    bottom: 5,
                     left: 5,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
@@ -704,6 +705,96 @@ class _SalePageState extends State<SalePage> {
                       ),
                     ),
                   ),
+
+                //  3-DOT MENU LOGIC
+                Positioned(
+                  top: 4,
+                  left: 4, // Placed on the left
+                  child: Consumer<AuthService>(
+                    builder: (context, authService, child) {
+                      final isLoggedIn = authService.isLoggedIn;
+                      final currentUserId = authService.currentUser?.id;
+
+                      if (!isLoggedIn || currentUserId == null) {
+                        return const SizedBox.shrink();
+                      }
+
+                      return FutureBuilder<int?>(
+                        future: context.read<ApiService>().getProductOwnerId(
+                          product.productId,
+                        ),
+                        builder: (context, snapshot) {
+                          final isOwner =
+                              snapshot.hasData &&
+                              snapshot.data.toString() ==
+                                  currentUserId.toString();
+
+                          if (!isOwner) return const SizedBox.shrink();
+
+                          return Container(
+                            decoration: BoxDecoration(
+                              // color: Colors.white.withOpacity(0.9),
+                              shape: BoxShape.circle,
+                            ),
+                            child: PopupMenuButton<String>(
+                              padding: EdgeInsets.zero,
+                              iconSize: 18,
+                              icon: const Icon(
+                                Icons.more_vert,
+                                color: Colors.black87,
+                              ),
+                              onSelected: (value) {
+                                if (value == 'edit') {
+                                  context.push(
+                                    '/sell?productId=${product.productId}',
+                                  );
+                                } else if (value == 'delete') {
+                                  _deleteProduct(
+                                    product.productId,
+                                    product.productName,
+                                  );
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem<String>(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.edit_outlined,
+                                        size: 18,
+                                        color: Color(0xff28733D),
+                                      ),
+                                      SizedBox(width: 10),
+                                      Text('Edit'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem<String>(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.delete_outline,
+                                        size: 18,
+                                        color: Colors.red,
+                                      ),
+                                      SizedBox(width: 10),
+                                      Text(
+                                        'Delete',
+                                        style: TextStyle(color: Colors.red),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
                 // FAVORITE
                 Positioned(
                   top: 4,
@@ -1136,4 +1227,48 @@ class _SalePageState extends State<SalePage> {
   //     ),
   //   );
   // }
+  Future<void> _deleteProduct(int productId, String productName) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Product'),
+        content: Text('Are you sure you want to delete "$productName"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Deleting product...'), duration: Duration(seconds: 2)),
+    );
+
+    final apiService = context.read<ApiService>();
+    final isDeleted = await apiService.deleteProductFromServer(productId);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+    if (isDeleted) {
+      setState(() {
+        allProducts.removeWhere((p) => p.productId == productId);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Product deleted successfully.'), backgroundColor: Colors.green),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to delete product.'), backgroundColor: Colors.red),
+      );
+    }
+  }
 }
