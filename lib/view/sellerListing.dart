@@ -18,6 +18,14 @@ import 'common/header.dart';
 import 'common/loading_widget.dart';
 import 'product_detail_page.dart';
 import 'new_in.dart';
+import 'common/favorite_helper.dart';
+
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:http/http.dart' as http;
+import 'package:http/browser_client.dart' show BrowserClient;
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SellerListingPage extends StatefulWidget {
   final int? sellerId;
@@ -27,6 +35,35 @@ class SellerListingPage extends StatefulWidget {
 
   @override
   State<SellerListingPage> createState() => _SellerListingPageState();
+}
+
+class SellerBusinessContact {
+  final int id;
+  final int userId;
+  final String type;
+  final String value;
+  final int groupId;
+  final bool isPrimary;
+
+  SellerBusinessContact({
+    required this.id,
+    required this.userId,
+    required this.type,
+    required this.value,
+    required this.groupId,
+    required this.isPrimary,
+  });
+
+  factory SellerBusinessContact.fromJson(Map<String, dynamic> json) {
+    return SellerBusinessContact(
+      id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+      userId: int.tryParse(json['userId']?.toString() ?? '') ?? 0,
+      type: json['type']?.toString() ?? '',
+      value: json['value']?.toString() ?? '',
+      groupId: int.tryParse(json['groupId']?.toString() ?? '') ?? 0,
+      isPrimary: json['isPrimary'] == true,
+    );
+  }
 }
 
 class _SellerListingPageState extends State<SellerListingPage> {
@@ -42,6 +79,8 @@ class _SellerListingPageState extends State<SellerListingPage> {
   final Set<int> favouriteProductIds = {};
   final Set<int> favouriteLoadingIds = {};
 
+  bool chatContactsLoading = false;
+
   List<Category> categories = [];
   bool categoryLoading = false;
 
@@ -56,6 +95,9 @@ class _SellerListingPageState extends State<SellerListingPage> {
 
   SellerInfo? sellerInfo;
   bool sellerInfoLoading = true;
+
+  final ScrollController _newestScrollController = ScrollController();
+  final ScrollController _salesScrollController = ScrollController();
 
   List<NewInModel> salesProducts = [];
   bool salesProductsLoading = true;
@@ -84,13 +126,25 @@ class _SellerListingPageState extends State<SellerListingPage> {
   @override
   void dispose() {
     _searchController.dispose();
+    _newestScrollController.dispose();
+    _salesScrollController.dispose();
     super.dispose();
   }
 
-  // ============================================================
-  // LOADERS
-  // ============================================================
+  void _scrollBy(ScrollController controller, double offset) {
+    if (!controller.hasClients) return;
+    final target = (controller.offset + offset).clamp(
+      0.0,
+      controller.position.maxScrollExtent,
+    );
+    controller.animateTo(
+      target,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
 
+  // LOADERS
   Future<void> loadSellerInfo() async {
     setState(() => sellerInfoLoading = true);
     try {
@@ -160,6 +214,162 @@ class _SellerListingPageState extends State<SellerListingPage> {
         newestArrivalsLoading = false;
         newestArrivalsError = e.toString();
       });
+    }
+  }
+
+  Future<void> _openChatSeller() async {
+    if (chatContactsLoading) return;
+
+    final sellerId = widget.sellerId;
+
+    if (sellerId == null) {
+      debugPrint('Seller ID is missing.');
+      return;
+    }
+
+    setState(() => chatContactsLoading = true);
+
+    try {
+      final url = Uri.parse(
+        'https://www.capital-sys.net/CKMMallAPI/api/User/getbusinesscontactsbyuserid/$sellerId',
+      );
+
+      late http.Response response;
+
+      if (kIsWeb) {
+        final client = BrowserClient()..withCredentials = true;
+
+        try {
+          response = await client.get(
+            url,
+            headers: {'Accept': 'application/json'},
+          );
+        } finally {
+          client.close();
+        }
+      } else {
+        final authService = context.read<AuthService>();
+
+        final headers = <String, String>{'Accept': 'application/json'};
+
+        final cookie = authService.authCookie;
+
+        if (cookie != null && cookie.isNotEmpty) {
+          headers['Cookie'] = cookie;
+        }
+
+        response = await http.get(url, headers: headers);
+      }
+
+      debugPrint('Business Contacts Status: ${response.statusCode}');
+      debugPrint('Business Contacts Response: ${response.body}');
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Failed to load seller contacts: ${response.statusCode}',
+        );
+      }
+
+      final decoded = jsonDecode(response.body);
+
+      if (decoded is! Map<String, dynamic> ||
+          decoded['businessContacts'] is! List) {
+        throw Exception('Invalid business contacts response.');
+      }
+
+      final List<SellerBusinessContact> contacts =
+          (decoded['businessContacts'] as List)
+              .whereType<Map<String, dynamic>>()
+              .map(SellerBusinessContact.fromJson)
+              .where((contact) => contact.value.trim().isNotEmpty)
+              .toList();
+
+      if (!mounted) return;
+
+      // Same logic as ProductDetailPage:
+      // Show one contact per type, preferring primary contacts.
+      final Map<String, SellerBusinessContact> uniqueContacts = {};
+
+      for (final contact in contacts) {
+        final type = contact.type.toLowerCase();
+
+        if (type == 'phone' ||
+            type == 'messenger' ||
+            type == 'telegram' ||
+            type == 'viber') {
+          if (!uniqueContacts.containsKey(type) || contact.isPrimary) {
+            uniqueContacts[type] = contact;
+          }
+        }
+      }
+
+      if (uniqueContacts.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No contact information available.')),
+        );
+        return;
+      }
+
+      await showDialog(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text('Contact Seller'),
+            content: Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                if (uniqueContacts.containsKey('phone'))
+                  _sellerContactIcon(
+                    Icons.phone,
+                    Colors.green,
+                    'Phone',
+                    uniqueContacts['phone']!,
+                  ),
+                if (uniqueContacts.containsKey('messenger'))
+                  _sellerContactIcon(
+                    FontAwesomeIcons.facebookMessenger,
+                    Colors.blue,
+                    'Messenger',
+                    uniqueContacts['messenger']!,
+                  ),
+                if (uniqueContacts.containsKey('telegram'))
+                  _sellerContactIcon(
+                    FontAwesomeIcons.telegram,
+                    Colors.blue.shade700,
+                    'Telegram',
+                    uniqueContacts['telegram']!,
+                  ),
+                if (uniqueContacts.containsKey('viber'))
+                  _sellerContactIcon(
+                    FontAwesomeIcons.viber,
+                    Colors.purple,
+                    'Viber',
+                    uniqueContacts['viber']!,
+                  ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Close'),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      debugPrint('Chat Seller Error: $e');
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to load seller contacts: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => chatContactsLoading = false);
+      }
     }
   }
 
@@ -315,7 +525,6 @@ class _SellerListingPageState extends State<SellerListingPage> {
     if (followLoading || sellerInfoLoading) return;
 
     final sellerId = widget.sellerId;
-
     if (sellerId == null) {
       debugPrint('Seller ID is missing.');
       return;
@@ -323,13 +532,15 @@ class _SellerListingPageState extends State<SellerListingPage> {
 
     final authService = context.read<AuthService>();
 
-    // Currently following = call unfollow.
-    // Currently not following = call follow.
+    // Not logged in → shared login dialog
+    if (!authService.isLoggedIn || authService.currentUser == null) {
+      FavoriteHelper.showLoginRequiredDialog(context);
+      return;
+    }
+
     final shouldFollow = !isFollowing;
 
-    setState(() {
-      followLoading = true;
-    });
+    setState(() => followLoading = true);
 
     final success = await _service.toggleFollow(
       authService: authService,
@@ -339,31 +550,142 @@ class _SellerListingPageState extends State<SellerListingPage> {
 
     if (!mounted) return;
 
-    setState(() {
-      if (success) {
+    if (success) {
+      setState(() {
         isFollowing = shouldFollow;
-
         if (shouldFollow) {
           followerCount++;
         } else if (followerCount > 0) {
           followerCount--;
         }
-      }
-
-      followLoading = false;
-    });
-
-    if (!success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            shouldFollow
-                ? 'Unable to follow seller.'
-                : 'Unable to unfollow seller.',
-          ),
-        ),
-      );
+        followLoading = false;
+      });
+      return;
     }
+
+    // Failed → check for 401
+    setState(() => followLoading = false);
+
+    // ScaffoldMessenger.of(context).showSnackBar(
+    //   SnackBar(
+    //     content: Text(
+    //       shouldFollow
+    //           ? 'Unable to follow seller.'
+    //           : 'Unable to unfollow seller.',
+    //     ),
+    //   ),
+    // );
+  }
+
+  Widget _sellerContactIcon(
+    dynamic icon,
+    Color color,
+    String label,
+    SellerBusinessContact contact,
+  ) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () async {
+        final type = contact.type.toLowerCase();
+        final value = contact.value.trim();
+
+        // Phone: display the phone number.
+        if (type == 'phone') {
+          showDialog(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              title: const Text('Contact via Phone'),
+              content: SelectableText(value),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
+
+        Uri? uri;
+
+        if (type == 'messenger') {
+          String cleanValue = value;
+
+          if (cleanValue.contains('facebook.com/')) {
+            cleanValue = cleanValue.split('facebook.com/').last;
+          }
+
+          if (cleanValue.contains('profile.php?id=')) {
+            cleanValue = cleanValue.split('profile.php?id=').last;
+          }
+
+          if (cleanValue.contains('?')) {
+            cleanValue = cleanValue.split('?').first;
+          }
+
+          if (cleanValue.endsWith('/')) {
+            cleanValue = cleanValue.substring(0, cleanValue.length - 1);
+          }
+
+          uri = Uri.parse('https://m.me/$cleanValue');
+        } else if (type == 'telegram') {
+          final username = value.startsWith('@') ? value.substring(1) : value;
+
+          uri = Uri.parse('https://t.me/$username');
+        } else if (type == 'viber') {
+          // If the value is already a URL, open it directly.
+          if (value.startsWith('http://') || value.startsWith('https://')) {
+            uri = Uri.tryParse(value);
+          } else {
+            final cleanPhone = value.replaceAll(RegExp(r'[\s\-+]'), '');
+            uri = Uri.parse('viber://chat?number=$cleanPhone');
+          }
+        }
+
+        if (uri == null) return;
+
+        try {
+          final launched = await launchUrl(
+            uri,
+            mode: LaunchMode.externalApplication,
+            webOnlyWindowName: '_blank',
+          );
+
+          if (!launched && mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Could not open $label')));
+          }
+        } catch (e) {
+          if (!mounted) return;
+
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error opening $label: $e')));
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            icon is FaIconData
+                ? FaIcon(icon, color: color, size: 22)
+                : Icon(icon as IconData, color: color, size: 22),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // BUILD
@@ -649,14 +971,28 @@ class _SellerListingPageState extends State<SellerListingPage> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.chat_bubble_outline,
-                            size: 14,
-                            color: Colors.white,
-                          ),
+                          if (chatContactsLoading)
+                            const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          else
+                            const Icon(
+                              Icons.chat_bubble_outline,
+                              size: 14,
+                              color: Colors.white,
+                            ),
+
                           const SizedBox(width: 4),
+
                           Text(
-                            'Chat Seller',
+                            chatContactsLoading ? 'Loading...' : 'Chat Seller',
                             style: TextStyle(
                               fontSize: mobile ? 11 : 12,
                               fontWeight: FontWeight.bold,
@@ -1287,150 +1623,280 @@ class _SellerListingPageState extends State<SellerListingPage> {
   }
 
   Widget buildNewestArrivalsSection(bool mobile) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Newest Arrivals',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: mobile ? 20 : 23,
-                  fontWeight: FontWeight.bold,
+    final itemCount = newestArrivals.length > 4 ? 4 : newestArrivals.length;
+    // +1 for the View All card at the end
+    final listCount = newestArrivals.isEmpty ? 0 : itemCount + 1;
+
+    return _sectionBorder(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Newest Arrivals',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: mobile ? 18 : 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-            TextButton(
-              onPressed: () {
-                context.go('/new-in');
-              },
-              child: Text(
-                'VIEW ALL',
-                style: TextStyle(
-                  fontSize: mobile ? 10 : 12,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xff28733D),
+              TextButton(
+                onPressed: () => context.go('/new-in'),
+                child: Text(
+                  'VIEW ALL',
+                  style: TextStyle(
+                    fontSize: mobile ? 10 : 12,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xff28733D),
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 5),
-        if (newestArrivalsLoading)
-          const SizedBox(
-            height: 150,
-            child: Center(child: CircularProgressIndicator()),
-          )
-        else if (newestArrivalsError != null)
-          SizedBox(
-            height: 100,
-            child: Center(
-              child: TextButton(
-                onPressed: loadNewestArrivals,
-                child: const Text('Failed to load. Tap to retry'),
-              ),
-            ),
-          )
-        else if (newestArrivals.isEmpty)
-          const SizedBox(
-            height: 100,
-            child: Center(child: Text('No newest arrivals available.')),
-          )
-        else
-          SizedBox(
-            height: mobile ? 150 : 205,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: newestArrivals.length > 4 ? 4 : newestArrivals.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 5),
-              itemBuilder: (context, index) {
-                final item = newestArrivals[index];
-                return SizedBox(
-                  width: mobile ? 135 : 180,
-                  child: buildSmallNewInCard(item, mobile),
-                );
-              },
-            ),
+            ],
           ),
-      ],
+          const SizedBox(height: 8),
+          if (newestArrivalsLoading)
+            const SizedBox(
+              height: 150,
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (newestArrivalsError != null)
+            SizedBox(
+              height: 100,
+              child: Center(
+                child: TextButton(
+                  onPressed: loadNewestArrivals,
+                  child: const Text('Failed to load. Tap to retry'),
+                ),
+              ),
+            )
+          else if (newestArrivals.isEmpty)
+            const SizedBox(
+              height: 100,
+              child: Center(child: Text('No newest arrivals available.')),
+            )
+          else
+            SizedBox(
+              height: mobile ? 150 : 205,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  ListView.separated(
+                    controller: _newestScrollController,
+                    scrollDirection: Axis.horizontal,
+                    itemCount: listCount,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      // Last item = View All card
+                      if (index == itemCount) {
+                        return _viewAllCard(
+                          mobile: mobile,
+                          onTap: () => context.go('/new-in'),
+                        );
+                      }
+                      final item = newestArrivals[index];
+                      return SizedBox(
+                        width: mobile ? 135 : 180,
+                        child: buildSmallNewInCard(item, mobile),
+                      );
+                    },
+                  ),
+                  // Left arrow
+                  Positioned(
+                    left: 0,
+                    child: _scrollArrow(
+                      icon: Icons.chevron_left,
+                      onTap: () => _scrollBy(_newestScrollController, -200),
+                    ),
+                  ),
+                  // Right arrow
+                  Positioned(
+                    right: 0,
+                    child: _scrollArrow(
+                      icon: Icons.chevron_right,
+                      onTap: () => _scrollBy(_newestScrollController, 200),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 
   Widget buildSalesProductsSection(bool mobile) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Sales Products',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: mobile ? 20 : 23,
-                  fontWeight: FontWeight.bold,
+    final itemCount = salesProducts.length > 4 ? 4 : salesProducts.length;
+    // +1 for the View All card at the end
+    final listCount = salesProducts.isEmpty ? 0 : itemCount + 1;
+
+    return _sectionBorder(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Sales Products',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: mobile ? 18 : 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-            TextButton(
-              onPressed: () {
-                context.go('/sale');
-              },
-              child: Text(
-                'VIEW ALL',
-                style: TextStyle(
-                  fontSize: mobile ? 10 : 12,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xff28733D),
+              TextButton(
+                onPressed: () => context.go('/sale'),
+                child: Text(
+                  'VIEW ALL',
+                  style: TextStyle(
+                    fontSize: mobile ? 10 : 12,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xff28733D),
+                  ),
                 ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (salesProductsLoading)
+            const SizedBox(
+              height: 150,
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (salesProductsError != null)
+            SizedBox(
+              height: 100,
+              child: Center(
+                child: TextButton(
+                  onPressed: loadSalesProducts,
+                  child: const Text('Failed to load. Tap to retry'),
+                ),
+              ),
+            )
+          else if (salesProducts.isEmpty)
+            const SizedBox(
+              height: 100,
+              child: Center(child: Text('No sales products available.')),
+            )
+          else
+            SizedBox(
+              height: mobile ? 150 : 205,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  ListView.separated(
+                    controller: _salesScrollController,
+                    scrollDirection: Axis.horizontal,
+                    itemCount: listCount,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      // Last item = View All card
+                      if (index == itemCount) {
+                        return _viewAllCard(
+                          mobile: mobile,
+                          onTap: () => context.go('/sale'),
+                        );
+                      }
+
+                      final item = salesProducts[index];
+                      return SizedBox(
+                        width: mobile ? 135 : 180,
+                        child: buildSmallNewInCard(item, mobile),
+                      );
+                    },
+                  ),
+
+                  // Left arrow
+                  Positioned(
+                    left: 0,
+                    child: _scrollArrow(
+                      icon: Icons.chevron_left,
+                      onTap: () => _scrollBy(_salesScrollController, -200),
+                    ),
+                  ),
+
+                  // Right arrow
+                  Positioned(
+                    right: 0,
+                    child: _scrollArrow(
+                      icon: Icons.chevron_right,
+                      onTap: () => _scrollBy(_salesScrollController, 200),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionBorder({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _scrollArrow({required IconData icon, required VoidCallback? onTap}) {
+    return Material(
+      color: Colors.white,
+      elevation: 2,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 32,
+          height: 32,
+          child: Icon(icon, size: 20, color: Colors.black87),
+        ),
+      ),
+    );
+  }
+
+  Widget _viewAllCard({required bool mobile, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: mobile ? 135 : 180,
+        decoration: BoxDecoration(
+          color: const Color(0xffF8F8F8),
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(5),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.arrow_forward,
+              size: mobile ? 28 : 34,
+              color: const Color(0xff28733D),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'VIEW ALL',
+              style: TextStyle(
+                fontSize: mobile ? 11 : 13,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xff28733D),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 5),
-
-        if (salesProductsLoading)
-          const SizedBox(
-            height: 150,
-            child: Center(child: CircularProgressIndicator()),
-          )
-        else if (salesProductsError != null)
-          SizedBox(
-            height: 100,
-            child: Center(
-              child: TextButton(
-                onPressed: loadSalesProducts,
-                child: const Text('Failed to load. Tap to retry'),
-              ),
-            ),
-          )
-        else if (salesProducts.isEmpty)
-          const SizedBox(
-            height: 100,
-            child: Center(child: Text('No sales products available.')),
-          )
-        else
-          SizedBox(
-            height: mobile ? 150 : 205,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: salesProducts.length > 4 ? 4 : salesProducts.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 5),
-              itemBuilder: (context, index) {
-                final item = salesProducts[index];
-
-                return SizedBox(
-                  width: mobile ? 135 : 180,
-                  child: buildSmallNewInCard(item, mobile),
-                );
-              },
-            ),
-          ),
-      ],
+      ),
     );
   }
 

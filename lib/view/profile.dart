@@ -12,6 +12,7 @@ import 'sellerListing.dart';
 import '../services/profile_service.dart';
 import '../models/profile_model.dart';
 import 'package:provider/provider.dart';
+import 'common/favorite_helper.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -211,7 +212,7 @@ class _ProfilePageState extends State<ProfilePage> {
       text: businessData["businessDescription"] ?? "",
     );
 
-    _loadProfile();
+    // _loadProfile();
   }
 
   Widget buildDateOfBirthInput() {
@@ -304,11 +305,26 @@ class _ProfilePageState extends State<ProfilePage> {
       debugPrint('Unable to load profile: $e');
       debugPrint('$stackTrace');
       if (!mounted) return;
-
       setState(() => _isLoadingProfile = false);
+      await _handleAuthError(e);
+    }
+  }
+
+  bool _isUnauthorizedError(Object error) {
+    final message = error.toString().toLowerCase();
+    return message.contains('401') ||
+        message.contains('unauthorized') ||
+        message.contains('session has expired');
+  }
+
+  Future<void> _handleAuthError(Object error) async {
+    if (!mounted) return;
+    if (_isUnauthorizedError(error)) {
+      FavoriteHelper.showSessionExpiredDialog(context);
+    } else {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Unable to load profile: $e')));
+      ).showSnackBar(SnackBar(content: Text('$error')));
     }
   }
 
@@ -334,67 +350,13 @@ class _ProfilePageState extends State<ProfilePage> {
     if (!mounted) return;
 
     final authService = context.read<AuthService>();
-    final currentUser = authService.currentUser;
 
-    if (currentUser == null) {
-      await _showLoginRequiredDialog();
+    if (!authService.isLoggedIn || authService.currentUser == null) {
+      FavoriteHelper.showLoginRequiredDialog(context);
       return;
     }
 
-    // // Logged in → load profile
-    // await _loadProfile();
-  }
-
-  Future<void> _showLoginRequiredDialog() async {
-    if (!mounted) return;
-
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: const Color(0xfffdfaf4),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Row(
-            children: [
-              Icon(Icons.lock_outline, color: Color(0xFFC77C2E), size: 28),
-              SizedBox(width: 10),
-              Text(
-                'Login Required',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          content: const Text(
-            'Your session has expired or you are not logged in.\n\n'
-            'Please login to continue.',
-            style: TextStyle(fontSize: 16),
-          ),
-          actions: [
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFC77C2E),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
-              ),
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                if (!mounted) return;
-                context.go('/login');
-              },
-              child: const Text(
-                'Login',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
+    await _loadProfile();
   }
 
   // CAMERA / GALLERY

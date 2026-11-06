@@ -140,4 +140,102 @@ class FavoriteHelper {
       ),
     );
   }
+
+  static void showLoginRequiredDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.lock_outline, color: Color(0xFFC77C2E), size: 28),
+            SizedBox(width: 10),
+            Text(
+              'Login Required',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Please sign in to save favourites or access this feature.',
+          style: TextStyle(fontSize: 16),
+        ),
+        actions: [
+          // TextButton(
+          //   onPressed: () {
+          //     Navigator.pop(dialogContext);
+          //   },
+          //   child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          // ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext); // Close dialog first
+              context.go('/login'); // Then navigate
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2B6E3B),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+            ),
+            child: const Text(
+              'Sign In',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static void showSessionExpiredDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.lock_clock, color: Color(0xFFC77C2E), size: 28),
+            SizedBox(width: 10),
+            Text(
+              "Session Expired",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: const Text(
+          "Your session has expired or you are not logged in.\n\n"
+          "Please log in to continue.",
+          style: TextStyle(fontSize: 16),
+        ),
+        actions: [
+          // TextButton(
+          //   onPressed: () => Navigator.pop(dialogContext),
+          //   child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+          // ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFC77C2E),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              context.push('/login');
+            },
+            child: const Text(
+              "Log In",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
 }
