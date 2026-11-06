@@ -65,6 +65,85 @@ class _SellerStorePageState extends State<SellerStorePage> {
   static const int pageSize = 10;
   int _currentPage = 1;
 
+  final ScrollController _newestScrollController = ScrollController();
+  final ScrollController _salesScrollController = ScrollController();
+
+  Widget _sectionBorder({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _scrollArrow({required IconData icon, required VoidCallback? onTap}) {
+    return Material(
+      color: Colors.white,
+      elevation: 2,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 32,
+          height: 32,
+          child: Icon(icon, size: 20, color: Colors.black87),
+        ),
+      ),
+    );
+  }
+
+  Widget _viewAllCard({required bool mobile, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: mobile ? 135 : 180,
+        decoration: BoxDecoration(
+          color: const Color(0xffF8F8F8),
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(5),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.arrow_forward,
+              size: mobile ? 28 : 34,
+              color: const Color(0xff28733D),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'VIEW ALL',
+              style: TextStyle(
+                fontSize: mobile ? 11 : 13,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xff28733D),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _scrollBy(ScrollController controller, double offset) {
+    if (!controller.hasClients) return;
+    final target = (controller.offset + offset).clamp(
+      0.0,
+      controller.position.maxScrollExtent,
+    );
+    controller.animateTo(
+      target,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -97,7 +176,8 @@ class _SellerStorePageState extends State<SellerStorePage> {
   @override
   void dispose() {
     _searchController.dispose();
-
+    _newestScrollController.dispose();
+    _salesScrollController.dispose();
     super.dispose();
   }
 
@@ -451,90 +531,105 @@ class _SellerStorePageState extends State<SellerStorePage> {
   // NEWEST ARRIVALS SECTION
 
   Widget buildNewestArrivalsSection(bool mobile) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // TITLE + VIEW ALL
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Newest Arrivals',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: mobile ? 20 : 23,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+    final itemCount = newestArrivals.length > 4 ? 4 : newestArrivals.length;
+    final listCount = newestArrivals.isEmpty ? 0 : itemCount + 1;
+
+    return _sectionBorder(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Newest Arrivals',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: mobile ? 18 : 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-            TextButton(
-              onPressed: () {
-                viewAllProducts('Newest Arrivals');
-              },
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: const Size(50, 25),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                'VIEW ALL',
-                style: TextStyle(
-                  fontSize: mobile ? 10 : 12,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xff28733D),
+              TextButton(
+                onPressed: () => viewAllProducts('Newest Arrivals'),
+                child: Text(
+                  'VIEW ALL',
+                  style: TextStyle(
+                    fontSize: mobile ? 10 : 12,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xff28733D),
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 5),
-
-        // LOADING
-        if (newestArrivalsLoading)
-          const SizedBox(
-            height: 150,
-            child: Center(child: CircularProgressIndicator()),
-          )
-        // ERROR
-        else if (newestArrivalsError != null)
-          SizedBox(
-            height: 100,
-            child: Center(
-              child: TextButton(
-                onPressed: loadNewestArrivals,
-                child: const Text('Failed to load. Tap to retry'),
-              ),
-            ),
-          )
-        // EMPTY
-        else if (newestArrivals.isEmpty)
-          const SizedBox(
-            height: 100,
-            child: Center(child: Text('No newest arrivals available.')),
-          )
-        // API PRODUCTS
-        else
-          SizedBox(
-            height: mobile ? 150 : 205,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              itemCount: newestArrivals.length > 4 ? 4 : newestArrivals.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 5),
-              itemBuilder: (context, index) {
-                final item = newestArrivals[index];
-
-                return SizedBox(
-                  width: mobile ? 135 : 180,
-                  child: buildNewestArrivalCard(item, mobile),
-                );
-              },
-            ),
+            ],
           ),
-      ],
+          const SizedBox(height: 8),
+          if (newestArrivalsLoading)
+            const SizedBox(
+              height: 150,
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (newestArrivalsError != null)
+            SizedBox(
+              height: 100,
+              child: Center(
+                child: TextButton(
+                  onPressed: loadNewestArrivals,
+                  child: const Text('Failed to load. Tap to retry'),
+                ),
+              ),
+            )
+          else if (newestArrivals.isEmpty)
+            const SizedBox(
+              height: 100,
+              child: Center(child: Text('No newest arrivals available.')),
+            )
+          else
+            SizedBox(
+              height: mobile ? 150 : 205,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  ListView.separated(
+                    controller: _newestScrollController,
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: listCount,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      if (index == itemCount) {
+                        return _viewAllCard(
+                          mobile: mobile,
+                          onTap: () => viewAllProducts('Newest Arrivals'),
+                        );
+                      }
+                      final item = newestArrivals[index];
+                      return SizedBox(
+                        width: mobile ? 135 : 180,
+                        child: buildNewestArrivalCard(item, mobile),
+                      );
+                    },
+                  ),
+                  Positioned(
+                    left: 0,
+                    child: _scrollArrow(
+                      icon: Icons.chevron_left,
+                      onTap: () => _scrollBy(_newestScrollController, -200),
+                    ),
+                  ),
+                  Positioned(
+                    right: 0,
+                    child: _scrollArrow(
+                      icon: Icons.chevron_right,
+                      onTap: () => _scrollBy(_newestScrollController, 200),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -1767,71 +1862,90 @@ class _SellerStorePageState extends State<SellerStorePage> {
     required List<Product> items,
     required bool mobile,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // TITLE + VIEW ALL
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: mobile ? 20 : 23,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+    final itemCount = items.length;
+    final listCount = items.isEmpty ? 0 : itemCount + 1;
+
+    return _sectionBorder(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: mobile ? 18 : 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-
-            // VIEW ALL
-            TextButton(
-              onPressed: () {
-                viewAllProducts(title);
-              },
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: const Size(50, 25),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                'VIEW ALL',
-                style: TextStyle(
-                  fontSize: mobile ? 10 : 12,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xff28733D),
+              TextButton(
+                onPressed: () => viewAllProducts(title),
+                child: Text(
+                  'VIEW ALL',
+                  style: TextStyle(
+                    fontSize: mobile ? 10 : 12,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xff28733D),
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 5),
-
-        // HORIZONTAL PRODUCTS
-        SizedBox(
-          height: mobile ? 150 : 205,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: items.length,
-            separatorBuilder: (context, index) {
-              return const SizedBox(width: 5);
-            },
-            itemBuilder: (context, index) {
-              final product = items[index];
-
-              return SizedBox(
-                width: mobile ? 135 : 180,
-                child: buildSmallProductCard(product, mobile),
-              );
-            },
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          if (items.isEmpty)
+            const SizedBox(
+              height: 100,
+              child: Center(child: Text('No products available.')),
+            )
+          else
+            SizedBox(
+              height: mobile ? 150 : 205,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  ListView.separated(
+                    controller: _salesScrollController,
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: listCount,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      if (index == itemCount) {
+                        return _viewAllCard(
+                          mobile: mobile,
+                          onTap: () => viewAllProducts(title),
+                        );
+                      }
+                      final product = items[index];
+                      return SizedBox(
+                        width: mobile ? 135 : 180,
+                        child: buildSmallProductCard(product, mobile),
+                      );
+                    },
+                  ),
+                  Positioned(
+                    left: 0,
+                    child: _scrollArrow(
+                      icon: Icons.chevron_left,
+                      onTap: () => _scrollBy(_salesScrollController, -200),
+                    ),
+                  ),
+                  Positioned(
+                    right: 0,
+                    child: _scrollArrow(
+                      icon: Icons.chevron_right,
+                      onTap: () => _scrollBy(_salesScrollController, 200),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 
