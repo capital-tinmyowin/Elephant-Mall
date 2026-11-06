@@ -325,6 +325,9 @@ class _LoginPageState extends State<LoginPage> {
                 if (value.length < 6) {
                   return 'Password must be at least 6 characters';
                 }
+                if (!RegExp(r'[0-9]').hasMatch(value)) {
+                  return 'Password must include at least one digit';
+                }
                 return null;
               },
               suffixIcon: IconButton(

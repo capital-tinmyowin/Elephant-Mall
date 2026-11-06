@@ -171,7 +171,7 @@ class _HomePageState extends State<HomePage> {
                           )
                         else
                           buildCategories(),
-                        buildTitle("Trending Now in YANGON"),
+                        buildTitle("TRENDING NOW IN PRODUCTS"),
                         sectionGap,
                         if (loading)
                           const CommonLoading(

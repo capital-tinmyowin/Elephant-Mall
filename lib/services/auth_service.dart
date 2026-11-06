@@ -175,7 +175,7 @@ class AuthService extends ChangeNotifier {
           }
           _isLoading = false;
           notifyListeners();
-          // 🔥 Pre-load favourites so the button state is correct on any screen
+          // Pre-load favourites so the button state is correct on any screen
           await getUserFavorites();
           return true;
         } else {
@@ -221,6 +221,15 @@ class AuthService extends ChangeNotifier {
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  void _handleSessionExpired() {
+    _currentUser = null;
+    _token = null;
+    _authCookie = null;
+    _favoriteProductIds.clear();
+    notifyListeners(); // This forces the Header to rebuild
+    debugPrint("Session expired. User logged out.");
   }
 
   // ============= FAVORITES =============
@@ -278,6 +287,10 @@ class AuthService extends ChangeNotifier {
       // print('kIsWeb: $kIsWeb');
       // print('======================');
 
+      if (response.statusCode == 401) {
+        _handleSessionExpired(); // Trigger logout
+        return [];
+      }
       if (response.statusCode == 200) {
         final dynamic data = json.decode(response.body);
 

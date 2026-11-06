@@ -903,16 +903,27 @@ class _ProfilePageState extends State<ProfilePage> {
     required IconData icon,
   }) {
     final isSelected = selectedMenu == index;
-
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final currentUser = authService.currentUser;
     return InkWell(
       onTap: () {
         setState(() {
           selectedMenu = index;
         });
+        if(title == "Favourite"){
+          if (currentUser == null) {
+            print("❌ CURRENT USER IS NULL");
+            print("========================================");
+
+            showUpdateMessage("Please login first.");
+            return;
+          }
+          context.go('/favourites');
+          return;
+        }
 
         if (title == "My Listings") {
           // Get the SAME AuthService instance that was created in main.dart
-          final authService = Provider.of<AuthService>(context, listen: false);
 
           print("========================================");
           print("MY LISTINGS DEBUG");
