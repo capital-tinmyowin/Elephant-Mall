@@ -20,6 +20,7 @@ import 'common/footer.dart';
 import 'login.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import 'common/favorite_helper.dart';
 
 class SellPage extends StatefulWidget {
   final int? productId;
@@ -447,7 +448,7 @@ class _SellPageState extends State<SellPage> {
   bool enableDiscountPrice = false;
   final skuController = TextEditingController();
   final qtyController = TextEditingController();
-
+  final ScrollController _categoryScrollController = ScrollController();
   // final variantqtyController = TextEditingController();
   // final variantpriceController = TextEditingController();
 
@@ -515,6 +516,45 @@ class _SellPageState extends State<SellPage> {
     if (widget.productId != null) {
       loadProduct(widget.productId!);
     }
+  }
+
+  @override
+  void dispose() {
+    _categoryScrollController.dispose();
+
+    titleController.dispose();
+    descriptionController.dispose();
+    priceController.dispose();
+    discountPriceController.dispose();
+    skuController.dispose();
+    qtyController.dispose();
+    locationController.dispose();
+    phoneController.dispose();
+    messengerController.dispose();
+    telegramController.dispose();
+    viberController.dispose();
+    conditionController.dispose();
+
+    super.dispose();
+  }
+
+  void _scrollCategories(bool scrollRight) {
+    if (!_categoryScrollController.hasClients) return;
+
+    final double currentPosition = _categoryScrollController.offset;
+
+    final double targetPosition = scrollRight
+        ? currentPosition + 250
+        : currentPosition - 250;
+
+    _categoryScrollController.animateTo(
+      targetPosition.clamp(
+        0.0,
+        _categoryScrollController.position.maxScrollExtent,
+      ),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   void _selectProductBusinessContactGroup() {
@@ -693,7 +733,7 @@ class _SellPageState extends State<SellPage> {
     if (!mounted) return;
 
     if (_isUnauthorizedError(error)) {
-      await _showLoginRequiredDialog();
+      FavoriteHelper.showLoginRequiredDialog(context);
     }
   }
 
@@ -856,7 +896,7 @@ class _SellPageState extends State<SellPage> {
       setState(() => isLoadingBuyerMethods = false);
 
       if (_isUnauthorizedError(e)) {
-        await _showLoginRequiredDialog();
+        FavoriteHelper.showSessionExpiredDialog(context);
         return;
       }
 
@@ -922,7 +962,7 @@ class _SellPageState extends State<SellPage> {
       });
 
       if (_isUnauthorizedError(e)) {
-        await _showLoginRequiredDialog();
+        FavoriteHelper.showSessionExpiredDialog(context);
         return;
       }
 
@@ -1676,234 +1716,7 @@ class _SellPageState extends State<SellPage> {
                 errorText: titleError,
               ),
             ),
-          ],
-        ),
 
-        const SizedBox(height: 5),
-
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: "Myanmar Crafts & Daily Goods",
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black,
-                    ),
-                  ),
-                  TextSpan(
-                    text: " (Suggected Categories)",
-                    style: TextStyle(
-                      fontSize: 18, // Smaller
-                      fontWeight: FontWeight.w400,
-                      color: Colors.black, // Different color
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 5),
-
-            SizedBox(
-              height: 140,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: categories.length,
-
-                itemBuilder: (context, index) {
-                  final category = categories[index];
-
-                  final isSelected = selectedCategoryIds.contains(
-                    category.categoryId,
-                  );
-
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        categoryError = null;
-
-                        if (isSelected) {
-                          selectedCategoryIds.remove(category.categoryId);
-                        } else {
-                          if (selectedCategoryIds.length >= 3) {
-                            showDialog(
-                              context: context,
-                              builder: (context) {
-                                return AlertDialog(
-                                  backgroundColor: const Color(0xfffdfaf4),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  titlePadding: EdgeInsets.zero,
-
-                                  title: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                      vertical: 16,
-                                    ),
-                                    decoration: const BoxDecoration(
-                                      color: Color(
-                                        0xFF3C6E2A,
-                                      ), // Same green as header
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(16),
-                                        topRight: Radius.circular(16),
-                                      ),
-                                    ),
-                                    child: const Row(
-                                      children: [
-                                        Icon(
-                                          Icons.warning_amber_rounded,
-                                          color: Colors.white,
-                                          size: 28,
-                                        ),
-                                        SizedBox(width: 10),
-                                        Text(
-                                          "Maximum Reached",
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 20,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  content: const Padding(
-                                    padding: EdgeInsets.only(top: 8),
-                                    child: Text(
-                                      "You can select up to 3 categories only.",
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                  ),
-
-                                  actionsPadding: const EdgeInsets.fromLTRB(
-                                    20,
-                                    0,
-                                    20,
-                                    20,
-                                  ),
-
-                                  actions: [
-                                    SizedBox(
-                                      width: 100,
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(
-                                            0xFFC77C2E,
-                                          ), // Gold
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              25,
-                                            ),
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 12,
-                                          ),
-                                        ),
-                                        onPressed: () {
-                                          Navigator.pop(context);
-                                        },
-                                        child: const Text(
-                                          "OK",
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                            return;
-                          }
-
-                          selectedCategoryIds.add(category.categoryId);
-                        }
-                      });
-                    },
-                    child: Container(
-                      width: 100,
-                      margin: const EdgeInsets.only(right: 10),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFF2F6B2F)
-                            : const Color.fromARGB(255, 174, 246, 174),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected
-                              ? const Color(0xFF2F6B2F)
-                              : const Color(0xFFB7DDBA),
-                          width: 2,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Expanded(
-                            flex: 7,
-                            child: Padding(
-                              padding: const EdgeInsets.all(6),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  category.photoPath,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) =>
-                                      const Icon(Icons.image, size: 40),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 3,
-                            child: Center(
-                              child: Text(
-                                category.categoryName,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: isSelected
-                                      ? Colors.white
-                                      : Colors.black,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-
-        if (categoryError != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 6, left: 8),
-            child: Text(
-              categoryError!,
-              style: const TextStyle(color: Colors.red, fontSize: 12),
-            ),
-          ),
-
-        const SizedBox(height: 5),
-
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
             const Text(
               "Product Description",
               style: TextStyle(
@@ -1960,7 +1773,189 @@ class _SellPageState extends State<SellPage> {
               ),
               decoration: _input("Enter condition (e.g., New, Used, Like New)"),
             ),
+          ],
+        ),
 
+        const SizedBox(height: 10),
+
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: "Myanmar Crafts & Daily Goods",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                  TextSpan(
+                    text: " (Suggected Categories)",
+                    style: TextStyle(
+                      fontSize: 18, // Smaller
+                      fontWeight: FontWeight.w400,
+                      color: Colors.black, // Different color
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 5),
+            SizedBox(
+              height: 110,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // CATEGORY LIST
+                  ListView.builder(
+                    controller: _categoryScrollController,
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 35),
+                    itemCount: categories.length,
+                    itemBuilder: (context, index) {
+                      final category = categories[index];
+
+                      final isSelected = selectedCategoryIds.contains(
+                        category.categoryId,
+                      );
+
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            categoryError = null;
+
+                            if (isSelected) {
+                              selectedCategoryIds.remove(category.categoryId);
+                            } else {
+                              if (selectedCategoryIds.length >= 3) {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) {
+                                    return AlertDialog(
+                                      title: const Text("Maximum Reached"),
+                                      content: const Text(
+                                        "You can select up to 3 categories only.",
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: const Text("OK"),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                                return;
+                              }
+
+                              selectedCategoryIds.add(category.categoryId);
+                            }
+                          });
+                        },
+                        child: Container(
+                          width: 85,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? const Color(0xFF2F6B2F)
+                                : const Color.fromARGB(255, 174, 246, 174),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isSelected
+                                  ? const Color(0xFF2F6B2F)
+                                  : const Color(0xFFB7DDBA),
+                              width: 2,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Expanded(
+                                flex: 6,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(5),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Image.network(
+                                      category.photoPath,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) =>
+                                          const Icon(Icons.image, size: 30),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 4,
+                                child: Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 3,
+                                    ),
+                                    child: Text(
+                                      category.categoryName,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: isSelected
+                                            ? Colors.white
+                                            : Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                  // LEFT ARROW OVER CATEGORY LIST
+                  Positioned(
+                    left: 0,
+                    child: _categoryArrowButton(
+                      icon: Icons.arrow_back_ios_new,
+                      onTap: () => _scrollCategories(false),
+                    ),
+                  ),
+
+                  // RIGHT ARROW OVER CATEGORY LIST
+                  Positioned(
+                    right: 0,
+                    child: _categoryArrowButton(
+                      icon: Icons.arrow_forward_ios,
+                      onTap: () => _scrollCategories(true),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+
+        if (categoryError != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 8),
+            child: Text(
+              categoryError!,
+              style: const TextStyle(color: Colors.red, fontSize: 12),
+            ),
+          ),
+
+        const SizedBox(height: 5),
+
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             const SizedBox(height: 10),
 
             /// LOCATION
@@ -2030,6 +2025,26 @@ class _SellPageState extends State<SellPage> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _categoryArrowButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.white,
+      shape: const CircleBorder(),
+      elevation: 3,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 32,
+          height: 32,
+          child: Icon(icon, size: 16, color: Colors.black87),
+        ),
+      ),
     );
   }
 
@@ -2932,7 +2947,7 @@ class _SellPageState extends State<SellPage> {
                           isSubmitting = false;
                         });
 
-                        await _showLoginRequiredDialog();
+                        FavoriteHelper.showSessionExpiredDialog(context);
                         return;
                       }
 
@@ -3005,7 +3020,7 @@ class _SellPageState extends State<SellPage> {
                           isSubmitting = false;
                         });
 
-                        await _showLoginRequiredDialog();
+                        FavoriteHelper.showLoginRequiredDialog(context);
                         return;
                       }
 
@@ -3078,7 +3093,7 @@ class _SellPageState extends State<SellPage> {
                     } else {
                       // HTTP 401 Unauthorized
                       if (apiResponse?.statusCode == 401) {
-                        await _showLoginRequiredDialog();
+                        FavoriteHelper.showSessionExpiredDialog(context);
                         return;
                       }
 
