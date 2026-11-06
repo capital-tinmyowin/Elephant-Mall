@@ -524,7 +524,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
               return Column(
                 children: cats.map((c) {
                   final count = api.categoryCounts[c.categoryId] ?? 0;
-                  return _buildExpandableCategoryItem(c, count, 0); // Call new recursive method
+                  return _buildExpandableCategoryItem(api,c, count, 0); // Call new recursive method
                 }).toList(),
               );
             },
@@ -844,7 +844,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   //   );
   // }
 
-   Widget _buildExpandableCategoryItem(Category cat, int count, int level) {
+   Widget _buildExpandableCategoryItem(ApiService api,Category cat, int count, int level) {
     final isSelected = _currentCategoryId == cat.categoryId;
     final isExpanded = _expandedCategories.contains(cat.categoryId);
     final subcats = _loadedSubcategories[cat.categoryId] ?? [];
@@ -863,8 +863,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
 
             // 2. Fetch subcategories if not loaded
             if (!_loadedSubcategories.containsKey(cat.categoryId)) {
-              final subs = await Provider.of<ApiService>(context, listen: false)
-                  .fetchSubcategories(cat.categoryId);
+              final subs = await api.fetchSubcategories(cat.categoryId);
               setState(() {
                 _loadedSubcategories[cat.categoryId] = subs;
                 // Only expand if it actually has subcategories
@@ -928,7 +927,9 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
         // Render children recursively if expanded
         if (isExpanded && hasSubcats)
           ...subcats.map((subCat) {
-            return _buildExpandableCategoryItem(subCat, 0, level + 1);
+            final count = api.categoryCounts[subCat.categoryId] ?? 0;
+            print('subCategory count $count');
+            return _buildExpandableCategoryItem(api,subCat, count, level + 1);
           }),
       ],
     );

@@ -541,9 +541,39 @@ class AuthService extends ChangeNotifier {
     );
 
     notifyListeners();
-
-    // 🔥 now actually rehydrate favorites from the server
+    // now actually rehydrate favorites from the server
     await getUserFavorites();
     return true;
+  }
+
+  Future<Map<String, dynamic>?> getSellerProfileDetail(int sellerId) async {
+    try {
+      final response = await _client.get(
+        Uri.parse('$_baseUrl/User/getuserprofiledetail/$sellerId'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data is Map<String, dynamic>) return data;
+        if (data is List && data.isNotEmpty) return data.first as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching seller profile detail: $e');
+      return null;
+    }
+  }
+
+  Future<http.Response> postAction(Uri url) async {
+    final headers = <String, String>{'Accept': 'application/json'};
+    if (!kIsWeb && _authCookie != null) headers['Cookie'] = _authCookie!;
+    return await _client.post(url, headers: headers);
+  }
+
+  Future<http.Response> deleteAction(Uri url) async {
+    final headers = <String, String>{'Accept': 'application/json'};
+    if (!kIsWeb && _authCookie != null) headers['Cookie'] = _authCookie!;
+    return await _client.delete(url, headers: headers);
   }
 }

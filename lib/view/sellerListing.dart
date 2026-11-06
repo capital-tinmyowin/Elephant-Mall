@@ -1,7 +1,11 @@
+import 'package:elephant_mall/models/business_contact.dart';
+import 'package:elephant_mall/services/Category_service.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/sellerpagemodel.dart';
 import '../models/SellerInfo.dart';
@@ -62,6 +66,9 @@ class _SellerListingPageState extends State<SellerListingPage> {
 
   static const int pageSize = 10;
   int _currentPage = 1;
+  bool _showContacts = false;
+  List<BusinessContact> _sellerContacts = [];
+  bool _isLoadingContacts = false;
 
   @override
   void initState() {
@@ -631,8 +638,7 @@ class _SellerListingPageState extends State<SellerListingPage> {
                   const SizedBox(width: 8),
                   // Chat Seller
                   GestureDetector(
-                    onTap: () {
-                    },
+                    onTap: _fetchSellerContacts,
                     child: Container(
                       height: mobile ? 28 : 32,
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -663,6 +669,7 @@ class _SellerListingPageState extends State<SellerListingPage> {
                   ),
                 ],
               ),
+              _buildSellerContactsSection(mobile),
             ],
           ),
         ),
@@ -1677,5 +1684,237 @@ class _SellerListingPageState extends State<SellerListingPage> {
         setState(() => favouriteLoadingIds.remove(productId));
       }
     }
+  }
+
+  Future<void> _fetchSellerContacts() async {
+    // If already loaded, just toggle visibility
+    if (_sellerContacts.isNotEmpty) {
+      setState(() => _showContacts = !_showContacts);
+      return;
+    }
+
+    // If no products, we can't fetch contacts
+    if (products.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No products available to fetch contacts from.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoadingContacts = true;
+      _showContacts = true;
+    });
+
+    try {
+      final apiService = context.read<ApiService>();
+      final firstProductId = products.first.productId;
+
+      if (firstProductId == null) {
+        throw Exception('Product ID is null');
+      }
+
+      //  Call the new public method
+      final detailProduct = await apiService.fetchProductDetail(firstProductId);
+
+      if (detailProduct != null) {
+        setState(() {
+          _sellerContacts = detailProduct.businessContacts;
+          _isLoadingContacts = false;
+        });
+      } else {
+        throw Exception('Failed to load product detail');
+      }
+    } catch (e) {
+      debugPrint('Failed to load seller contacts: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingContacts = false;
+          _showContacts = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to load contacts. Please try again.'),
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildSellerContactsSection(bool mobile) {
+    if (!_showContacts) return const SizedBox.shrink();
+
+    if (_isLoadingContacts) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      );
+    }
+
+    if (_sellerContacts.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        alignment: Alignment.center,
+        child: const Text('No contact information available.'),
+      );
+    }
+
+    // Filter unique contacts
+    final Map<String, BusinessContact> uniqueContacts = {};
+    for (var contact in _sellerContacts) {
+      final type = contact.type.toLowerCase();
+      if (type == 'phone' ||
+          type == 'messenger' ||
+          type == 'telegram' ||
+          type == 'viber') {
+        if (!uniqueContacts.containsKey(type) || contact.isPrimary) {
+          uniqueContacts[type] = contact;
+        }
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12, top: 8),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      decoration: BoxDecoration(
+        // color: Colors.grey[50],
+        // borderRadius: BorderRadius.circular(8),
+        // border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Wrap(
+        spacing: 16,
+        runSpacing: 8,
+        alignment: WrapAlignment.center,
+        children: [
+          if (uniqueContacts.containsKey('phone'))
+            _contactIcon(
+              Icons.phone,
+              Colors.green,
+              'Phone',
+              uniqueContacts['phone']!,
+            ),
+          if (uniqueContacts.containsKey('messenger'))
+            _contactIcon(
+              FontAwesomeIcons.facebookMessenger,
+              Colors.blue,
+              'Messenger',
+              uniqueContacts['messenger']!,
+            ),
+          if (uniqueContacts.containsKey('telegram'))
+            _contactIcon(
+              FontAwesomeIcons.telegram,
+              Colors.blue[700]!,
+              'Telegram',
+              uniqueContacts['telegram']!,
+            ),
+          if (uniqueContacts.containsKey('viber'))
+            _contactIcon(
+              FontAwesomeIcons.viber,
+              Colors.purple,
+              'Viber',
+              uniqueContacts['viber']!,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _contactIcon(
+    dynamic icon,
+    Color color,
+    String label,
+    BusinessContact contact,
+  ) {
+    return InkWell(
+      onTap: () async {
+        Uri? uri;
+        final type = contact.type.toLowerCase();
+        final value = contact.value.trim();
+
+        if (type == 'messenger') {
+          String cleanValue = value.trim();
+          if (cleanValue.contains('facebook.com/')) {
+            cleanValue = cleanValue.split('facebook.com/').last;
+          }
+          if (cleanValue.contains('profile.php?id=')) {
+            cleanValue = cleanValue.split('profile.php?id=').last;
+          }
+          if (cleanValue.contains('?')) {
+            cleanValue = cleanValue.split('?').first;
+          }
+          if (cleanValue.endsWith('/')) {
+            cleanValue = cleanValue.substring(0, cleanValue.length - 1);
+          }
+          uri = Uri.parse('https://m.me/$cleanValue');
+        } else if (type == 'telegram') {
+          if (value.startsWith('+')) {
+            uri = Uri.parse('https://t.me/$value');
+          } else {
+            final username = value.startsWith('@') ? value.substring(1) : value;
+            uri = Uri.parse('https://t.me/$username');
+          }
+        } else if (type == 'viber') {
+          String cleanPhone = value.replaceAll(RegExp(r'[\s\-\+]'), '');
+          uri = Uri.parse('viber://chat?number=$cleanPhone');
+        } else {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text('Contact via $label'),
+              content: SelectableText(contact.value),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
+
+        try {
+          final launched = await launchUrl(
+            uri,
+            mode: LaunchMode.externalApplication,
+            webOnlyWindowName: '_blank',
+          );
+          if (!launched && mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Could not open $label')));
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Error: $e')));
+          }
+        }
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            icon is FaIconData
+                ? FaIcon(icon, color: color, size: 20)
+                : Icon(icon as IconData, color: color, size: 20),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

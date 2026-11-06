@@ -305,6 +305,7 @@ class _LoginPageState extends State<LoginPage> {
               Icons.lock_outline,
               "Password",
               controller: _passwordController,
+              obscure: _obscurePassword,
               textInputAction:
                   TextInputAction.done, // Done shows the "Enter" icon
               onFieldSubmitted:

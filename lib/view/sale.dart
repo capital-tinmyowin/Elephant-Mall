@@ -27,7 +27,8 @@ class _SalePageState extends State<SalePage> {
   String selectedCategoryId = ''; // '' = All
   String selectedDiscount = 'Discount %';
   String selectedPrice = 'Price Range';
-  String selectedSort = 'Biggest Savings';
+  String selectedSort = 'Newest';
+  
 
   List<SaleModel> allProducts = [];
   static const int pageSize = 10;
@@ -91,12 +92,12 @@ class _SalePageState extends State<SalePage> {
       result = result.where((p) => p.salePrice > 100000).toList();
     }
 
-    if (selectedSort == 'Biggest Savings') {
-      result.sort(
-        (a, b) => (b.originalPrice - b.salePrice).compareTo(
-          a.originalPrice - a.salePrice,
-        ),
-      );
+    if (selectedSort == 'Newest') {
+      // result.sort(
+      //   (a, b) => (b.originalPrice - b.salePrice).compareTo(
+      //     a.originalPrice - a.salePrice,
+      //   ),
+      // );
     } else if (selectedSort == 'Discount: High to Low') {
       result.sort((a, b) => b.discount.compareTo(a.discount));
     } else if (selectedSort == 'Price: Low to High') {
@@ -470,7 +471,7 @@ class _SalePageState extends State<SalePage> {
                 child: _buildDropdown(
                   value: selectedSort,
                   items: const [
-                    'Biggest Savings',
+                    'Newest',
                     'Discount: High to Low',
                     'Price: Low to High',
                     'Price: High to Low',
@@ -538,7 +539,7 @@ class _SalePageState extends State<SalePage> {
           child: _buildDropdown(
             value: selectedSort,
             items: const [
-              'Biggest Savings',
+              'Newest',
               'Discount: High to Low',
               'Price: Low to High',
               'Price: High to Low',

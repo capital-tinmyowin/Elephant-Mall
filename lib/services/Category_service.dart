@@ -433,11 +433,69 @@ class ApiService extends ChangeNotifier {
   }
 
   // ============= LOAD CATEGORIES =============
-  Future<void> loadCategoryCounts() async {
+  // Future<void> loadCategoryCounts() async {
+  //   try {
+  //     // Fetch the full category list (id + name)
+  //     final url = Uri.parse(
+  //       'https://www.capital-sys.net/CKMMallAPI/api/Category/getallsubcategoriesbycategoryId/7',
+  //     );
+  //     final response = await http
+  //         .get(url, headers: {'Content-Type': 'application/json'})
+  //         .timeout(const Duration(seconds: 15));
+
+  //     if (response.statusCode != 200) return;
+
+  //     final dynamic data = json.decode(response.body);
+  //     List<dynamic> list = [];
+  //     if (data is List) {
+  //       list = data;
+  //     } else if (data is Map<String, dynamic> && data['data'] is List) {
+  //       list = data['data'];
+  //     }
+  //     _categories = list
+  //         .whereType<Map<String, dynamic>>()
+  //         .map(_parseCategoryFromJson)
+  //         .toList();
+  //     _sortedCategories = _categories;
+
+  //     for (final cat in list) {
+  //       if (cat is! Map) continue;
+  //       final id = cat['id'] ?? cat['categoryId'];
+  //       if (id is! int) continue;
+      
+  //       // Fetch products for this category, count them
+  //       try {
+  //         final prodUrl = Uri.parse(
+  //           'https://www.capital-sys.net/CKMMallAPI/api/Category/categoryproductwithparentId/$id',
+  //         );
+  //         final prodRes = await http
+  //             .get(prodUrl, headers: {'Content-Type': 'application/json'})
+  //             .timeout(const Duration(seconds: 10));
+
+  //         if (prodRes.statusCode == 200) {
+  //           final pData = json.decode(prodRes.body);
+  //           int count = 0;
+  //           if (pData is List) {
+  //             count = pData.length;
+  //           } else if (pData is Map<String, dynamic> && pData['data'] is List) {
+  //             count = (pData['data'] as List).length;
+  //           }
+  //           _categoryCounts[id] = count;
+  //         }
+  //       } catch (_) {
+  //         _categoryCounts[id] = 0;
+  //       }
+  //     }
+  //     notifyListeners();
+  //   } catch (e) {
+  //     print('category counts error: $e');
+  //   }
+  // }
+   Future<void> loadCategoryCounts() async {
     try {
-      // Fetch the full category list (id + name)
+      // 1. Fetch categories using the specific root ID (7)
       final url = Uri.parse(
-        'https://www.capital-sys.net/CKMMallAPI/api/category/all',
+        'https://www.capital-sys.net/CKMMallAPI/api/Category/getallsubcategoriesbycategoryId/7',
       );
       final response = await http
           .get(url, headers: {'Content-Type': 'application/json'})
@@ -452,44 +510,75 @@ class ApiService extends ChangeNotifier {
       } else if (data is Map<String, dynamic> && data['data'] is List) {
         list = data['data'];
       }
-      _categories = list
-          .whereType<Map<String, dynamic>>()
-          .map(_parseCategoryFromJson)
-          .toList();
-      _sortedCategories = _sortCategoriesByOrder(_categories);
 
-      for (final cat in list) {
-        if (cat is! Map) continue;
-        final id = cat['id'] ?? cat['categoryId'];
+      // 2. Parse ONLY top-level items and remove duplicates
+      final Set<int> processedIds = {}; 
+      _categories = []; // Reset categories list
+      
+      for (var item in list) {
+        if (item is! Map<String, dynamic>) continue;
+        
+        final id = item['id'] ?? item['categoryId'];
         if (id is! int) continue;
 
-        // Fetch products for this category, count them
-        try {
-          final prodUrl = Uri.parse(
-            'https://www.capital-sys.net/CKMMallAPI/api/Category/categoryproductwithparentId/$id',
-          );
-          final prodRes = await http
-              .get(prodUrl, headers: {'Content-Type': 'application/json'})
-              .timeout(const Duration(seconds: 10));
+        // PREVENT DUPLICATES: If we already processed this ID at the top level, skip it
+        if (processedIds.contains(id)) continue;
+        processedIds.add(id);
 
-          if (prodRes.statusCode == 200) {
-            final pData = json.decode(prodRes.body);
-            int count = 0;
-            if (pData is List) {
-              count = pData.length;
-            } else if (pData is Map<String, dynamic> && pData['data'] is List) {
-              count = (pData['data'] as List).length;
-            }
-            _categoryCounts[id] = count;
-          }
-        } catch (_) {
-          _categoryCounts[id] = 0;
-        }
+        _categories.add(_parseCategoryFromJson(item));
       }
+      
+      _sortedCategories = _categories;
+
+      // 3. Recursively fetch counts for all categories and subcategories
+      for (var category in _categories) {
+        await _fetchRecursiveCounts(category.categoryId);
+      }
+
       notifyListeners();
     } catch (e) {
       print('category counts error: $e');
     }
+  }
+
+  // New recursive method to fetch counts for a category and all its children
+  Future<void> _fetchRecursiveCounts(int categoryId) async {
+    // Fetch the count for this specific category
+    _categoryCounts[categoryId] = await _fetchCategoryProductCount(categoryId);
+
+    // Fetch subcategories for this category
+    final subCats = await fetchSubcategories(categoryId);
+    for (var subCat in subCats) {
+      // Avoid infinite loops if API returns itself as a child
+      if (subCat.categoryId == categoryId) continue; 
+      
+      // Recursively fetch counts for the subcategory
+      await _fetchRecursiveCounts(subCat.categoryId);
+    }
+  }
+
+  //  Helper method to fetch the product count for a specific category
+  Future<int> _fetchCategoryProductCount(int categoryId) async {
+    try {
+      final prodUrl = Uri.parse(
+        'https://www.capital-sys.net/CKMMallAPI/api/Category/categoryproductwithparentId/$categoryId',
+      );
+      final prodRes = await http
+          .get(prodUrl, headers: {'Content-Type': 'application/json'})
+          .timeout(const Duration(seconds: 10));
+
+      if (prodRes.statusCode == 200) {
+        final pData = json.decode(prodRes.body);
+        if (pData is List) {
+          return pData.length;
+        } else if (pData is Map<String, dynamic> && pData['data'] is List) {
+          return (pData['data'] as List).length;
+        }
+      }
+    } catch (_) {
+      return 0;
+    }
+    return 0;
   }
 
   Future<void> loadCategories() async {
@@ -497,7 +586,7 @@ class ApiService extends ChangeNotifier {
     notifyListeners();
     try {
       _categories = await _getCategoriesFromApi();
-      _sortedCategories = _sortCategoriesByOrder(_categories);
+      _sortedCategories = _categories;
     } catch (e) {
       _sortedCategories = _categories;
     } finally {
@@ -567,7 +656,7 @@ class ApiService extends ChangeNotifier {
         } else if (data is Map<String, dynamic> && data['data'] is List) {
           list = data['data'];
         }
-
+      // print("printing"+data);
         // Parse the categories
         final subs = list
             .whereType<Map<String, dynamic>>()
@@ -668,6 +757,15 @@ class ApiService extends ChangeNotifier {
     } catch (e) {
       print(' Product detail error: $e');
       rethrow;
+    }
+  }
+
+  Future<Product?> fetchProductDetail(int productId) async {
+    try {
+      return await _getProductByIdFromApi(productId);
+    } catch (e) {
+      debugPrint('Error fetching product detail: $e');
+      return null;
     }
   }
 
@@ -784,7 +882,7 @@ class ApiService extends ChangeNotifier {
     try {
       //  Log the exact URL being requested
       final url = Uri.parse(
-        'https://www.capital-sys.net/CKMMallAPI/api/category/categoryproduct/$categoryId',
+        'https://www.capital-sys.net/CKMMallAPI/api/category/categoryproductwithparentId/$categoryId',
       );
       // final url = Uri.parse('$baseUrl/products/category/$category');
       print('📡 Requesting: $url');
@@ -1124,6 +1222,4 @@ class ApiService extends ChangeNotifier {
       userId: null,
     );
   }
-
-  
 }
