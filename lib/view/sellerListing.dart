@@ -423,10 +423,15 @@ class _SellerListingPageState extends State<SellerListingPage> {
 
       final existingFavouriteIds = <int>{};
       for (final product in result) {
-        if (product.productId != null && product.favourite == 1) {
-          existingFavouriteIds.add(product.productId!);
+        final id = product.productId;
+        if (id != null && id != 0 && product.favourite == 1) {
+          existingFavouriteIds.add(id);
         }
+        debugPrint(
+          'Product $id favourite=${product.favourite} isEdit=${product.isEdit}',
+        );
       }
+      debugPrint('Seeded favourite ids: $existingFavouriteIds');
 
       if (!mounted) return;
       setState(() {
@@ -2110,41 +2115,58 @@ class _SellerListingPageState extends State<SellerListingPage> {
     );
   }
 
-  // ============================================================
   // FAVOURITE
-  // ============================================================
 
   Future<void> toggleFavourite(Product product) async {
     final productId = product.productId;
-    if (productId == null) return;
+    if (productId == 0) return;
     if (favouriteLoadingIds.contains(productId)) return;
 
+    final authService = context.read<AuthService>();
+
+    // Not logged in → same dialog as other pages
+    if (!authService.isLoggedIn || authService.currentUser == null) {
+      FavoriteHelper.showLoginRequiredDialog(context);
+      return;
+    }
+
     final bool isFavourite = favouriteProductIds.contains(productId);
+
     setState(() => favouriteLoadingIds.add(productId));
 
     try {
-      final authService = context.read<AuthService>();
-      bool success;
+      // Same helper as HomePage
+      await FavoriteHelper.toggleFavorite(
+        context,
+        productId: productId,
+        isCurrentlyFavorite: isFavourite,
+      );
 
-      if (isFavourite) {
-        success = await _service.removeFavourite(
-          authService: authService,
-          productId: productId,
-        );
-        if (!mounted) return;
-        if (success) {
-          setState(() => favouriteProductIds.remove(productId));
+      if (!mounted) return;
+
+      // Sync local UI set from AuthService if it tracks favourites
+      setState(() {
+        if (isFavourite) {
+          favouriteProductIds.remove(productId);
+        } else {
+          favouriteProductIds.add(productId);
         }
-      } else {
-        success = await _service.addFavourite(
-          authService: authService,
-          productId: productId,
-        );
-        if (!mounted) return;
-        if (success) {
-          setState(() => favouriteProductIds.add(productId));
-        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('401') ||
+          msg.contains('unauthorized') ||
+          msg.contains('please login')) {
+        FavoriteHelper.showLoginRequiredDialog(context);
+        return;
       }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => favouriteLoadingIds.remove(productId));
