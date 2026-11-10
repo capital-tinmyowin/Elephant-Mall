@@ -482,6 +482,18 @@ class _SellPageState extends State<SellPage> {
 
   List<Category> categories = [];
   List<int> selectedCategoryIds = [];
+
+  /// Parent main-category id → subcategory tree from API
+  Map<int, List<CategoryNode>> subcategoriesByParentId = {};
+
+  /// Selected subcategory / child ids (any depth)
+  Set<int> selectedSubcategoryIds = {};
+
+  /// Expanded nodes (show children when checked or expanded)
+  Set<int> expandedSubcategoryIds = {};
+
+  bool isLoadingSubcategories = false;
+
   List<ProductVariant> variants = [];
   List<ProductImageSlot> imageSlots = List.generate(
     10,
@@ -836,11 +848,29 @@ class _SellPageState extends State<SellPage> {
         );
       }
 
+      if (categories.isEmpty) {
+        try {
+          final result = await productService.getCategories();
+          if (mounted) setState(() => categories = result);
+        } catch (e) {
+          debugPrint('loadCategories during loadProduct: $e');
+        }
+      }
+
+      final loadedIds = List<int>.from(product.categoryIds);
+      final topLevelIdSet = categories.map((c) => c.categoryId).toSet();
+      final parentIds =
+          loadedIds.where((id) => topLevelIdSet.contains(id)).toList();
+      final subIds =
+          loadedIds.where((id) => !topLevelIdSet.contains(id)).toSet();
+
       setState(() {
-        selectedCategoryIds = List<int>.from(product.categoryIds);
+        selectedCategoryIds =
+            parentIds.isNotEmpty ? parentIds : loadedIds;
+        selectedSubcategoryIds = subIds;
+        expandedSubcategoryIds = Set<int>.from(subIds);
+        subcategoriesByParentId = {};
         imageSlots = loaded;
-        // Keep variants list empty when there was only one variant
-        // so the simple Price/SKU/Qty fields remain enabled.
         variants = loadedVariants.length == 1
             ? <ProductVariant>[]
             : loadedVariants;
@@ -848,6 +878,12 @@ class _SellPageState extends State<SellPage> {
         telegramVisible = product.telegram.trim().isNotEmpty;
         viberVisible = product.viber.trim().isNotEmpty;
       });
+
+      for (final catId in List<int>.from(selectedCategoryIds)) {
+        if (topLevelIdSet.contains(catId) || parentIds.isEmpty) {
+          await _loadSubcategoriesForCategory(catId);
+        }
+      }
 
       _selectProductBusinessContactGroup();
 
@@ -872,6 +908,314 @@ class _SellPageState extends State<SellPage> {
       debugPrint(e.toString());
       await _handleApiError(e);
     }
+  }
+
+  Set<int> _collectNodeIds(List<CategoryNode> nodes) {
+    final ids = <int>{};
+    for (final node in nodes) {
+      for (final n in node.flatten()) {
+        ids.add(n.id);
+      }
+    }
+    return ids;
+  }
+
+  void _clearSubcategoriesForParent(int parentId) {
+    final tree = subcategoriesByParentId[parentId];
+    if (tree != null) {
+      final ids = _collectNodeIds(tree);
+      selectedSubcategoryIds.removeWhere(ids.contains);
+      expandedSubcategoryIds.removeWhere(ids.contains);
+    }
+    subcategoriesByParentId.remove(parentId);
+  }
+
+  Future<void> _loadSubcategoriesForCategory(int categoryId) async {
+    if (subcategoriesByParentId.containsKey(categoryId)) return;
+
+    setState(() => isLoadingSubcategories = true);
+
+    try {
+      final nodes = await productService.getSubcategoriesByCategoryId(
+        categoryId,
+      );
+      if (!mounted) return;
+
+      if (!selectedCategoryIds.contains(categoryId)) {
+        setState(() => isLoadingSubcategories = false);
+        return;
+      }
+
+      setState(() {
+        subcategoriesByParentId[categoryId] = nodes;
+        isLoadingSubcategories = false;
+
+        // Restore any pre-selected ids that appear in this tree (edit mode)
+        final treeIds = _collectNodeIds(nodes);
+        for (final id in List<int>.from(selectedCategoryIds)) {
+          if (treeIds.contains(id)) {
+            selectedSubcategoryIds.add(id);
+          }
+        }
+        for (final id in List<int>.from(selectedSubcategoryIds)) {
+          if (treeIds.contains(id)) {
+            // Expand ancestors path is handled by checkbox parent selection
+            expandedSubcategoryIds.add(id);
+          }
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => isLoadingSubcategories = false);
+      debugPrint('Load subcategories error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load subcategories: $e')),
+      );
+    }
+  }
+
+  Future<void> _toggleMainCategory(Category category) async {
+    final id = category.categoryId;
+    final isSelected = selectedCategoryIds.contains(id);
+
+    if (isSelected) {
+      setState(() {
+        categoryError = null;
+        selectedCategoryIds.remove(id);
+        _clearSubcategoriesForParent(id);
+      });
+      return;
+    }
+
+    if (selectedCategoryIds.length >= 3) {
+      if (!mounted) return;
+      await showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            backgroundColor: const Color(0xfffdfaf4),
+            title: const Text("Maximum Reached"),
+            content: const Text("You can select up to 3 categories only."),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("OK"),
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
+
+    setState(() {
+      categoryError = null;
+      selectedCategoryIds.add(id);
+    });
+
+    await _loadSubcategoriesForCategory(id);
+  }
+
+  List<int> get _categoryIdsForSubmit {
+    return <int>{...selectedCategoryIds, ...selectedSubcategoryIds}.toList();
+  }
+
+  void _toggleSubcategoryNode(CategoryNode node, bool checked) {
+    setState(() {
+      if (checked) {
+        selectedSubcategoryIds.add(node.id);
+        if (node.hasChildren) {
+          expandedSubcategoryIds.add(node.id);
+        }
+      } else {
+        selectedSubcategoryIds.remove(node.id);
+        // Uncheck all descendants
+        for (final n in node.flatten()) {
+          selectedSubcategoryIds.remove(n.id);
+          expandedSubcategoryIds.remove(n.id);
+        }
+      }
+    });
+  }
+
+  Widget _buildSubcategoryCheckboxNode(CategoryNode node, {int depth = 0}) {
+    final isChecked = selectedSubcategoryIds.contains(node.id);
+    final showChildren =
+        node.hasChildren && (isChecked || expandedSubcategoryIds.contains(node.id));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(left: depth * 16.0),
+          child: Row(
+            children: [
+              Checkbox(
+                value: isChecked,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+                activeColor: const Color(0xFF2F6B2F),
+                onChanged: (value) {
+                  _toggleSubcategoryNode(node, value == true);
+                },
+              ),
+              if (node.categoryImageUrl.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: Image.network(
+                      node.categoryImageUrl,
+                      width: 28,
+                      height: 28,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          const Icon(Icons.category, size: 22),
+                    ),
+                  ),
+                ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    _toggleSubcategoryNode(node, !isChecked);
+                  },
+                  child: Text(
+                    node.name,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight:
+                          isChecked ? FontWeight.w700 : FontWeight.w500,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+              ),
+              if (node.hasChildren)
+                IconButton(
+                  icon: Icon(
+                    showChildren
+                        ? Icons.expand_less
+                        : Icons.expand_more,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      if (expandedSubcategoryIds.contains(node.id)) {
+                        expandedSubcategoryIds.remove(node.id);
+                      } else {
+                        expandedSubcategoryIds.add(node.id);
+                      }
+                    });
+                  },
+                ),
+            ],
+          ),
+        ),
+        if (showChildren)
+          for (final child in node.subcategories)
+            _buildSubcategoryCheckboxNode(child, depth: depth + 1),
+      ],
+    );
+  }
+
+  Widget _buildSubcategorySection() {
+    if (selectedCategoryIds.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final parentNames = <int, String>{
+      for (final c in categories) c.categoryId: c.categoryName,
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            const Text(
+              "Subcategories",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
+            ),
+            if (isLoadingSubcategories) ...[
+              const SizedBox(width: 12),
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          "Check a subcategory to select it. Checking an item with children shows the next level.",
+          style: TextStyle(fontSize: 13, color: Colors.black54),
+        ),
+        const SizedBox(height: 8),
+        for (final parentId in selectedCategoryIds) ...[
+          Builder(
+            builder: (context) {
+              final tree = subcategoriesByParentId[parentId];
+              final name = parentNames[parentId] ?? 'Category $parentId';
+
+              if (tree == null) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    isLoadingSubcategories
+                        ? 'Loading subcategories for $name…'
+                        : 'No subcategories loaded for $name',
+                    style: const TextStyle(fontSize: 13, color: Colors.black54),
+                  ),
+                );
+              }
+
+              if (tree.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    'No subcategories for $name',
+                    style: const TextStyle(fontSize: 13, color: Colors.black54),
+                  ),
+                );
+              }
+
+              return Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF7EDD9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFB7DDBA)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2F6B2F),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    for (final node in tree)
+                      _buildSubcategoryCheckboxNode(node),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ],
+    );
   }
 
   Future<void> loadBuyerContactMethods() async {
@@ -1823,39 +2167,7 @@ class _SellPageState extends State<SellPage> {
                       );
 
                       return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            categoryError = null;
-
-                            if (isSelected) {
-                              selectedCategoryIds.remove(category.categoryId);
-                            } else {
-                              if (selectedCategoryIds.length >= 3) {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) {
-                                    return AlertDialog(
-                                      title: const Text("Maximum Reached"),
-                                      content: const Text(
-                                        "You can select up to 3 categories only.",
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context),
-                                          child: const Text("OK"),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                                return;
-                              }
-
-                              selectedCategoryIds.add(category.categoryId);
-                            }
-                          });
-                        },
+                        onTap: () => _toggleMainCategory(category),
                         child: Container(
                           width: 85,
                           margin: const EdgeInsets.only(right: 8),
@@ -1950,6 +2262,9 @@ class _SellPageState extends State<SellPage> {
               style: const TextStyle(color: Colors.red, fontSize: 12),
             ),
           ),
+
+        // Nested subcategories (checkbox) for each selected main category
+        _buildSubcategorySection(),
 
         const SizedBox(height: 5),
 
@@ -2970,7 +3285,7 @@ class _SellPageState extends State<SellPage> {
                           condition: conditionController.text.trim(),
                           status: isActive ? 'Active' : 'Inactive',
                           businessContactGroupId: groupId,
-                          categoryIds: selectedCategoryIds,
+                          categoryIds: _categoryIdsForSubmit,
                           variants: variantsToSend, // ← uses synthetic list
                           images: imagesToKeep, // existing images still kept
                           imageBytes: newImageBytes,
@@ -2998,7 +3313,7 @@ class _SellPageState extends State<SellPage> {
                           condition: conditionController.text.trim(),
                           status: isActive ? 'Active' : 'Inactive',
                           businessContactGroupId: groupId,
-                          categoryIds: selectedCategoryIds,
+                          categoryIds: _categoryIdsForSubmit,
                           variants: variantsToSend, // ← uses synthetic list
                           images: [],
                           imageBytes: newImageBytes,
@@ -3088,7 +3403,11 @@ class _SellPageState extends State<SellPage> {
                           (i) => ProductImageSlot(sortOrder: i + 1),
                         );
                         selectedCategoryIds.clear();
+                        selectedSubcategoryIds.clear();
+                        expandedSubcategoryIds.clear();
+                        subcategoriesByParentId.clear();
                         variants.clear();
+                        agreedToTerms = false;
                       });
                     } else {
                       // HTTP 401 Unauthorized
