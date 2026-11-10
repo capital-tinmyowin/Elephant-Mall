@@ -34,8 +34,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   int _selectedImageIndex = 0;
   bool _isMobile = false;
   List<Product> _sellerProducts = [];
-  bool _pageLoading = true; // 🔥 new
+  bool _pageLoading = true; // new
   String? _pageError;
+  bool _showContacts = false;
+  bool _isFollowing = false;
+  bool _followLoading = false;
 
   @override
   void initState() {
@@ -84,6 +87,16 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       final product = _apiService.selectedProduct;
       final uid = product?.userId;
       if (uid != null) {
+        if (auth.isLoggedIn) {
+          final profileJson = await auth.getSellerProfileDetail(
+            uid,
+          ); // We will add this method to AuthService
+          if (profileJson != null) {
+            setState(() {
+              _isFollowing = profileJson['isFollowing'] ?? false;
+            });
+          }
+        }
         await _apiService.loadSellerProducts(uid);
       }
 
@@ -154,7 +167,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     _pageLoading = true;
                     _pageError = null;
                   });
-                  _loadProduct(); // 🔥 see below
+                  _loadProduct(); // see below
                 },
               );
             } else {
@@ -224,7 +237,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   _buildProductInfo(product),
                   const SizedBox(height: 16),
                   _buildActionButtons(product),
-                  _buildBusinessContacts(product), // Add this
+                  if (_showContacts)
+                    _buildBusinessContacts(product), // Add this
                   const SizedBox(height: 16),
                   _buildDescription(product),
                   _buildSellerInfo(product),
@@ -256,7 +270,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                             _buildProductInfo(product),
                             const SizedBox(height: 16),
                             _buildActionButtons(product),
-                            _buildBusinessContacts(product), // Add this
+                            if (_showContacts)
+                              _buildBusinessContacts(product), // Add this
                             const SizedBox(height: 16),
                             _buildDescription(product),
                             _buildSellerInfo(product),
@@ -286,7 +301,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         Center(child: _buildProductGallery(product)),
         const SizedBox(height: 16),
         _buildActionButtons(product),
-        _buildBusinessContacts(product), //  Add this
+        if (_showContacts) _buildBusinessContacts(product), //  Add this
         const SizedBox(height: 16),
         _buildDescription(product),
         const SizedBox(height: 16),
@@ -699,15 +714,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         Expanded(
           child: ElevatedButton(
             onPressed: () {
-              final sellerName = product.userName != null
-                  ? 'Seller ${product.userName}'
-                  : 'seller';
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('📩 Message sent to $sellerName!'),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
+              setState(() {
+                _showContacts = !_showContacts;
+              });
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2B6E3B),
@@ -717,7 +726,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Ask Seller'),
+            child: Text(_showContacts ? 'Hide Contacts' : 'Ask Seller'),
           ),
         ),
         const SizedBox(width: 12),
@@ -1106,28 +1115,38 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(' You are now following $sellerName!'),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    },
+                    onPressed: _followLoading
+                        ? null
+                        : () => _toggleFollow(product.userId!),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF2B6E3B)),
+                      side: BorderSide(
+                        color: _isFollowing
+                            ? Colors.grey
+                            : const Color(0xFF2B6E3B),
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.add, size: 16),
-                        SizedBox(width: 4),
-                        Text('Follow Seller'),
-                      ],
-                    ),
+                    child: _followLoading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                _isFollowing ? Icons.check : Icons.add,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _isFollowing ? 'Following' : 'Follow Seller',
+                              ),
+                            ],
+                          ),
                   ),
                 ),
               ],
@@ -1194,27 +1213,35 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   ),
                 ),
                 OutlinedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(' You are now following $sellerName!'),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
+                  onPressed: _followLoading
+                      ? null
+                      : () => _toggleFollow(product.userId!),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFF2B6E3B)),
+                    side: BorderSide(
+                      color: _isFollowing
+                          ? Colors.grey
+                          : const Color(0xFF2B6E3B),
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.add, size: 16),
-                      SizedBox(width: 4),
-                      Text('Follow Seller'),
-                    ],
-                  ),
+                  child: _followLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Row(
+                          children: [
+                            Icon(
+                              _isFollowing ? Icons.check : Icons.add,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(_isFollowing ? 'Following' : 'Follow Seller'),
+                          ],
+                        ),
                 ),
               ],
             ),
@@ -1343,5 +1370,59 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _toggleFollow(int sellerId) async {
+    if (_followLoading) return;
+    final auth = Provider.of<AuthService>(context, listen: false);
+
+    if (!auth.isLoggedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to follow this seller')),
+      );
+      return;
+    }
+
+    setState(() => _followLoading = true);
+
+    try {
+      final bool currentlyFollowing = _isFollowing;
+      final String endpoint = currentlyFollowing ? 'unfollow' : 'follow';
+      final url = Uri.parse(
+        'https://www.capital-sys.net/CKMMallAPI/api/UserAction/$endpoint/$sellerId',
+      );
+      final response = currentlyFollowing
+          ? await auth.deleteAction(url) // Unfollow uses DELETE
+          : await auth.postAction(url);
+      //  DEBUG: Print the exact response
+      debugPrint(' $endpoint Status: ${response.statusCode}');
+      debugPrint(' $endpoint Body: ${response.body}');
+      // We use a simple post request, assuming AuthService handles cookies
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        setState(() {
+          _isFollowing = !currentlyFollowing;
+        });
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content: Text(
+        //       _isFollowing
+        //           ? 'Followed successfully!'
+        //           : 'Unfollowed successfully!',
+        //     ),
+        //   ),
+        // );
+      } else {
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   const SnackBar(content: Text('Failed to update follow status')),
+        // );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      setState(() => _followLoading = false);
+    }
   }
 }
