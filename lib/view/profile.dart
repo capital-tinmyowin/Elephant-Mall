@@ -933,7 +933,7 @@ class _ProfilePageState extends State<ProfilePage> {
           final currentUser = authService.currentUser;
 
           if (currentUser == null) {
-            print("❌ CURRENT USER IS NULL");
+            print("CURRENT USER IS NULL");
             print("========================================");
 
             showUpdateMessage("Please login first.");

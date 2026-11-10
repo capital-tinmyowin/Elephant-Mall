@@ -302,21 +302,49 @@ class _SellerStorePageState extends State<SellerStorePage> {
 
     if (confirmed != true || !mounted) return;
 
-    // UI-only deletion. Replace this with your DELETE API call.
-    setState(() {
-      products.removeWhere((item) => item.productId == productId);
+    try {
+      final authService = context.read<AuthService>();
 
-      favouriteProductIds.remove(productId);
-      favouriteLoadingIds.remove(productId);
+      // CALL DELETE API
+      await _service.deleteProduct(productId, authService: authService);
 
-      if (_currentPage > totalPages) {
-        _currentPage = totalPages;
+      if (!mounted) return;
+
+      // Remove from UI only after API succeeds.
+      setState(() {
+        products.removeWhere((item) => item.productId == productId);
+
+        favouriteProductIds.remove(productId);
+        favouriteLoadingIds.remove(productId);
+
+        if (_currentPage > totalPages) {
+          _currentPage = totalPages;
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Product deleted successfully.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      if (_isUnauthorizedError(e)) {
+        await _showLoginRequiredDialog();
+        return;
       }
-    });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Product removed from the displayed list.')),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to delete product: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+
+      debugPrint('Delete product error: $e');
+    }
   }
 
   Future<void> _showLoginRequiredDialog() async {

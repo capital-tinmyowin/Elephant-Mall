@@ -158,9 +158,7 @@ class SellerPageService {
         .toList();
   }
 
-  // ============================================================
   // SELLER PRODUCTS
-  // ============================================================
 
   Future<List<Product>> fetchSellerProducts(
     String sellerId, {
@@ -209,9 +207,44 @@ class SellerPageService {
         .toList();
   }
 
-  // ============================================================
+  Future<void> deleteProduct(
+    int productId, {
+    required AuthService authService,
+  }) async {
+    final url = Uri.parse(
+      'https://www.capital-sys.net/CKMMallAPI/api/Product/DeleteProduct/$productId',
+    );
+
+    http.Client client;
+
+    if (kIsWeb) {
+      client = BrowserClient()..withCredentials = true;
+    } else {
+      client = http.Client();
+    }
+
+    try {
+      final headers = <String, String>{};
+
+      // Mobile: send the authentication cookie manually.
+      // Web: BrowserClient sends cookies using withCredentials.
+      if (!kIsWeb && authService.authCookie != null) {
+        headers['Cookie'] = authService.authCookie!;
+      }
+
+      final response = await client.delete(url, headers: headers);
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception(
+          'Delete product failed (${response.statusCode}): ${response.body}',
+        );
+      }
+    } finally {
+      client.close();
+    }
+  }
+
   // ADD TO FAVOURITE
-  // ============================================================
 
   Future<bool> addFavourite({
     required AuthService authService,
