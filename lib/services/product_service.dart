@@ -89,6 +89,53 @@ class BuyerContactDetail {
   }
 }
 
+/// Nested category / subcategory node from
+/// GET /api/Category/getallsubcategoriesbycategoryId/{id}
+class CategoryNode {
+  final int id;
+  final String name;
+  final String categoryImageUrl;
+  final List<CategoryNode> subcategories;
+
+  CategoryNode({
+    required this.id,
+    required this.name,
+    required this.categoryImageUrl,
+    required this.subcategories,
+  });
+
+  factory CategoryNode.fromJson(Map<String, dynamic> json) {
+    final rawSubs = json['subcategories'];
+    final List<CategoryNode> children = [];
+    if (rawSubs is List) {
+      for (final item in rawSubs) {
+        if (item is Map) {
+          children.add(
+            CategoryNode.fromJson(Map<String, dynamic>.from(item)),
+          );
+        }
+      }
+    }
+    return CategoryNode(
+      id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+      name: json['name']?.toString() ?? '',
+      categoryImageUrl: json['categoryImageUrl']?.toString() ?? '',
+      subcategories: children,
+    );
+  }
+
+  bool get hasChildren => subcategories.isNotEmpty;
+
+  /// Flatten this node and all descendants (depth-first).
+  List<CategoryNode> flatten() {
+    final result = <CategoryNode>[this];
+    for (final child in subcategories) {
+      result.addAll(child.flatten());
+    }
+    return result;
+  }
+}
+
 class ProductService {
   // SAMPLE BUYER CONTACT METHODS
   final List<BuyerContactMethod> _buyerContactMethods = [
@@ -98,7 +145,6 @@ class ProductService {
   ];
 
   // SAMPLE BUYER CONTACT DETAILS
-
   final Map<int, BuyerContactDetail> _buyerContactDetails = {
     1: BuyerContactDetail(
       phoneNumber: '09123456789',
@@ -107,7 +153,6 @@ class ProductService {
       messenger: 'https://m.me/mainbuyer',
       location: 'Yangon',
     ),
-
     2: BuyerContactDetail(
       phoneNumber: '09222222222',
       telegram: '@yangonbuyer',
@@ -115,7 +160,6 @@ class ProductService {
       messenger: 'https://m.me/yangonbuyer',
       location: 'Yangon',
     ),
-
     3: BuyerContactDetail(
       phoneNumber: '09333333333',
       telegram: '@mandalaybuyer',
@@ -124,6 +168,32 @@ class ProductService {
       location: 'Mandalay',
     ),
   };
+
+  /// Extract only the filename from a full image URL or path.
+  /// e.g. "https://.../uploads/PI_1_1_261102151447958.jpg" → "PI_1_1_261102151447958.jpg"
+  static String _imageFileNameOnly(String imageUrlOrPath) {
+    final trimmed = imageUrlOrPath.trim();
+    if (trimmed.isEmpty) return '';
+
+    try {
+      final uri = Uri.parse(trimmed);
+      if (uri.pathSegments.isNotEmpty) {
+        final last = uri.pathSegments.last;
+        if (last.isNotEmpty) return last;
+      }
+    } catch (_) {
+      // fall through to slash-based parse
+    }
+
+    var path = trimmed.split('?').first.split('#').first;
+    final slash = path.lastIndexOf('/');
+    final backslash = path.lastIndexOf('\\');
+    final sep = slash > backslash ? slash : backslash;
+    if (sep >= 0 && sep < path.length - 1) {
+      return path.substring(sep + 1);
+    }
+    return path;
+  }
 
   // GET BUYER CONTACT METHODS / GROUP IDS
   Future<List<BuyerContactMethod>> getBuyerContactMethods({
@@ -277,7 +347,6 @@ class ProductService {
   }
 
   // FIND SELL PRODUCT BY PRODUCT CODE
-
   Future<SellProductModel?> getSellProductByCode(int productId) async {
     final url = Uri.parse(
       'https://www.capital-sys.net/CKMMallAPI/api/Product/GetProductByProductID/$productId',
@@ -292,7 +361,7 @@ class ProductService {
 
     debugPrint(
       'Get product failed: ${response.statusCode} - ${response.body}',
-    ); // debugPrint('GET PRODUCT RESPONSE: ${response.body}');
+    );
 
     if (response.statusCode == 200) {
       return SellProductModel.fromJson(jsonDecode(response.body));
@@ -304,8 +373,6 @@ class ProductService {
   }
 
   // CREATE PRODUCT
-  // ============================================================
-
   Future<ProductApiResponse> createProduct({
     required AuthService authService,
     required String productCode,
@@ -400,27 +467,19 @@ class ProductService {
       http.Response response;
 
       if (kIsWeb) {
-        // Flutter Web:
-        // Browser automatically sends the authentication cookie.
         final client = BrowserClient();
         client.withCredentials = true;
 
         try {
           final streamedResponse = await client.send(request);
-
-          // IMPORTANT:
-          // Convert the streamed response before closing the client.
           response = await http.Response.fromStream(streamedResponse);
         } finally {
           client.close();
         }
       } else {
-        // Android / iOS:
-        // Manually attach the cookie captured during login.
         if (authService.authCookie != null &&
             authService.authCookie!.isNotEmpty) {
           request.headers['Cookie'] = authService.authCookie!;
-
           debugPrint('CREATE AUTH: Authentication cookie attached.');
         } else {
           debugPrint('CREATE AUTH: No authentication cookie found.');
@@ -430,8 +489,6 @@ class ProductService {
 
         try {
           final streamedResponse = await client.send(request);
-
-          // Convert before closing the client.
           response = await http.Response.fromStream(streamedResponse);
         } finally {
           client.close();
@@ -444,7 +501,6 @@ class ProductService {
       debugPrint('Response Headers: ${response.headers}');
       debugPrint('=========================================');
 
-      // Authentication failure
       if (response.statusCode == 401) {
         debugPrint('CREATE RESULT: 401 Unauthorized');
 
@@ -455,7 +511,6 @@ class ProductService {
         );
       }
 
-      // Empty response
       if (response.body.isEmpty) {
         final isSuccess =
             response.statusCode >= 200 && response.statusCode < 300;
@@ -516,8 +571,6 @@ class ProductService {
     }
   }
 
-  // UPDATE PRODUCT
-
   // UPDATE PRODUCT USING PUT + MULTIPART
   Future<ProductApiResponse> updateProduct({
     required AuthService authService,
@@ -552,14 +605,10 @@ class ProductService {
       };
     }).toList();
 
-    // Existing image metadata
+    // Existing image metadata — imageUrl as filename only
     final pImageList = images.map((image) {
-      final String fullImageUrl = image['imageUrl']?.toString() ?? '';
-
-      // Extract only the image filename from the full URL.
-      final String imageFileName = fullImageUrl.isNotEmpty
-          ? Uri.parse(fullImageUrl).pathSegments.last
-          : '';
+      final fullImageUrl = (image['imageUrl'] ?? '').toString();
+      final imageFileName = _imageFileNameOnly(fullImageUrl);
 
       return {
         'id': image['id'] ?? 0,
@@ -602,7 +651,6 @@ class ProductService {
       'businesscontact': businessContacts,
     };
 
-    // IMPORTANT: PUT request with multipart/form-data
     final request = http.MultipartRequest('PUT', url);
 
     request.headers['Accept'] = 'application/json';
@@ -635,7 +683,6 @@ class ProductService {
       late http.Response response;
 
       if (kIsWeb) {
-        // Web: send browser authentication cookies
         final client = BrowserClient();
         client.withCredentials = true;
 
@@ -646,7 +693,6 @@ class ProductService {
           client.close();
         }
       } else {
-        // Android / iOS: attach authentication cookie
         final cookie = authService.authCookie;
 
         if (cookie != null && cookie.isNotEmpty) {
@@ -671,7 +717,6 @@ class ProductService {
       debugPrint('Response Body: ${response.body}');
       debugPrint('Response Headers: ${response.headers}');
 
-      // Authentication failure
       if (response.statusCode == 401) {
         return ProductApiResponse(
           success: false,
@@ -680,7 +725,6 @@ class ProductService {
         );
       }
 
-      // Successful response with no body
       final isHttpSuccess =
           response.statusCode >= 200 && response.statusCode < 300;
 
@@ -694,7 +738,6 @@ class ProductService {
         );
       }
 
-      // Parse JSON response
       dynamic decodedResponse;
 
       try {
@@ -744,70 +787,55 @@ class ProductService {
     }
   }
 
-  // Future<bool> createProduct({
-  //   required String title,
-  //   required String description,
-  //   required String price,
-  //   required String sku,
-  //   required String quantity,
-  //   required String phoneNumber,
-  //   required String messengerLink,
-  //   required String telegram,
-  //   required String viber,
-  //   required List<Uint8List?> images,
-  //   required List<ProductVariant> variants,
-  // }) async {
-  //   var request = http.MultipartRequest(
-  //     'POST',
-  //     Uri.parse('https://www.capital-sys.net/CKMMallAPI/api/saleitem/SaveSaleItem'),
-  //   );
+  /// Subcategories (nested tree) for a parent category.
+  /// GET /api/Category/getallsubcategoriesbycategoryId/{categoryId}
+  Future<List<CategoryNode>> getSubcategoriesByCategoryId(
+    int categoryId,
+  ) async {
+    final url = Uri.parse(
+      'https://www.capital-sys.net/CKMMallAPI/api/Category/getallsubcategoriesbycategoryId/$categoryId',
+    );
 
-  //   request.fields['Title'] = title;
-  //   request.fields['Description'] = description;
-  //   request.fields['Price'] = price;
-  //   request.fields['SKU'] = sku;
-  //   request.fields['Quantity'] = quantity;
-  //   request.fields['PhoneNumber'] = phoneNumber;
-  //   request.fields['MessengerLink'] = messengerLink;
-  //   request.fields['Telegram'] = telegram;
-  //   request.fields['Viber'] = viber;
+    debugPrint('GET SUBCATEGORIES URL: $url');
 
-  //   // Product Variants
-  //   for (int i = 0; i < variants.length; i++) {
-  //     request.fields['Variants[$i].Variant_Name'] = variants[i].variantName;
+    try {
+      final response = await http.get(
+        url,
+        headers: {'Accept': 'application/json'},
+      );
 
-  //     request.fields['Variants[$i].SKU'] = variants[i].sku;
+      debugPrint(
+        'GET SUBCATEGORIES status=${response.statusCode} '
+        'bodyLen=${response.body.length}',
+      );
 
-  //     request.fields['Variants[$i].Price'] = variants[i].variant_Price
-  //         .toString();
-  //   }
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Failed to load subcategories: ${response.statusCode}',
+        );
+      }
 
-  //   // Product Images
-  //   int index = 0;
+      final decoded = jsonDecode(response.body);
+      if (decoded is! List) {
+        throw Exception('Invalid subcategories response (expected list).');
+      }
 
-  //   for (final image in images) {
-  //     if (image != null) {
-  //       request.files.add(
-  //         http.MultipartFile.fromBytes(
-  //           'Images',
-  //           image,
-  //           filename: 'image_$index.jpg',
-  //         ),
-  //       );
+      return decoded
+          .whereType<Map>()
+          .map((e) => CategoryNode.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    } catch (e, st) {
+      debugPrint('getSubcategoriesByCategoryId error: $e');
+      debugPrint('$st');
+      rethrow;
+    }
+  }
 
-  //       index++;
-  //     }
-  //   }
-
-  //   final response = await request.send();
-
-  //   return response.statusCode == 200;
-  // }
-
-  // GET CATEGORIES
-
+  // GET MAIN PRODUCT CATEGORIES (for sell form top-level list)
+  // GET /api/Category/GetMainProductCategories
+  // Flat list with parentId. We expose only direct children of root.
   static const String _categoryUrl =
-      'https://www.capital-sys.net/CKMMallAPI/api/category/all';
+      'https://www.capital-sys.net/CKMMallAPI/api/Category/GetMainProductCategories';
 
   Future<List<Category>> getCategories() async {
     try {
@@ -820,12 +848,53 @@ class ProductService {
         throw Exception('Failed to load categories: ${response.statusCode}');
       }
 
-      final List<dynamic> jsonData = jsonDecode(response.body);
+      final decoded = jsonDecode(response.body);
+      if (decoded is! List) {
+        throw Exception('Invalid categories response (expected list).');
+      }
 
-      final categories = jsonData
-          .map<Category>((json) => Category.fromJson(json))
-          .where((category) => category.categoryName.toLowerCase() != 'root')
+      final List<Map<String, dynamic>> rows = decoded
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
           .toList();
+
+      // Root nodes: parentId == 0 or name == "root"
+      final rootIds = <int>{};
+      for (final row in rows) {
+        final name = (row['name'] ?? '').toString().toLowerCase().trim();
+        final parentId = int.tryParse(row['parentId']?.toString() ?? '') ?? -1;
+        final id = int.tryParse(row['id']?.toString() ?? '') ?? 0;
+        if (parentId == 0 || name == 'root') {
+          rootIds.add(id);
+        }
+      }
+
+      // Main categories = direct children of root
+      final mainRows = rows.where((row) {
+        final parentId = int.tryParse(row['parentId']?.toString() ?? '') ?? -1;
+        final name = (row['name'] ?? '').toString().toLowerCase().trim();
+        if (name == 'root') return false;
+        return rootIds.contains(parentId);
+      }).toList();
+
+      // Map API fields (id/name/image) to Category.fromJson expected keys
+      final categories = mainRows.map((row) {
+        final mapped = <String, dynamic>{
+          'id': row['id'],
+          'categoryId': row['id'],
+          'name': row['name'],
+          'categoryName': row['name'],
+          'categoryImageUrl': row['image'] ?? row['categoryImageUrl'] ?? '',
+          'photoPath': row['image'] ?? row['photoPath'] ?? '',
+          'imageUrl': row['image'],
+        };
+        return Category.fromJson(mapped);
+      }).toList();
+
+      debugPrint(
+        'GetMainProductCategories: total=${rows.length}, '
+        'main=${categories.length}, rootIds=$rootIds',
+      );
 
       return categories;
     } catch (e, stackTrace) {
