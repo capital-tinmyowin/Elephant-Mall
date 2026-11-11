@@ -2144,7 +2144,7 @@ class _SellPageState extends State<SellPage> {
                           margin: const EdgeInsets.only(right: 8),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? const Color.fromARGB(255, 107, 238, 100)
+                                ? const Color.fromARGB(255, 82, 149, 79)
                                 : const Color.fromARGB(255, 186, 238, 182),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
