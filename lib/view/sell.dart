@@ -859,14 +859,15 @@ class _SellPageState extends State<SellPage> {
 
       final loadedIds = List<int>.from(product.categoryIds);
       final topLevelIdSet = categories.map((c) => c.categoryId).toSet();
-      final parentIds =
-          loadedIds.where((id) => topLevelIdSet.contains(id)).toList();
-      final subIds =
-          loadedIds.where((id) => !topLevelIdSet.contains(id)).toSet();
+      final parentIds = loadedIds
+          .where((id) => topLevelIdSet.contains(id))
+          .toList();
+      final subIds = loadedIds
+          .where((id) => !topLevelIdSet.contains(id))
+          .toSet();
 
       setState(() {
-        selectedCategoryIds =
-            parentIds.isNotEmpty ? parentIds : loadedIds;
+        selectedCategoryIds = parentIds.isNotEmpty ? parentIds : loadedIds;
         selectedSubcategoryIds = subIds;
         expandedSubcategoryIds = Set<int>.from(subIds);
         subcategoriesByParentId = {};
@@ -1041,7 +1042,8 @@ class _SellPageState extends State<SellPage> {
   Widget _buildSubcategoryCheckboxNode(CategoryNode node, {int depth = 0}) {
     final isChecked = selectedSubcategoryIds.contains(node.id);
     final showChildren =
-        node.hasChildren && (isChecked || expandedSubcategoryIds.contains(node.id));
+        node.hasChildren &&
+        (isChecked || expandedSubcategoryIds.contains(node.id));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1053,27 +1055,15 @@ class _SellPageState extends State<SellPage> {
               Checkbox(
                 value: isChecked,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+                visualDensity: const VisualDensity(
+                  horizontal: -4,
+                  vertical: -4,
+                ),
                 activeColor: const Color(0xFF2F6B2F),
                 onChanged: (value) {
                   _toggleSubcategoryNode(node, value == true);
                 },
               ),
-              if (node.categoryImageUrl.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: Image.network(
-                      node.categoryImageUrl,
-                      width: 28,
-                      height: 28,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.category, size: 22),
-                    ),
-                  ),
-                ),
               Expanded(
                 child: GestureDetector(
                   onTap: () {
@@ -1083,31 +1073,12 @@ class _SellPageState extends State<SellPage> {
                     node.name,
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight:
-                          isChecked ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: isChecked ? FontWeight.w700 : FontWeight.w500,
                       color: Colors.black87,
                     ),
                   ),
                 ),
               ),
-              if (node.hasChildren)
-                IconButton(
-                  icon: Icon(
-                    showChildren
-                        ? Icons.expand_less
-                        : Icons.expand_more,
-                    size: 20,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      if (expandedSubcategoryIds.contains(node.id)) {
-                        expandedSubcategoryIds.remove(node.id);
-                      } else {
-                        expandedSubcategoryIds.add(node.id);
-                      }
-                    });
-                  },
-                ),
             ],
           ),
         ),
@@ -2173,8 +2144,8 @@ class _SellPageState extends State<SellPage> {
                           margin: const EdgeInsets.only(right: 8),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? const Color(0xFF2F6B2F)
-                                : const Color.fromARGB(255, 174, 246, 174),
+                                ? const Color.fromARGB(255, 107, 238, 100)
+                                : const Color.fromARGB(255, 186, 238, 182),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                               color: isSelected
