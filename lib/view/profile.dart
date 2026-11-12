@@ -910,7 +910,7 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() {
           selectedMenu = index;
         });
-        if(title == "Favourite"){
+        if (title == "Favourite") {
           if (currentUser == null) {
             print("❌ CURRENT USER IS NULL");
             print("========================================");
@@ -1583,13 +1583,40 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   // UPDATE ABOUT
-  void updateAboutMe() {
-    setState(() {
-      about["description"] = aboutController.text.trim();
-      isEditingAbout = false;
-    });
+  Future<void> updateAboutMe() async {
+    final authService = context.read<AuthService>();
+    final currentUser = authService.currentUser;
 
-    showUpdateMessage("About Me updated");
+    // Auth check (same pattern as personal / business)
+    if (currentUser == null || !authService.isLoggedIn) {
+      FavoriteHelper.showLoginRequiredDialog(context);
+      return;
+    }
+
+    final description = aboutController.text.trim();
+
+    try {
+      setState(() => _isLoadingProfile = true);
+
+      await ProfileService(
+        authService: authService,
+      ).updateUserBio(description: description);
+
+      if (!mounted) return;
+
+      setState(() {
+        about['description'] = description;
+        isEditingAbout = false;
+        _isLoadingProfile = false;
+      });
+
+      showUpdateMessage('About Me updated successfully.');
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() => _isLoadingProfile = false);
+      await _handleAuthError(e); // shows session dialog on 401
+    }
   }
 
   // CANCEL ABOUT

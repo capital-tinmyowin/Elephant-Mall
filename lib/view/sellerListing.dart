@@ -710,8 +710,8 @@ class _SellerListingPageState extends State<SellerListingPage> {
                   constraints: const BoxConstraints(maxWidth: 1400),
                   child: Padding(
                     padding: EdgeInsets.symmetric(
-                      horizontal: mobile ? 6 : 20,
-                      vertical: mobile ? 5 : 15,
+                      horizontal: mobile ? 12 : 20,
+                      vertical: mobile ? 10 : 15,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1181,38 +1181,144 @@ class _SellerListingPageState extends State<SellerListingPage> {
   }
 
   Widget buildFilters(bool mobile) {
+    if (mobile) {
+      return Column(
+        children: [
+          Row(
+            children: [
+              Expanded(child: buildCategoryFilter(mobile)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _filterDropdown(
+                  mobile: mobile,
+                  value: selectedPrice,
+                  items: const [
+                    'Price',
+                    'Under 50,000',
+                    '50,000 - 100,000',
+                    'Over 100,000',
+                  ],
+                  onChanged: (v) {
+                    if (v == null) return;
+                    setState(() {
+                      selectedPrice = v;
+                      _currentPage = 1;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _filterDropdown(
+                  mobile: mobile,
+                  value: selectedSort,
+                  items: const [
+                    'Primmys by Price',
+                    'Lowest Price',
+                    'Highest Price',
+                  ],
+                  onChanged: (v) {
+                    if (v == null) return;
+                    setState(() {
+                      selectedSort = v;
+                      _currentPage = 1;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    // Desktop — single row
+    return Row(
+      children: [
+        SizedBox(width: 170, child: buildCategoryFilter(mobile)),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 150,
+          child: _filterDropdown(
+            mobile: mobile,
+            value: selectedPrice,
+            items: const [
+              'Price',
+              'Under 50,000',
+              '50,000 - 100,000',
+              'Over 100,000',
+            ],
+            onChanged: (v) {
+              if (v == null) return;
+              setState(() {
+                selectedPrice = v;
+                _currentPage = 1;
+              });
+            },
+          ),
+        ),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 180,
+          child: _filterDropdown(
+            mobile: mobile,
+            value: selectedSort,
+            items: const ['Primmys by Price', 'Lowest Price', 'Highest Price'],
+            onChanged: (v) {
+              if (v == null) return;
+              setState(() {
+                selectedSort = v;
+                _currentPage = 1;
+              });
+            },
+          ),
+        ),
+        const Spacer(),
+      ],
+    );
+  }
+
+  Widget _filterDropdown({
+    required bool mobile,
+    required String value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
     return SizedBox(
-      height: mobile ? 27 : 36,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            buildCategoryFilter(mobile),
-            SizedBox(width: mobile ? 8 : 12),
-            buildFilter(
-              selectedPrice,
-              ['Price', 'Under 50,000', '50,000 - 100,000', 'Over 100,000'],
-              (value) {
-                setState(() {
-                  selectedPrice = value;
-                  _currentPage = 1;
-                });
-              },
-              mobile,
-            ),
-            SizedBox(width: mobile ? 8 : 12),
-            buildFilter(
-              selectedSort,
-              ['Primmys by Price', 'Lowest Price', 'Highest Price'],
-              (value) {
-                setState(() {
-                  selectedSort = value;
-                  _currentPage = 1;
-                });
-              },
-              mobile,
-            ),
-          ],
+      height: mobile ? 32 : 34,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xffF8F8F8),
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: value,
+            isExpanded: true,
+            isDense: true,
+            icon: Icon(Icons.keyboard_arrow_down, size: mobile ? 16 : 17),
+            style: TextStyle(color: Colors.black87, fontSize: mobile ? 11 : 12),
+            dropdownColor: Colors.white,
+            items: items
+                .map(
+                  (e) => DropdownMenuItem<String>(
+                    value: e,
+                    child: Text(
+                      e,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+                .toList(),
+            onChanged: onChanged,
+          ),
         ),
       ),
     );
@@ -1269,31 +1375,33 @@ class _SellerListingPageState extends State<SellerListingPage> {
   // PRODUCT GRID — NO EDIT BUTTON
 
   Widget buildProductGrid(bool mobile) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        int columns;
-        if (constraints.maxWidth < 500) {
-          columns = 2;
-        } else if (constraints.maxWidth < 800) {
-          columns = 3;
-        } else {
-          columns = 5;
-        }
+    final products = pagedProducts;
 
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: pagedProducts.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: columns,
-            crossAxisSpacing: mobile ? 6 : 10,
-            mainAxisSpacing: mobile ? 6 : 10,
-            childAspectRatio: mobile ? 0.62 : 1.1,
+    if (products.isEmpty) {
+      return const SizedBox(
+        height: 200,
+        child: Center(
+          child: Text(
+            'No products found.',
+            style: TextStyle(color: Colors.grey),
           ),
-          itemBuilder: (context, index) {
-            return buildProductCard(pagedProducts[index], mobile);
-          },
-        );
+        ),
+      );
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: products.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: mobile ? 2 : 5,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        // Tighter height = less empty space under the button
+        mainAxisExtent: mobile ? 250 : 260,
+      ),
+      itemBuilder: (context, index) {
+        return buildProductCard(products[index], mobile);
       },
     );
   }
@@ -1309,48 +1417,58 @@ class _SellerListingPageState extends State<SellerListingPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image only — no edit button
+          // IMAGE
           SizedBox(
-            height: mobile ? 75 : 145,
+            height: mobile ? 145 : 155,
             width: double.infinity,
             child: _buildProductImage(product.imageUrl, mobile),
           ),
+
+          // NAME
           Padding(
-            padding: const EdgeInsets.fromLTRB(4, 3, 4, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product.productName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: mobile ? 9 : 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${formatPrice(product.price.toString())} Kyat',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: mobile ? 9.5 : 13,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-              ],
+            padding: const EdgeInsets.fromLTRB(6, 4, 6, 0),
+            child: Text(
+              product.productName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: mobile ? 12 : 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
             ),
           ),
+
+          // PRICE
           Padding(
-            padding: const EdgeInsets.fromLTRB(6, 4, 6, 6),
+            padding: const EdgeInsets.fromLTRB(6, 2, 6, 0),
+            child: Text(
+              '${formatPrice(product.price.toString())} Kyat',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: mobile ? 12 : 13,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+          ),
+
+          // Pushes button row to the bottom of the card
+          const SizedBox(height: 8),
+          // VIEW DETAILS + HEART (tight to bottom)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              6,
+              0,
+              6,
+              6,
+            ), // small gap to card border
             child: Row(
               children: [
                 Expanded(
                   child: SizedBox(
-                    height: mobile ? 22 : 28,
+                    height: mobile ? 28 : 30,
                     child: ElevatedButton(
                       onPressed: () {
                         if (product.productId != null) {
@@ -1369,7 +1487,7 @@ class _SellerListingPageState extends State<SellerListingPage> {
                       child: Text(
                         'View Details',
                         style: TextStyle(
-                          fontSize: mobile ? 9 : 11,
+                          fontSize: mobile ? 10 : 11,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -1382,25 +1500,18 @@ class _SellerListingPageState extends State<SellerListingPage> {
                       ? null
                       : () => toggleFavourite(product),
                   child: SizedBox(
-                    width: mobile ? 26 : 32,
-                    height: mobile ? 26 : 32,
+                    width: mobile ? 28 : 32,
+                    height: mobile ? 28 : 32,
                     child: favouriteLoadingIds.contains(product.productId)
-                        ? Padding(
-                            padding: const EdgeInsets.all(6),
-                            child: CircularProgressIndicator(
-                              strokeWidth: 1.8,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                favouriteProductIds.contains(product.productId)
-                                    ? Colors.red
-                                    : Colors.grey.shade600,
-                              ),
-                            ),
+                        ? const Padding(
+                            padding: EdgeInsets.all(6),
+                            child: CircularProgressIndicator(strokeWidth: 1.8),
                           )
                         : Icon(
                             favouriteProductIds.contains(product.productId)
                                 ? Icons.favorite
                                 : Icons.favorite_border,
-                            size: mobile ? 18 : 22,
+                            size: mobile ? 20 : 22,
                             color:
                                 favouriteProductIds.contains(product.productId)
                                 ? Colors.red

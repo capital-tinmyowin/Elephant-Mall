@@ -1317,20 +1317,20 @@ class _SellerStorePageState extends State<SellerStorePage> {
 
   Widget buildProductGrid(bool mobile) {
     final list = pagedProducts;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         int columns;
 
         if (constraints.maxWidth < 500) {
-          columns = 2; // phone
+          columns = 2; // Phone
         } else if (constraints.maxWidth < 800) {
-          columns = 3; // tablet
+          columns = 3; // Tablet
         } else {
-          columns = 5; // laptop / desktop — always 5 per row
+          columns = 5; // Laptop / desktop
         }
 
         const spacing = 5.0;
-        final list = pagedProducts;
 
         return GridView.builder(
           shrinkWrap: true,
@@ -1340,9 +1340,7 @@ class _SellerStorePageState extends State<SellerStorePage> {
             crossAxisCount: columns,
             crossAxisSpacing: spacing,
             mainAxisSpacing: spacing,
-            childAspectRatio: mobile
-                ? 0.72
-                : 1.10, // tweak if cards feel too tall/short
+            mainAxisExtent: mobile ? 250 : 260,
           ),
           itemBuilder: (context, index) {
             return buildProductCard(list[index], mobile);
@@ -1367,7 +1365,7 @@ class _SellerStorePageState extends State<SellerStorePage> {
         children: [
           // PRODUCT IMAGE + EDIT BUTTON
           SizedBox(
-            height: mobile ? 75 : 145,
+            height: mobile ? 145 : 155,
             width: double.infinity,
             child: Stack(
               children: [

@@ -527,7 +527,7 @@ class _NewInPageState extends State<NewInPage> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         image: const DecorationImage(
-          image: AssetImage('assets/newarrival1.png'),
+          image: AssetImage('assets/'),
           fit: BoxFit.cover,
           alignment:
               Alignment.centerRight, //  keep the products visible on the right
