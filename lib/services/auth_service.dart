@@ -305,18 +305,18 @@ class AuthService extends ChangeNotifier {
           }
         }
 
-         final products = items.whereType<Map<String, dynamic>>().map((json) {
+        final products = items.whereType<Map<String, dynamic>>().map((json) {
           // 1. Extract categoryId (e.g., "9,10")
           final rawCatId = json['categoryId']?.toString() ?? '';
-          
+
           // 2. Create the product from JSON
           final p = Product.fromJson(json);
 
           // 3. If the product category is empty, try to find the name
           if (p.category.isEmpty && rawCatId.isNotEmpty) {
-            // Here we need the ApiService categories. 
+            // Here we need the ApiService categories.
             // Since we can't easily access it, we will resolve this in the UI.
-            // For now, we will pass the rawCatId to a temporary variable 
+            // For now, we will pass the rawCatId to a temporary variable
             // (You might need to update your Product model to accept a list of IDs).
           }
 
@@ -383,9 +383,9 @@ class AuthService extends ChangeNotifier {
             headers: headers,
           )
           .timeout(const Duration(seconds: 15));
-           if (response.statusCode == 401) {
+      if (response.statusCode == 401) {
         await logout(); // Force logout locally
-         _errorMessage = 'Session has expired (401)';
+        _errorMessage = 'Session has expired (401)';
         notifyListeners();
         return false;
       }
@@ -459,9 +459,9 @@ class AuthService extends ChangeNotifier {
           .delete(uri, headers: headers)
           .timeout(const Duration(seconds: 15));
 
-           if (response.statusCode == 401) {
+      if (response.statusCode == 401) {
         await logout(); // Force logout locally
-         _errorMessage = 'Session has expired (401)';
+        _errorMessage = 'Session has expired (401)';
         notifyListeners();
         return false;
       }
@@ -548,15 +548,18 @@ class AuthService extends ChangeNotifier {
 
   Future<Map<String, dynamic>?> getSellerProfileDetail(int sellerId) async {
     try {
-      final response = await _client.get(
-        Uri.parse('$_baseUrl/User/getuserprofiledetail/$sellerId'),
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 15));
+      final response = await _client
+          .get(
+            Uri.parse('$_baseUrl/User/getuserprofiledetail/$sellerId'),
+            headers: {'Content-Type': 'application/json'},
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data is Map<String, dynamic>) return data;
-        if (data is List && data.isNotEmpty) return data.first as Map<String, dynamic>;
+        if (data is List && data.isNotEmpty)
+          return data.first as Map<String, dynamic>;
       }
       return null;
     } catch (e) {
@@ -575,5 +578,29 @@ class AuthService extends ChangeNotifier {
     final headers = <String, String>{'Accept': 'application/json'};
     if (!kIsWeb && _authCookie != null) headers['Cookie'] = _authCookie!;
     return await _client.delete(url, headers: headers);
+  }
+
+  Future<Map<String, dynamic>?> performSearch({
+    required String query,
+    required String relatedPage,
+  }) async {
+    try {
+      final encodedQuery = Uri.encodeComponent(query);
+      final url = Uri.parse(
+        '$_baseUrl/Search/Search?searchData=$encodedQuery&relatedPage=$relatedPage',
+      );
+
+      final response = await _client
+          .get(url, headers: {'Accept': 'application/json'})
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Search Error: $e');
+      return null;
+    }
   }
 }

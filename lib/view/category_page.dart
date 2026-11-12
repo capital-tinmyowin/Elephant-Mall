@@ -77,21 +77,23 @@ class _CategoryPageState extends State<CategoryPage> {
           children: [
             //  Header - ONLY on Desktop (NOT mobile)
             const CommonHeader(),
-            Expanded(
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                padding: const EdgeInsets.only(bottom: 30.0),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isMobile ? 8.0 : 16.0,
-                    vertical: 16.0,
+            if (!isMobile)
+              Expanded(child: _buildDesktopLayout())
+            // MOBILE: Keep the standard scroll
+            else
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.only(bottom: 30.0),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 8.0 : 16.0,
+                      vertical: 16.0,
+                    ),
+                    child: _buildMobileLayout(),
                   ),
-                  child: isMobile
-                      ? _buildMobileLayout()
-                      : _buildDesktopLayout(),
                 ),
               ),
-            ),
             //  Footer - ONLY on Desktop (NOT mobile)
             if (!isMobile) const CommonFooter(),
           ],
@@ -133,58 +135,6 @@ class _CategoryPageState extends State<CategoryPage> {
 
               // DARK OVERLAY
               Container(color: Colors.black.withValues(alpha: 0.25)),
-
-              // TEXT
-              // Positioned(
-              //   left: isMobile ? 15 : 40,
-              //   top: isMobile ? 15 : 40,
-              //   right: 10,
-              //   child: Column(
-              //     crossAxisAlignment: CrossAxisAlignment.start,
-              //     children: [
-              //       Text(
-              //         'YANGON SUMMER HEATWAVE SAVINGS!',
-              //         maxLines: 1,
-              //         overflow: TextOverflow.ellipsis,
-              //         style: TextStyle(
-              //           color: Colors.white,
-              //           fontSize: isMobile ? 14 : 28,
-              //           fontWeight: FontWeight.bold,
-              //         ),
-              //       ),
-
-              //       const SizedBox(height: 8),
-
-              //       Text(
-              //         'Cool styles for Yangon’s hottest days.',
-              //         maxLines: 2,
-              //         overflow: TextOverflow.ellipsis,
-              //         style: TextStyle(
-              //           color: Colors.white,
-              //           fontSize: isMobile ? 11 : 16,
-              //         ),
-              //       ),
-
-              //       const SizedBox(height: 15),
-
-              //       ElevatedButton(
-              //         style: ElevatedButton.styleFrom(
-              //           backgroundColor: Colors.orange,
-              //           shape: RoundedRectangleBorder(
-              //             borderRadius: BorderRadius.circular(20),
-              //           ),
-              //         ),
-              //         onPressed: () {},
-              //         child: const Text(
-              //           'SHOP NOW',
-              //           style: TextStyle(
-              //             color: Colors.white,
-              //           ),
-              //         ),
-              //       ),
-              //     ],
-              //   ),
-              // ),
             ],
           ),
         ),
@@ -194,29 +144,41 @@ class _CategoryPageState extends State<CategoryPage> {
 
   // ============= DESKTOP LAYOUT =============
   Widget _buildDesktopLayout() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Left Column - Products
-        Expanded(
-          flex: 3,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              buildHero(),
-              // _buildHeroCarousel(false),
-              const SizedBox(height: 16),
-              _buildProducts(),
-            ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Left Column - Products
+          Expanded(
+            flex: 3,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  buildHero(),
+                  // _buildHeroCarousel(false),
+                  const SizedBox(height: 16),
+                  _buildProducts(),
+                ],
+              ),
+            ),
           ),
-        ),
-        // Right Column - Trending Sidebar
-        const SizedBox(width: 16),
-        SizedBox(
-          width: 320, //  Fixed width for sidebar
-          child: _buildTrendingSidebar(),
-        ),
-      ],
+          // Right Column - Trending Sidebar
+          const SizedBox(width: 16),
+          SizedBox(
+            width: 320,
+            child: Container(
+              // This forces the sidebar to stick within the viewport
+              height: MediaQuery.of(context).size.height - 100,
+              child: SingleChildScrollView(
+                // This allows the sidebar to scroll internally IF the trending list is too long
+                child: _buildTrendingSidebar(),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -654,47 +616,44 @@ class _CategoryPageState extends State<CategoryPage> {
           );
         }
 
-        return Wrap(
-          spacing: 20,
-          runSpacing: 5,
-          children: categories.map((category) {
-            return Container(
-              width: 100, // Fixed width for single product
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    height: 120,
-                    child: Center(
-                      child: Container(
-                        width: 100.0,
-                        padding: const EdgeInsets.only(right: 5.0),
-                        child: Center(child: _buildProductCard(category)),
-                      ),
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: categories.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            // 6 columns on desktop, 3 on mobile (adjust as needed)
+            crossAxisCount: MediaQuery.of(context).size.width < 800 ? 3 : 6,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            mainAxisExtent: 160, // Height to fit image + text
+          ),
+          itemBuilder: (context, index) {
+            final category = categories[index];
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(child: _buildProductCard(category)),
+                const SizedBox(height: 4),
+                GestureDetector(
+                  onTap: () {
+                    context.go(
+                      '/category/${category.categoryId}?name=${Uri.encodeComponent(category.categoryName)}',
+                    );
+                  },
+                  child: Text(
+                    category.categoryName,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2B6E3B),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  GestureDetector(
-                    onTap: () {
-                      context.go(
-                        '/category/${category.categoryId}?name=${Uri.encodeComponent(category.categoryName)}',
-                      );
-                    },
-                    child: Center(
-                      child: Text(
-                        category.categoryName,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2B6E3B),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             );
-          }).toList(),
+          },
         );
       },
     );
@@ -703,14 +662,11 @@ class _CategoryPageState extends State<CategoryPage> {
   // ============= DESKTOP PRODUCT CARD =============
   Widget _buildProductCard(Category category) {
     return GestureDetector(
-      // onTap: () {
-      //   Navigator.push(
-      //     context,
-      //     MaterialPageRoute(
-      //       builder: (context) => ProductDetailPage(productId: product.productId),
-      //     ),
-      //   );
-      // },
+      onTap: () {
+        context.go(
+          '/category/${category.categoryId}?name=${Uri.encodeComponent(category.categoryName)}',
+        );
+      },
       child: Container(
         height: 130,
         decoration: BoxDecoration(
@@ -739,37 +695,6 @@ class _CategoryPageState extends State<CategoryPage> {
                 ),
               ),
             ),
-            // Padding(
-            //   padding: const EdgeInsets.all(2.0),
-            //   child: SizedBox(
-            //     width: double.infinity,
-            //     height: 20,
-            //     child: ElevatedButton(
-            //       onPressed: () {
-            //         Navigator.push(
-            //           context,
-            //           MaterialPageRoute(
-            //             builder: (context) =>
-            //                 ProductDetailPage(productId: product.productId),
-            //           ),
-            //         );
-            //       },
-            //       style: ElevatedButton.styleFrom(
-            //         backgroundColor: Colors.grey[100],
-            //         foregroundColor: const Color(0xFF2B6E3B),
-            //         padding: const EdgeInsets.symmetric(vertical: 3),
-            //         shape: RoundedRectangleBorder(
-            //           borderRadius: BorderRadius.circular(20),
-            //         ),
-            //         minimumSize: const Size(double.infinity, 22),
-            //       ),
-            //       child: const Text(
-            //         'View Details',
-            //         style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800),
-            //       ),
-            //     ),
-            //   ),
-            // ),
           ],
         ),
       ),
@@ -1018,7 +943,7 @@ class _CategoryPageState extends State<CategoryPage> {
   // ============= TRENDING ITEM =============
   Widget _buildTrendingItem(Product product, bool isCompact) {
     final bool isMobile = MediaQuery.of(context).size.width < 768;
-      // print(product.image);
+    // print(product.image);
     return GestureDetector(
       onTap: () {
         context.go('/product/${product.productId}');
