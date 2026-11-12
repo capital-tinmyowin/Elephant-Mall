@@ -274,7 +274,7 @@ class _SalePageState extends State<SalePage> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         image: const DecorationImage(
-          image: AssetImage('assets/sale.png'),
+          image: AssetImage('assets/'),
           fit: BoxFit.fill,
           alignment: Alignment(0, -0.3),
         ),

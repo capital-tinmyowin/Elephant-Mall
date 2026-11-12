@@ -34,11 +34,15 @@ class FavoriteHelper {
     if (success) {
       // Refresh the global favorites list to sync hearts
       await authService.getUserFavorites();
-      
+
       if (!context.mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(isCurrentlyFavorite ? 'Removed from favourites' : 'Added to favourites ❤️'),
+          content: Text(
+            isCurrentlyFavorite
+                ? 'Removed from favourites'
+                : 'Added to favourites ❤️',
+          ),
           duration: const Duration(seconds: 1),
         ),
       );
@@ -46,13 +50,17 @@ class FavoriteHelper {
     } else {
       //  Handle Session Timeout (401)
       final error = authService.errorMessage?.toLowerCase() ?? '';
-      if (error.contains('401') || error.contains('unauthorized') || error.contains('session has expired')) {
+      if (error.contains('401') ||
+          error.contains('unauthorized') ||
+          error.contains('session has expired')) {
         _showSessionExpiredDialog(context);
       } else {
         // Show standard error message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authService.errorMessage ?? 'Could not update favourite'),
+            content: Text(
+              authService.errorMessage ?? 'Could not update favourite',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -70,7 +78,10 @@ class FavoriteHelper {
           children: [
             Icon(Icons.lock_outline, color: Color(0xFFC77C2E), size: 28),
             SizedBox(width: 10),
-            Text('Login Required', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              'Login Required',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         content: const Text(
@@ -92,9 +103,14 @@ class FavoriteHelper {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2B6E3B),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
             ),
-            child: const Text('Sign In', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Sign In',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -111,7 +127,10 @@ class FavoriteHelper {
           children: [
             Icon(Icons.lock_clock, color: Color(0xFFC77C2E), size: 28),
             SizedBox(width: 10),
-            Text("Session Expired", style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              "Session Expired",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         content: const Text(
@@ -128,13 +147,18 @@ class FavoriteHelper {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFC77C2E),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
             ),
             onPressed: () {
               Navigator.pop(dialogContext);
               context.push('/login');
             },
-            child: const Text("Log In", style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              "Log In",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -200,21 +224,17 @@ class FavoriteHelper {
             Icon(Icons.lock_clock, color: Color(0xFFC77C2E), size: 28),
             SizedBox(width: 10),
             Text(
-              "Session Expired",
+              'Session Expired',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ],
         ),
         content: const Text(
-          "Your session has expired or you are not logged in.\n\n"
-          "Please log in to continue.",
+          'Your session has expired or you are not logged in.\n\n'
+          'Please log in to continue.',
           style: TextStyle(fontSize: 16),
         ),
         actions: [
-          // TextButton(
-          //   onPressed: () => Navigator.pop(dialogContext),
-          //   child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
-          // ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFC77C2E),
@@ -223,12 +243,18 @@ class FavoriteHelper {
                 borderRadius: BorderRadius.circular(25),
               ),
             ),
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              context.push('/login');
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+
+              // Clear stale login state so redirect allows /login
+              final auth = Provider.of<AuthService>(context, listen: false);
+              await auth.logout(); // or clearSession() / whatever you have
+
+              if (!context.mounted) return;
+              GoRouter.of(context).go('/login');
             },
             child: const Text(
-              "Log In",
+              'Log In',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
@@ -236,6 +262,4 @@ class FavoriteHelper {
       ),
     );
   }
-
-
 }

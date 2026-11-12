@@ -311,7 +311,7 @@ class ProfileService {
     required String email,
     required String phone,
     required String role,
-    required String dateOfBirth,  
+    required String dateOfBirth,
     required String gender,
     required String location,
   }) async {
@@ -403,8 +403,88 @@ class ProfileService {
     }
   }
 
+  Future<Map<String, dynamic>> updateUserBio({
+    required String description,
+  }) async {
+    final url = Uri.parse(
+      'https://www.capital-sys.net/CKMMallAPI/api/User/UpdateUserBio',
+    );
+
+    final body = jsonEncode({'description': description});
+
+    debugPrint('========== UPDATE BIO REQUEST ==========');
+    debugPrint('Method: PATCH');
+    debugPrint('URL: $url');
+    debugPrint('Body: $body');
+    debugPrint('========================================');
+
+    late http.Response response;
+
+    if (kIsWeb) {
+      final client = BrowserClient()..withCredentials = true;
+      try {
+        response = await client.patch(
+          // ← PATCH
+          url,
+          headers: const {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: body,
+        );
+      } finally {
+        client.close();
+      }
+    } else {
+      final headers = <String, String>{
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      };
+
+      final cookie = authService.authCookie;
+      if (cookie != null && cookie.isNotEmpty) {
+        headers['Cookie'] = cookie;
+      }
+
+      final client = http.Client();
+      try {
+        response = await client.patch(
+          url,
+          headers: headers,
+          body: body,
+        ); // ← PATCH
+      } finally {
+        client.close();
+      }
+    }
+
+    debugPrint('UPDATE BIO STATUS: ${response.statusCode}');
+    debugPrint('UPDATE BIO BODY: ${response.body}');
+
+    if (response.statusCode == 401) {
+      throw Exception('Unauthorized (401). Please log in again.');
+    }
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Failed to update bio (${response.statusCode}): ${response.body}',
+      );
+    }
+
+    if (response.body.trim().isEmpty) {
+      return {'success': true};
+    }
+
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) return decoded;
+      return {'data': decoded};
+    } catch (_) {
+      return {'message': response.body};
+    }
+  }
+
   // LOG AND PARSE UPLOAD RESPONSE
-  // ============================================================
   Map<String, dynamic> _parseUploadResponse(
     http.Response response, {
     required String uploadType,
