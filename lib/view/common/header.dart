@@ -24,8 +24,14 @@ class CommonHeader extends StatefulWidget {
 
 class _CommonHeaderState extends State<CommonHeader> {
   bool _isMenuOpen = false;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
+  void dispose() {
+    _searchController.dispose(); // Dispose it
+    super.dispose();
+  }
+
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 800;
     final authService = Provider.of<AuthService>(context);
@@ -111,7 +117,46 @@ class _CommonHeaderState extends State<CommonHeader> {
                       width: 300,
                       height: 42,
                       child: TextField(
+                        controller: _searchController,
                         textAlignVertical: TextAlignVertical.center,
+                        onSubmitted: (value) {
+                          if (value.trim().isNotEmpty) {
+                            // Determine current page name
+                            final currentPath = GoRouterState.of(
+                              context,
+                            ).uri.path;
+                            String relatedPage = 'Home';
+
+                            if (currentPath.startsWith('/category'))
+                              relatedPage = 'Categories';
+                            else if (currentPath.startsWith('/sale'))
+                              relatedPage = 'Sale';
+                            else if (currentPath.startsWith('/new-in'))
+                              relatedPage = 'NewIn';
+                            else if (currentPath.startsWith('/product'))
+                              relatedPage = 'Product';
+                            else if (currentPath.startsWith('category/'))
+                              relatedPage = 'CategoryDetails';
+                            else if (currentPath.startsWith('/favourites'))
+                              relatedPage = 'Favorites';
+
+                            // Navigate to SearchPage
+                            if (currentPath == '/search') {
+                              relatedPage =
+                                  GoRouterState.of(
+                                    context,
+                                  ).uri.queryParameters['page'] ??
+                                  'Home';
+                            }
+
+                            context.pushReplacement(
+                              '/search?q=${Uri.encodeComponent(value.trim())}&page=$relatedPage',
+                            );
+
+                            _searchController.clear();
+                            FocusScope.of(context).unfocus();
+                          }
+                        },
                         decoration: InputDecoration(
                           hintText: "Search",
                           prefixIcon: const Icon(Icons.search, size: 20),

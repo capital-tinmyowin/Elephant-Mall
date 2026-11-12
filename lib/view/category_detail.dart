@@ -105,7 +105,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 768;
+    final isMobile = MediaQuery.of(context).size.width < 900;
 
     return ChangeNotifierProvider.value(
       value: _apiService,
@@ -524,7 +524,12 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
               return Column(
                 children: cats.map((c) {
                   final count = api.categoryCounts[c.categoryId] ?? 0;
-                  return _buildExpandableCategoryItem(api,c, count, 0); // Call new recursive method
+                  return _buildExpandableCategoryItem(
+                    api,
+                    c,
+                    count,
+                    0,
+                  ); // Call new recursive method
                 }).toList(),
               );
             },
@@ -613,7 +618,6 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
           //     }).toList(),
           //   ),
           // ),
-
           const SizedBox(height: 8),
 
           // Color Section with Toggle
@@ -844,14 +848,19 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   //   );
   // }
 
-   Widget _buildExpandableCategoryItem(ApiService api,Category cat, int count, int level) {
+  Widget _buildExpandableCategoryItem(
+    ApiService api,
+    Category cat,
+    int count,
+    int level,
+  ) {
     final isSelected = _currentCategoryId == cat.categoryId;
     final isExpanded = _expandedCategories.contains(cat.categoryId);
     final subcats = _loadedSubcategories[cat.categoryId] ?? [];
     final hasSubcats = subcats.isNotEmpty;
-    
+
     //CHANGE: Only show arrow if subcategories actually exist
-    final showArrow = hasSubcats; 
+    final showArrow = hasSubcats;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -898,8 +907,12 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                     cat.categoryName,
                     style: TextStyle(
                       fontSize: 14,
-                      color: isSelected ? const Color(0xFF2B6E3B) : Colors.black87,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                      color: isSelected
+                          ? const Color(0xFF2B6E3B)
+                          : Colors.black87,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
                   ),
                 ),
@@ -909,7 +922,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                   style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                 ),
                 const SizedBox(width: 4),
-                
+
                 // Show Arrow if has subcategories
                 if (showArrow)
                   Icon(
@@ -918,22 +931,25 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                     color: Colors.grey[500],
                   )
                 else
-                  const SizedBox(width: 16), // Empty space so text aligns properly
+                  const SizedBox(
+                    width: 16,
+                  ), // Empty space so text aligns properly
               ],
             ),
           ),
         ),
-        
+
         // Render children recursively if expanded
         if (isExpanded && hasSubcats)
           ...subcats.map((subCat) {
             final count = api.categoryCounts[subCat.categoryId] ?? 0;
             print('subCategory count $count');
-            return _buildExpandableCategoryItem(api,subCat, count, level + 1);
+            return _buildExpandableCategoryItem(api, subCat, count, level + 1);
           }),
       ],
     );
   }
+
   // ============= MOBILE FILTERS =============
   Widget _buildMobileFilters() {
     return Column(
@@ -1104,7 +1120,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
 
   // ============= SORT BAR =============
   Widget _buildSortBar() {
-    final bool isMobile = MediaQuery.of(context).size.width < 768;
+    final bool isMobile = MediaQuery.of(context).size.width < 800;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
       decoration: BoxDecoration(
@@ -1189,10 +1205,20 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                         productController.products,
                       ),
                     ).length;
+                    final int startIndex = totalProducts == 0
+                        ? 0
+                        : ((_currentPage - 1) * _itemsPerPage) + 1;
+                    final int endIndex = (startIndex + _itemsPerPage - 1).clamp(
+                      0,
+                      totalProducts,
+                    );
+
                     return Padding(
                       padding: const EdgeInsets.only(left: 12),
                       child: Text(
-                        'Showing 1-${totalProducts > 8 ? 8 : totalProducts} of $totalProducts products',
+                        totalProducts == 0
+                            ? 'No products'
+                            : 'Showing $startIndex-$endIndex of $totalProducts products',
                         style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                       ),
                     );
@@ -1282,16 +1308,12 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-            // maxCrossAxisExtent: isMobile ? 180 : 250, // Only this changes
-            // crossAxisSpacing: 16,
-            // mainAxisSpacing: 24,
-            // childAspectRatio: 0.54,
-            // mainAxisExtent: isMobile ? 290 : 380,
-            maxCrossAxisExtent: isMobile ? 200 : 240,
+           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            // 4 columns on desktop, 2 on mobile
+            crossAxisCount: isMobile ? 2 : 4, 
             crossAxisSpacing: 16,
             mainAxisSpacing: 20,
-            mainAxisExtent: isMobile ? 270 : 340,
+            mainAxisExtent: isMobile ? 270 : 340, // Keep your current heights
           ),
           itemCount: products.length,
           itemBuilder: (context, index) {
@@ -1678,7 +1700,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   //     ),
   //   );
   // }
-   Widget _buildProductCard(Product product, bool isMobile) {
+  Widget _buildProductCard(Product product, bool isMobile) {
     return GestureDetector(
       onTap: () {
         context.go('/product/${product.productId}');
@@ -1727,10 +1749,13 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
 
                   // If logged in, fetch owner ID to check if user is the owner
                   return FutureBuilder<int?>(
-                    future: context.read<ApiService>().getProductOwnerId(product.productId),
+                    future: context.read<ApiService>().getProductOwnerId(
+                      product.productId,
+                    ),
                     builder: (context, snapshot) {
-                      final isOwner = snapshot.hasData && 
-                                      snapshot.data.toString() == currentUserId.toString();
+                      final isOwner =
+                          snapshot.hasData &&
+                          snapshot.data.toString() == currentUserId.toString();
 
                       return Stack(
                         fit: StackFit.expand,
@@ -1745,7 +1770,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                               fit: BoxFit.cover,
                             ),
                           ),
-                          
+
                           // Discount badge
                           if (product.productId % 2 == 0)
                             Positioned(
@@ -1775,7 +1800,8 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                           if (isOwner)
                             Positioned(
                               top: 8,
-                              left: 9, // Placed on the left to avoid conflicting with the favorite heart
+                              left:
+                                  9, // Placed on the left to avoid conflicting with the favorite heart
                               child: Container(
                                 decoration: BoxDecoration(
                                   // color: Colors.white.withOpacity(0.9),
@@ -1784,10 +1810,15 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                                 child: PopupMenuButton<String>(
                                   padding: EdgeInsets.zero,
                                   iconSize: 18,
-                                  icon: const Icon(Icons.more_vert, color: Colors.black87),
+                                  icon: const Icon(
+                                    Icons.more_vert,
+                                    color: Colors.black87,
+                                  ),
                                   onSelected: (value) {
                                     if (value == 'edit') {
-                                      context.go('/sell?productId=${product.productId}');
+                                      context.go(
+                                        '/sell?productId=${product.productId}',
+                                      );
                                     } else if (value == 'delete') {
                                       _deleteProduct(context, product);
                                     }
@@ -1797,7 +1828,11 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                                       value: 'edit',
                                       child: Row(
                                         children: [
-                                          Icon(Icons.edit_outlined, size: 18, color: Color(0xff28733D)),
+                                          Icon(
+                                            Icons.edit_outlined,
+                                            size: 18,
+                                            color: Color(0xff28733D),
+                                          ),
                                           SizedBox(width: 10),
                                           Text('Edit'),
                                         ],
@@ -1807,9 +1842,16 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                                       value: 'delete',
                                       child: Row(
                                         children: [
-                                          Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                          Icon(
+                                            Icons.delete_outline,
+                                            size: 18,
+                                            color: Colors.red,
+                                          ),
                                           SizedBox(width: 10),
-                                          Text('Delete', style: TextStyle(color: Colors.red)),
+                                          Text(
+                                            'Delete',
+                                            style: TextStyle(color: Colors.red),
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -1824,7 +1866,9 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                             right: 8,
                             child: Consumer<AuthService>(
                               builder: (context, authService, child) {
-                                final isFav = authService.isFavorite(product.productId);
+                                final isFav = authService.isFavorite(
+                                  product.productId,
+                                );
                                 return GestureDetector(
                                   onTap: () async {
                                     await FavoriteHelper.toggleFavorite(
@@ -1840,9 +1884,13 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                                     ),
                                     padding: const EdgeInsets.all(6),
                                     child: Icon(
-                                      isFav ? Icons.favorite : Icons.favorite_border,
+                                      isFav
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
                                       size: isMobile ? 16 : 18,
-                                      color: isFav ? Colors.red : Colors.grey[700],
+                                      color: isFav
+                                          ? Colors.red
+                                          : Colors.grey[700],
                                     ),
                                   ),
                                 );
@@ -1856,7 +1904,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                 },
               ),
             ),
-            
+
             // Product Info ... (Keep your existing code below this)
             Padding(
               padding: EdgeInsets.fromLTRB(
@@ -2082,13 +2130,15 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
 
   Future<void> _deleteProduct(BuildContext context, Product product) async {
     final productId = product.productId;
-    
+
     // 1. Confirm
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete Product'),
-        content: Text('Are you sure you want to delete "${product.productName}"?'),
+        content: Text(
+          'Are you sure you want to delete "${product.productName}"?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -2106,7 +2156,10 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
 
     // 2. Call API
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Deleting product...'), duration: Duration(seconds: 2)),
+      const SnackBar(
+        content: Text('Deleting product...'),
+        duration: Duration(seconds: 2),
+      ),
     );
 
     final apiService = context.read<ApiService>();
@@ -2121,11 +2174,17 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
         _apiService.products.removeWhere((item) => item.productId == productId);
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Product deleted successfully.'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Product deleted successfully.'),
+          backgroundColor: Colors.green,
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to delete product.'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Failed to delete product.'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }

@@ -41,7 +41,7 @@ class _HomePageState extends State<HomePage> {
   String? errorMessage;
   // final Set<int> _favoriteProductIds = {};
   int _currentPage = 1;
-  final int _itemsPerPage = 14;
+  final int _itemsPerPage = 10;
   int get totalPages {
     final total = products.length;
     if (total == 0) return 1;
@@ -565,8 +565,10 @@ class _HomePageState extends State<HomePage> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: pageProducts.length,
-          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 200, // product card width
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: mobile(context)
+                ? 2
+                : 5, // Adjust count based on screen
             mainAxisSpacing: 8,
             crossAxisSpacing: 8,
             mainAxisExtent: 220,
@@ -609,15 +611,18 @@ class _HomePageState extends State<HomePage> {
                         // 2. If logged in, fetch the owner ID
                         return FutureBuilder<int?>(
                           // Use read to prevent unnecessary rebuilds
-                          future: context.read<ApiService>().getProductOwnerId(p.productId),
+                          future: context.read<ApiService>().getProductOwnerId(
+                            p.productId,
+                          ),
                           builder: (context, snapshot) {
-                            
                             // DEBUG PRINT (Look at your console)
                             // print('Product ID: ${p.productId} | API Owner ID: ${snapshot.data} | Current User ID: $currentUserId');
 
                             // 3. Compare as Strings to prevent int vs string mismatch
-                            final isOwner = snapshot.hasData && 
-                                            snapshot.data.toString() == currentUserId.toString();
+                            final isOwner =
+                                snapshot.hasData &&
+                                snapshot.data.toString() ==
+                                    currentUserId.toString();
 
                             return Stack(
                               children: [
@@ -633,7 +638,7 @@ class _HomePageState extends State<HomePage> {
                                     borderRadius: 12,
                                   ),
                                 ),
-                                
+
                                 // 4. Show menu if verified owner
                                 if (isOwner)
                                   Positioned(
@@ -687,7 +692,9 @@ class _HomePageState extends State<HomePage> {
                                               SizedBox(width: 10),
                                               Text(
                                                 'Delete',
-                                                style: TextStyle(color: Colors.red),
+                                                style: TextStyle(
+                                                  color: Colors.red,
+                                                ),
                                               ),
                                             ],
                                           ),
