@@ -791,7 +791,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: Text(isFav ? 'Added to Favourite' : 'Add to Favourite'),
+                child: Text(isFav ? 'Remove From Favourite' : 'Add to Favourite'),
               );
             },
           ),
@@ -879,7 +879,15 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         final type = contact.type.toLowerCase();
         final value = contact.value.trim();
 
-        if (type == 'messenger') {
+        // HANDLE PHONE CALL
+        if (type == 'phone') {
+          // Remove spaces and dashes, but keep the + for international format
+          final cleanPhone = value.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+          uri = Uri.parse('tel:$cleanPhone');
+          
+          debugPrint('📞 Attempting to call: $cleanPhone');
+        } 
+        else if (type == 'messenger') {
           String cleanValue = value.trim();
 
           // 1. If the user pasted a full Facebook URL, extract just the username part
@@ -906,11 +914,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           // However, it's better to enforce the database to store the correct username.
 
           uri = Uri.parse('https://m.me/$cleanValue');
-
           // DEBUG: Print to see what is happening
-          print('Original value: $value');
-          print('Cleaned username: $cleanValue');
-          print('Generated URL: $uri');
+          // print('Original value: $value');
+          // print('Cleaned username: $cleanValue');
+          // print('Generated URL: $uri');
         } else if (type == 'telegram') {
           // Telegram: if value is a phone number (+95...), use t.me/+95...
           // If it's a username, use t.me/username
@@ -930,9 +937,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           uri = Uri.parse('viber://chat?number=$cleanPhone');
 
           // DEBUG: Print to verify the generated link
-          print('Original Viber value: $value');
-          print('Cleaned Viber phone: $cleanPhone');
-          print('Generated Viber URI: $uri');
+          // print('Original Viber value: $value');
+          // print('Cleaned Viber phone: $cleanPhone');
+          // print('Generated Viber URI: $uri');
         } else {
           showDialog(
             context: context,
@@ -1031,9 +1038,56 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         ? 'Seller $userName'
         : 'Unknown Seller';
     final String avatarText = sellerName.substring(0, 1).toUpperCase();
-
+    final auth = Provider.of<AuthService>(context, listen: false);
+    final currentUserId = auth.currentUser?.id;
+    final isOwner = currentUserId != null && currentUserId == product.userId;
     //  Check if screen is smaller than 1100px
     final bool isSmallScreen = MediaQuery.of(context).size.width < 1100;
+
+    void navigateToSeller() {
+      if (product.userId == null) return;
+
+      if (isOwner) {
+        // Go to My Listing page
+        context.go(
+          '/my-store/${product.userId}?name=${Uri.encodeComponent(sellerName)}',
+        );
+      } else {
+        // Go to Seller Listing page
+        context.go(
+          '/seller/${product.userId}?name=${Uri.encodeComponent(sellerName)}',
+        );
+      }
+    }
+
+    // Helper for the Follow button UI
+    Widget buildFollowButton() {
+      if (isOwner) return const SizedBox.shrink(); // Hide if owner
+
+      return OutlinedButton(
+        onPressed: _followLoading ? null : () => _toggleFollow(product.userId!),
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(
+            color: _isFollowing ? Colors.grey : const Color(0xFF2B6E3B),
+          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        child: _followLoading
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(_isFollowing ? Icons.check : Icons.add, size: 16),
+                  const SizedBox(width: 4),
+                  Text(_isFollowing ? 'Following' : 'Follow Seller'),
+                ],
+              ),
+      );
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
@@ -1074,11 +1128,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           InkWell(
-                            onTap: () {
-                              context.go(
-                                '/seller/${product.userId}?name=${Uri.encodeComponent(sellerName)}',
-                              );
-                            },
+                            onTap: navigateToSeller,
                             child: Text(
                               sellerName,
                               style: const TextStyle(
@@ -1112,43 +1162,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 ),
                 const SizedBox(height: 12),
                 // Bottom row: Follow button full width
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: _followLoading
-                        ? null
-                        : () => _toggleFollow(product.userId!),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(
-                        color: _isFollowing
-                            ? Colors.grey
-                            : const Color(0xFF2B6E3B),
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: _followLoading
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                _isFollowing ? Icons.check : Icons.add,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                _isFollowing ? 'Following' : 'Follow Seller',
-                              ),
-                            ],
-                          ),
-                  ),
-                ),
+                if (!isOwner)
+                  SizedBox(width: double.infinity, child: buildFollowButton()),
               ],
             )
           : Row(
@@ -1178,11 +1193,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       InkWell(
-                        onTap: () {
-                          context.go(
-                            '/seller/${product.userId}?name=${Uri.encodeComponent(sellerName)}',
-                          );
-                        },
+                        onTap: navigateToSeller,
                         child: Text(
                           sellerName,
                           style: const TextStyle(
@@ -1212,37 +1223,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     ],
                   ),
                 ),
-                OutlinedButton(
-                  onPressed: _followLoading
-                      ? null
-                      : () => _toggleFollow(product.userId!),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(
-                      color: _isFollowing
-                          ? Colors.grey
-                          : const Color(0xFF2B6E3B),
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: _followLoading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Row(
-                          children: [
-                            Icon(
-                              _isFollowing ? Icons.check : Icons.add,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(_isFollowing ? 'Following' : 'Follow Seller'),
-                          ],
-                        ),
-                ),
+                if (!isOwner) buildFollowButton(),
               ],
             ),
     );

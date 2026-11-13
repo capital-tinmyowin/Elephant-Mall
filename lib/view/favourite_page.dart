@@ -32,7 +32,7 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
   String _searchQuery = '';
 
   int _currentPage = 1; // Start from 1
-  final int _itemsPerPage = 12; // 10 items per page
+  final int _itemsPerPage = 10; // 10 items per page
   bool _isLoadingMore = false;
   late Set<int> _lastFavoriteIds;
   String? _loadError;
@@ -55,12 +55,12 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final apiService = Provider.of<ApiService>(context, listen: false);
       await apiService.loadCategories();
-     if (mounted) {
+      if (mounted) {
         setState(() {
           // Map categories to names, prepend 'All'
           _filterOptions = [
             'All',
-            ...apiService.categories.map((c) => c.categoryName)
+            ...apiService.categories.map((c) => c.categoryName),
           ];
         });
       }
@@ -119,7 +119,6 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
 
   Future<void> _loadFavorites() async {
     setState(() {
-      
       _isLoading = true;
       _loadError = null;
     });
@@ -167,7 +166,9 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
             id: entry.key + 1,
             userId: authService.currentUser?.id ?? 0,
             productId: entry.value.productId,
-            addedDate: DateTime.now().subtract(Duration(milliseconds: entry.key)),
+            addedDate: DateTime.now().subtract(
+              Duration(milliseconds: entry.key),
+            ),
             product: entry.value,
           );
         }).toList();
@@ -386,10 +387,11 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
                         _selectedFilter = selected ? filter : 'All';
                         debugPrint('🔵 Selected Filter: $_selectedFilter');
                         for (var fav in _favorites) {
-                          debugPrint('🟢 Item Category: ${fav.product?.category}');
+                          debugPrint(
+                            '🟢 Item Category: ${fav.product?.category}',
+                          );
                         }
                         _resetPagination();
-
                       });
                     },
                     backgroundColor: Colors.grey[100],
@@ -487,17 +489,17 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
                         label: Text(filter),
                         selected: isSelected,
                         onSelected: (selected) {
-                            //  Update the main page state
+                          //  Update the main page state
                           setState(() {
                             _selectedFilter = selected ? filter : 'All';
                             _resetPagination();
                           });
-                          
+
                           //  Update the bottom sheet state
                           setStateBottomSheet(() {});
-                          
+
                           //  Close the bottom sheet
-                          Navigator.pop(modalcontext); 
+                          Navigator.pop(modalcontext);
                         },
                         backgroundColor: Colors.grey[100],
                         selectedColor: const Color(0xFF2B6E3B),
@@ -569,19 +571,19 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
                 ),
               ),
               SizedBox(width: 3),
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: const Color.fromARGB(255, 231, 231, 231),
-                  ),
-                  borderRadius: BorderRadius.circular(5),
-                  color: Colors.white,
-                ),
-                child: Padding(
-                  padding: EdgeInsetsGeometry.all(12),
-                  child: Icon(Icons.filter_list_rounded),
-                ),
-              ),
+              // Container(
+              //   decoration: BoxDecoration(
+              //     border: Border.all(
+              //       color: const Color.fromARGB(255, 231, 231, 231),
+              //     ),
+              //     borderRadius: BorderRadius.circular(5),
+              //     color: Colors.white,
+              //   ),
+              //   child: Padding(
+              //     padding: EdgeInsetsGeometry.all(12),
+              //     child: Icon(Icons.filter_list_rounded),
+              //   ),
+              // ),
             ],
           ),
           Row(
@@ -741,16 +743,13 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _displayedFavorites.length,
-            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-              // UPDATED: Smaller max width for 3 items per row on mobile
-              maxCrossAxisExtent: isMobile
-                  ? 130
-                  : 230, // Changed from 170 to 120
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: isMobile
+                  ? 3
+                  : 5, // 3 items on mobile, 5 on desktop
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              // UPDATED: Adjust height for smaller cards
-              mainAxisExtent: isMobile ? 210 : 320, // Reduced height for mobile
-              childAspectRatio: 0.65,
+              mainAxisExtent: isMobile ? 210 : 320, // Keep your current heights
             ),
             itemBuilder: (context, index) {
               final favorite = _displayedFavorites[index];
@@ -806,6 +805,95 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
                     isMobile ? 80 : 180,
                     double.infinity,
                   ),
+                  //  3-DOT MENU LOGIC ADDED HERE
+                  Positioned(
+                    top: 8,
+                    left: 8, // Placed on the left
+                    child: Consumer<AuthService>(
+                      builder: (context, authService, child) {
+                        final isLoggedIn = authService.isLoggedIn;
+                        final currentUserId = authService.currentUser?.id;
+
+                        if (!isLoggedIn || currentUserId == null) {
+                          return const SizedBox.shrink();
+                        }
+
+                        return FutureBuilder<int?>(
+                          future: context.read<ApiService>().getProductOwnerId(
+                            product.productId,
+                          ),
+                          builder: (context, snapshot) {
+                            final isOwner =
+                                snapshot.hasData &&
+                                snapshot.data.toString() ==
+                                    currentUserId.toString();
+
+                            if (!isOwner) return const SizedBox.shrink();
+
+                            return Container(
+                              decoration: BoxDecoration(
+                                // color: Colors.white.withOpacity(0.9),
+                                shape: BoxShape.circle,
+                              ),
+                              child: PopupMenuButton<String>(
+                                padding: EdgeInsets.zero,
+                                iconSize: 18,
+                                icon: const Icon(
+                                  Icons.more_vert,
+                                  color: Colors.black87,
+                                ),
+                                onSelected: (value) {
+                                  if (value == 'edit') {
+                                    context.go(
+                                      '/sell?productId=${product.productId}',
+                                    );
+                                  } else if (value == 'delete') {
+                                    _deleteProduct(
+                                      product.productId,
+                                      product.productName,
+                                    );
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  const PopupMenuItem<String>(
+                                    value: 'edit',
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.edit_outlined,
+                                          size: 18,
+                                          color: Color(0xff28733D),
+                                        ),
+                                        SizedBox(width: 10),
+                                        Text('Edit'),
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem<String>(
+                                    value: 'delete',
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.delete_outline,
+                                          size: 18,
+                                          color: Colors.red,
+                                        ),
+                                        SizedBox(width: 10),
+                                        Text(
+                                          'Delete',
+                                          style: TextStyle(color: Colors.red),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
                   Positioned(
                     top: 12,
                     right: 12,
@@ -830,7 +918,7 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
                           );
                           if (!context.mounted) return;
                           if (ok) {
-                            await auth.getUserFavorites(); // 🔥 refetch list
+                            await auth.getUserFavorites(); // refetch list
                           }
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -884,16 +972,16 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(width: 1),
-                  if (!isMobile)
-                    Row(
-                      children: [
-                        const Icon(Icons.star, size: 12, color: Colors.amber),
-                        const Icon(Icons.star, size: 12, color: Colors.amber),
-                        const Icon(Icons.star, size: 12, color: Colors.amber),
-                        const Icon(Icons.star, size: 12, color: Colors.amber),
-                        const Icon(Icons.star, size: 12, color: Colors.amber),
-                      ],
-                    ),
+                  // if (!isMobile)
+                  //   Row(
+                  //     children: [
+                  //       const Icon(Icons.star, size: 12, color: Colors.amber),
+                  //       const Icon(Icons.star, size: 12, color: Colors.amber),
+                  //       const Icon(Icons.star, size: 12, color: Colors.amber),
+                  //       const Icon(Icons.star, size: 12, color: Colors.amber),
+                  //       const Icon(Icons.star, size: 12, color: Colors.amber),
+                  //     ],
+                  //   ),
                 ],
               ),
             ),
@@ -903,12 +991,12 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
               padding: EdgeInsetsGeometry.only(left: 5),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.house_outlined,
-                    color: const Color(0xFF2B6E3B),
-                    size: 15,
-                  ),
-                  SizedBox(width: 1),
+                  // Icon(
+                  //   Icons.house_outlined,
+                  //   color: const Color(0xFF2B6E3B),
+                  //   size: 15,
+                  // ),
+                  // SizedBox(width: 1),
                   Text(
                     product.category,
                     style: TextStyle(
@@ -1347,7 +1435,7 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
             product.category.toLowerCase().contains(_searchQuery.toLowerCase());
       }).toList();
     }
-    
+
     // Filter by category
     if (_selectedFilter != 'All') {
       filtered = filtered.where((favorite) {
@@ -1357,14 +1445,14 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
         // Standardize both strings for comparison
         final productCat = product.category.trim().toLowerCase();
         final selectedCat = _selectedFilter.trim().toLowerCase();
-        
+
         // Exact match OR partial match (e.g., "Bag" matches "Bags")
-        return productCat == selectedCat || 
-               productCat.contains(selectedCat) || 
-               selectedCat.contains(productCat);
+        return productCat == selectedCat ||
+            productCat.contains(selectedCat) ||
+            selectedCat.contains(productCat);
       }).toList();
     }
-    
+
     // Sort
     filtered = _sortFavorites(filtered);
     return filtered;
@@ -1399,5 +1487,65 @@ class _MyFavouritePageState extends State<MyFavouritePage> {
     }
 
     return sorted;
+  }
+
+  Future<void> _deleteProduct(int productId, String productName) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Product'),
+        content: Text('Are you sure you want to delete "$productName"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Deleting product...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    final apiService = context.read<ApiService>();
+    final isDeleted = await apiService.deleteProductFromServer(productId);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+    if (isDeleted) {
+      setState(() {
+        // 1. Remove from favorites
+        final auth = Provider.of<AuthService>(context, listen: false);
+        auth.favoriteProductIds.remove(productId);
+
+        // 2. Remove from UI
+        _favorites.removeWhere((f) => f.productId == productId);
+        _resetPagination();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Product deleted successfully.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to delete product.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

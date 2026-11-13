@@ -5,6 +5,7 @@ import 'package:elephant_mall/view/home.dart';
 import 'package:elephant_mall/view/myListing.dart';
 import 'package:elephant_mall/view/profile.dart';
 import 'package:elephant_mall/view/sale.dart';
+import 'package:elephant_mall/view/search_page.dart';
 import 'package:elephant_mall/view/sellerListing.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -186,6 +187,20 @@ class MyApp extends StatelessWidget {
                 sellerId: sellerId,
                 sellerName: sellerName,
               ),
+            );
+          },
+        ),
+
+        GoRoute(
+          path: '/search',
+          pageBuilder: (context, state) {
+            final query = state.uri.queryParameters['q'] ?? '';
+            // Get current page path and map to relatedPage parameter
+            // Example: if coming from /new-in, pass 'NewIn'
+            final related = state.uri.queryParameters['page'] ?? 'Home';
+            
+            return NoTransitionPage(
+              child: SearchPage(query: query, relatedPage: related),
             );
           },
         ),
