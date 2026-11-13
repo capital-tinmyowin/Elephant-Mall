@@ -14,8 +14,13 @@ import 'package:elephant_mall/widgets/app_image.dart';
 class SearchPage extends StatefulWidget {
   final String query;
   final String relatedPage;
-
-  const SearchPage({super.key, required this.query, this.relatedPage = 'Home'});
+  final String? categoryId;
+  const SearchPage({
+    super.key,
+    required this.query,
+    this.relatedPage = 'Home',
+    this.categoryId,
+  });
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -39,12 +44,15 @@ class _SearchPageState extends State<SearchPage> {
     super.didUpdateWidget(oldWidget);
     // If the query or the related page changed, re-fetch results
     if (oldWidget.query != widget.query ||
-        oldWidget.relatedPage != widget.relatedPage) {
+        oldWidget.relatedPage != widget.relatedPage ||
+        oldWidget.categoryId != widget.categoryId) {
       _fetchSearchResults();
     }
   }
 
   Future<void> _fetchSearchResults() async {
+    if (!mounted) return;
+
     setState(() {
       _isLoading = true;
       _error = null;
@@ -55,24 +63,28 @@ class _SearchPageState extends State<SearchPage> {
     try {
       final auth = Provider.of<AuthService>(context, listen: false);
       final result = await auth.performSearch(
-        query: widget.query, 
-        relatedPage: widget.relatedPage
+        query: widget.query,
+        relatedPage: widget.relatedPage,
+        categoryId: widget.categoryId,
       );
 
+      if (!mounted) return;
+
       if (result != null) {
+        // 1. Get products (standard)
         final List<dynamic> productsJson = result['products'] ?? [];
+        
+        // 2. Get categories. 
+        // THE FIX: For CategoryDetails, the backend puts products inside the "categories" key!
         final List<dynamic> categoriesJson = result['categories'] ?? [];
 
         setState(() {
-          _products = productsJson.map((json) {
-            // SAFE PRICE PARSING
+          // Map standard products
+          List<Product> parsedProducts = productsJson.map((json) {
             double price = 0.0;
             final rawPrice = json['price'];
-            if (rawPrice is num) {
-              price = rawPrice.toDouble();
-            } else if (rawPrice is String) {
-              price = double.tryParse(rawPrice.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0;
-            }
+            if (rawPrice is num) price = rawPrice.toDouble();
+            if (rawPrice is String) price = double.tryParse(rawPrice.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0;
 
             return Product(
               productId: json['productId'] ?? 0,
@@ -80,34 +92,55 @@ class _SearchPageState extends State<SearchPage> {
               productName: json['productName'] ?? '',
               price: price,
               category: json['categoryName'] ?? '',
-              image: json['imageUrl'] ?? '',
+              image: json['imageUrl']?.toString() ?? '',
             );
           }).toList();
 
-          _categories = categoriesJson.map((json) {
-            return Category(
-              categoryId: json['categoryId'] ?? 0,
-              categoryName: json['categoryName'] ?? '',
-              photoPath: json['categoryImageUrl'] ?? '',
-            );
-          }).toList();
+          // THE FIX: Check if "categories" actually contains products (from CategoryDetails)
+          if (parsedProducts.isEmpty && categoriesJson.isNotEmpty && categoriesJson.first.containsKey('productId')) {
+            // It's actually a list of products!
+            parsedProducts = categoriesJson.map((json) {
+              double price = 0.0;
+              final rawPrice = json['price'];
+              if (rawPrice is num) price = rawPrice.toDouble();
+              if (rawPrice is String) price = double.tryParse(rawPrice.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0;
 
+              return Product(
+                productId: json['productId'] ?? 0,
+                productCode: json['productId'].toString(),
+                productName: json['productName'] ?? '',
+                price: price,
+                category: json['categoryName'] ?? '',
+                image: json['imageUrl']?.toString() ?? '',
+              );
+            }).toList();
+          } else {
+            // It's actually a list of categories
+            _categories = categoriesJson.map((json) {
+              return Category(
+                categoryId: json['id'] ?? json['categoryId'] ?? 0,
+                categoryName: json['name'] ?? json['categoryName'] ?? '',
+                photoPath: json['categoryImageUrl'] ?? '',
+              );
+            }).toList();
+          }
+
+          _products = parsedProducts;
           _isLoading = false;
-          
-          // If both are empty, show a friendly message (Not an error)
+
           if (_products.isEmpty && _categories.isEmpty) {
             _error = 'No results found for "${widget.query}".';
           }
         });
       } else {
         setState(() {
-          _error = 'No results found.';
+          _error = 'Unable to fetch search results.';
           _isLoading = false;
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        // Clean up the error message for display
         _error = e.toString().replaceAll('Exception: ', '');
         _isLoading = false;
       });

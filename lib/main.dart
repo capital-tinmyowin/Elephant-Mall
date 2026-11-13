@@ -44,7 +44,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-     final authService = Provider.of<AuthService>(context, listen: false);
+    final authService = Provider.of<AuthService>(context, listen: false);
     // 1. Initialize GoRouter
     final GoRouter router = GoRouter(
       initialLocation: '/',
@@ -55,13 +55,15 @@ class MyApp extends StatelessWidget {
 
         // Define which routes require the user to be logged in
         final List<String> protectedRoutes = [
-          '/profile', 
-          '/favourites', 
+          '/profile',
+          '/favourites',
           '/sell',
           '/my-store',
         ];
         // Check if the current path starts with any protected route
-        final bool isProtected = protectedRoutes.any((route) => currentPath.startsWith(route));
+        final bool isProtected = protectedRoutes.any(
+          (route) => currentPath.startsWith(route),
+        );
 
         // If it's a protected route and they are NOT logged in, force them to /login
         if (isProtected && !isLoggedIn) {
@@ -69,7 +71,8 @@ class MyApp extends StatelessWidget {
         }
 
         // If they are logged in and trying to access /login or /signup, send them home
-        if (isLoggedIn && (currentPath == '/login' || currentPath == '/signup')) {
+        if (isLoggedIn &&
+            (currentPath == '/login' || currentPath == '/signup')) {
           return '/';
         }
         // No redirect needed
@@ -112,7 +115,8 @@ class MyApp extends StatelessWidget {
         GoRoute(
           path: '/sell/:id',
           pageBuilder: (context, state) {
-            final productId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+            final productId =
+                int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
             return NoTransitionPage(child: SellPage(productId: productId));
           },
         ),
@@ -195,12 +199,15 @@ class MyApp extends StatelessWidget {
           path: '/search',
           pageBuilder: (context, state) {
             final query = state.uri.queryParameters['q'] ?? '';
-            // Get current page path and map to relatedPage parameter
-            // Example: if coming from /new-in, pass 'NewIn'
             final related = state.uri.queryParameters['page'] ?? 'Home';
-            
+            final categoryId = state.uri.queryParameters['categoryId'];
             return NoTransitionPage(
-              child: SearchPage(query: query, relatedPage: related),
+              child: SearchPage(
+                key: ValueKey('$query-$related-$categoryId'), // Forces rebuild
+                query: query,
+                relatedPage: related,
+                categoryId: categoryId,
+              ),
             );
           },
         ),
