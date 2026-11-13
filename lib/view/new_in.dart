@@ -29,7 +29,7 @@ class _NewInPageState extends State<NewInPage> {
   List<NewInModel> allProducts = [];
   List<CategoryOption> categories = [];
 
-  static const int pageSize = 10;
+  static const int pageSize = 18;
   int _currentPage = 1;
 
   final NewInService _newInService = NewInService();
@@ -436,10 +436,10 @@ class _NewInPageState extends State<NewInPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 10),
+                        // const SizedBox(height: 10),
 
-                        // Banner stays visible during product loading
-                        _buildHeroBanner(mobileView),
+                        // // Banner stays visible during product loading
+                        // _buildHeroBanner(mobileView),
 
                         const SizedBox(height: 10),
 
@@ -449,7 +449,7 @@ class _NewInPageState extends State<NewInPage> {
                         const SizedBox(height: 10),
 
                         if (!isLoading && errorMessage == null) ...[
-                          _buildProductCount(products.length),
+                          _buildProductCount(filteredProducts.length),
                           const SizedBox(height: 5),
                         ],
 
@@ -789,11 +789,15 @@ class _NewInPageState extends State<NewInPage> {
 
   // RESULT COUNT
 
-  Widget _buildProductCount(int count) {
+  Widget _buildProductCount(int filteredCount) {
+    final total = filteredCount;
+    final start = total == 0 ? 0 : ((_currentPage - 1) * pageSize) + 1;
+    final end = (start + pageSize - 1).clamp(0, total);
+
     return Align(
       alignment: Alignment.centerRight,
       child: Text(
-        "Showing 1–$count of ${allProducts.length} results",
+        total == 0 ? 'No results' : 'Showing $start–$end of $total results',
         style: const TextStyle(fontSize: 15, color: Colors.black54),
       ),
     );
@@ -841,10 +845,10 @@ class _NewInPageState extends State<NewInPage> {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: products.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: mobileView ? 2 : 5,
+        crossAxisCount: mobileView ? 2 : 6,
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
-        mainAxisExtent: mobileView ? 215 : 230,
+        mainAxisExtent: mobileView ? 195 : 205,
       ),
       itemBuilder: (context, index) {
         return _buildProductCard(products[index]);
@@ -1181,7 +1185,10 @@ class _NewInPageState extends State<NewInPage> {
     if (confirmed != true || !mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Deleting product...'), duration: Duration(seconds: 2)),
+      const SnackBar(
+        content: Text('Deleting product...'),
+        duration: Duration(seconds: 2),
+      ),
     );
 
     final apiService = context.read<ApiService>();
@@ -1195,11 +1202,17 @@ class _NewInPageState extends State<NewInPage> {
         allProducts.removeWhere((p) => p.productId == productId);
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Product deleted successfully.'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Product deleted successfully.'),
+          backgroundColor: Colors.green,
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to delete product.'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Failed to delete product.'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
