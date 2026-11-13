@@ -121,40 +121,61 @@ class _CommonHeaderState extends State<CommonHeader> {
                         textAlignVertical: TextAlignVertical.center,
                         onSubmitted: (value) {
                           if (value.trim().isNotEmpty) {
-                            // Determine current page name
-                            final currentPath = GoRouterState.of(
-                              context,
-                            ).uri.path;
-                            String relatedPage = 'Home';
+                            final currentUri = GoRouterState.of(context).uri;
+                            final currentPath = currentUri.path;
 
-                            if (currentPath.startsWith('/category'))
-                              relatedPage = 'Categories';
-                            else if (currentPath.startsWith('/sale'))
-                              relatedPage = 'Sale';
-                            else if (currentPath.startsWith('/new-in'))
-                              relatedPage = 'NewIn';
-                            else if (currentPath.startsWith('/product'))
-                              relatedPage = 'Product';
-                            else if (currentPath.startsWith('category/'))
-                              relatedPage = 'CategoryDetails';
-                            else if (currentPath.startsWith('/favourites'))
-                              relatedPage = 'Favorites';
-
-                            // Navigate to SearchPage
+                            // 1. Keep context if already on search page
                             if (currentPath == '/search') {
-                              relatedPage =
-                                  GoRouterState.of(
-                                    context,
-                                  ).uri.queryParameters['page'] ??
-                                  'Home';
+                              final existingPage =
+                                  currentUri.queryParameters['page'] ?? 'Home';
+                              final existingCatId =
+                                  currentUri.queryParameters['categoryId'];
+                              String extraParams = existingCatId != null
+                                  ? '&categoryId=$existingCatId'
+                                  : '';
+
+                              context.pushReplacement(
+                                '/search?q=${Uri.encodeComponent(value.trim())}&page=$existingPage$extraParams',
+                              );
+                              _searchController.clear();
+                              FocusScope.of(context).unfocus();
+                              return;
+                            }
+
+                            // 2. Set context based on current page
+                            String relatedPage = 'Home';
+                            String queryParams = '';
+
+                            if (currentPath == '/category') {
+                              relatedPage = 'Categories';
+                            } else if (currentPath.startsWith('/category/')) {
+                              relatedPage = 'CategoryDetails';
+                              final pathSegments = currentPath.split('/');
+                              if (pathSegments.length > 2) {
+                                queryParams = '&categoryId=${pathSegments[2]}';
+                              }
+                            } else if (currentPath == '/sale') {
+                              relatedPage = 'Sale';
+                            } else if (currentPath == '/new-in') {
+                              relatedPage = 'NewIn';
+                            } else if (currentPath == '/favourites') {
+                              relatedPage = 'Favorites';
                             }
 
                             context.pushReplacement(
-                              '/search?q=${Uri.encodeComponent(value.trim())}&page=$relatedPage',
+                              '/search?q=${Uri.encodeComponent(value.trim())}&page=$relatedPage$queryParams',
                             );
-
                             _searchController.clear();
                             FocusScope.of(context).unfocus();
+
+                            // 2. Delay the navigation by 100ms to let the current frame finish
+                            Future.delayed(const Duration(milliseconds: 100), () {
+                              if (!context.mounted) return;
+
+                              context.pushReplacement(
+                                '/search?q=${Uri.encodeComponent(value.trim())}&page=$relatedPage$queryParams',
+                              );
+                            });
                           }
                         },
                         decoration: InputDecoration(

@@ -242,8 +242,8 @@ class AuthService extends ChangeNotifier {
           )
           .timeout(const Duration(seconds: 30));
 
-      print('📡 Product detail status: ${response.statusCode}');
-      print('📡 Product detail body: ${response.body}');
+      // print('📡 Product detail status: ${response.statusCode}');
+      // print('📡 Product detail body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -583,16 +583,52 @@ class AuthService extends ChangeNotifier {
   Future<Map<String, dynamic>?> performSearch({
     required String query,
     required String relatedPage,
+    String? categoryId,
   }) async {
     try {
       final encodedQuery = Uri.encodeComponent(query);
-      final url = Uri.parse(
-        '$_baseUrl/Search/Search?searchData=$encodedQuery&relatedPage=$relatedPage',
-      );
 
-      final response = await _client
-          .get(url, headers: {'Accept': 'application/json'})
-          .timeout(const Duration(seconds: 15));
+      // Build URL
+      String urlStr =
+          '$_baseUrl/Search/Search?searchData=$encodedQuery&relatedPage=$relatedPage';
+      if (categoryId != null && categoryId.isNotEmpty) {
+        urlStr += '&categoryId=$categoryId';
+      }
+
+      final url = Uri.parse(urlStr);
+
+      // Build Headers
+      final headers = <String, String>{
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      };
+
+      if (!kIsWeb && _authCookie != null) {
+        headers['Cookie'] = _authCookie!;
+      }
+
+      print('--- SEARCH REQUEST ---');
+      print('URL: $url');
+
+      // 👇 THE CRITICAL FIX FOR WEB COOKIES 👇
+      http.Response response;
+      if (kIsWeb) {
+        // Create a fresh BrowserClient just for this request to ensure cookies are sent
+        final browserClient = BrowserClient();
+        browserClient.withCredentials = true;
+
+        response = await browserClient
+            .get(url, headers: headers)
+            .timeout(const Duration(seconds: 15));
+      } else {
+        response = await _client
+            .get(url, headers: headers)
+            .timeout(const Duration(seconds: 15));
+      }
+
+      print('--- SEARCH RESPONSE ---');
+      print('Status: ${response.statusCode}');
+      print('Body: ${response.body}');
 
       if (response.statusCode == 200) {
         return json.decode(response.body) as Map<String, dynamic>;
