@@ -42,10 +42,7 @@ class _ProfilePageState extends State<ProfilePage> {
       "location": "",
       "accountTypes": <String>[],
     },
-    "about": {
-      "description":
-          "I love fashion, lifestyle products, and finding high-quality items for everyday life.",
-    },
+    "about": {"description": ""},
     "business": {
       "shopName": "",
       "businessType": "",
@@ -146,10 +143,10 @@ class _ProfilePageState extends State<ProfilePage> {
   // PROFILE MENU
   final List<Map<String, dynamic>> profileMenus = [
     {"title": "Profile", "icon": Icons.person_outline},
-    {"title": "Account Settings", "icon": Icons.settings_outlined},
+    // {"title": "Account Settings", "icon": Icons.settings_outlined},
     {"title": "Security", "icon": Icons.lock_outline},
-    {"title": "Communication Preferences", "icon": Icons.mail_outline},
-    {"title": "Addresses", "icon": Icons.location_on_outlined},
+    // {"title": "Communication Preferences", "icon": Icons.mail_outline},
+    // {"title": "Addresses", "icon": Icons.location_on_outlined},
     {"title": "Favourite", "icon": Icons.star_border},
     {"title": "My Listings", "icon": Icons.storefront_outlined},
     {"title": "Notifications", "icon": Icons.notifications_none_outlined},
@@ -278,10 +275,12 @@ class _ProfilePageState extends State<ProfilePage> {
         'businessType': result.businessType,
         'businessLocation': result.businessLocation,
         'businessDescription': result.businessDescription,
+        'description': result.bio,
       };
 
       setState(() {
         profileData['personal'] = personalData;
+        aboutController.text = result.bio;
         profileData['business'] = businessData;
         _avatarUrl = _imageUrl(result.avatarUrl);
         _coverUrl = _imageUrl(result.coverUrl);

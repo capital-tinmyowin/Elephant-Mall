@@ -31,7 +31,7 @@ class _SalePageState extends State<SalePage> {
   
 
   List<SaleModel> allProducts = [];
-  static const int pageSize = 10;
+  static const int pageSize = 18;
   int _currentPage = 1;
 
   bool isLoading = true;
@@ -210,15 +210,15 @@ class _SalePageState extends State<SalePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 8),
+                        // const SizedBox(height: 5),
 
-                        _buildHeroBanner(mobileView),
+                        // _buildHeroBanner(mobileView),
 
                         const SizedBox(height: 10),
 
                         _buildFilterRow(mobileView),
 
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 5),
 
                         if (isLoading)
                           const Padding(
@@ -240,7 +240,7 @@ class _SalePageState extends State<SalePage> {
                           const SizedBox(height: 5),
                           _buildProductGrid(products, mobileView),
                           _buildPagination(),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 10),
                           // _buildSaleCategories(mobileView),
                         ],
                       ],
@@ -629,12 +629,12 @@ class _SalePageState extends State<SalePage> {
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         // 2 products on mobile
         // 5 products on desktop
-        crossAxisCount: mobileView ? 2 : 5,
+        crossAxisCount: mobileView ? 2 : 6,
 
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
 
-        mainAxisExtent: mobileView ? 225 : 235,
+        mainAxisExtent: mobileView ? 195 : 205,
       ),
       itemBuilder: (context, index) {
         return _buildProductCard(products[index]);
@@ -656,7 +656,7 @@ class _SalePageState extends State<SalePage> {
         children: [
           // IMAGE
           SizedBox(
-            height: 125,
+            height: 120,
             child: Stack(
               children: [
                 Positioned.fill(
@@ -893,7 +893,7 @@ class _SalePageState extends State<SalePage> {
             // ),
           ),
 
-          const Spacer(),
+          // const Spacer(),
 
           // VIEW DEAL BUTTON
           Padding(

@@ -396,13 +396,17 @@ class _CommonHeaderState extends State<CommonHeader> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Account'),
+        title: const Text(
+          'Account',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '👋 ${user?.fullName ?? user?.username ?? 'User'}',
+              ' ${user?.fullName ?? user?.username ?? 'User'}',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
