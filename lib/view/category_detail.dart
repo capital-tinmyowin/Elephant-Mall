@@ -57,6 +57,31 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
     if (total == 0) return 1;
     return (total / _itemsPerPage).ceil();
   }
+  Future<void> _autoExpandCurrentCategory() async {
+    if (!mounted) return;
+
+    final topCategories = _apiService.categories;
+    
+    // Loop through top-level categories to see if our current ID is inside their subcategories
+    for (var parentCat in topCategories) {
+      // Skip if it's the exact same category (top level)
+      if (parentCat.categoryId == _currentCategoryId) continue;
+
+      // Fetch subcategories for this parent
+      final subs = await _apiService.fetchSubcategories(parentCat.categoryId);
+      
+      // Check if our current category is in the list of subs
+      final isSub = subs.any((s) => s.categoryId == _currentCategoryId);
+      
+      if (isSub) {
+        setState(() {
+          _expandedCategories.add(parentCat.categoryId);
+          _loadedSubcategories[parentCat.categoryId] = subs;
+        });
+        break; // Stop searching once found
+      }
+    }
+  }
 
   final List<String> _sortOptions = [
     'Newest First',
@@ -78,13 +103,16 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   @override
   void initState() {
     super.initState();
-    _apiService = ApiService();
     _currentCategoryId = widget.categoryId;
     _currentCategoryName = widget.categoryName;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+     _apiService = Provider.of<ApiService>(context, listen: false);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       _apiService.loadProductsByCategory(_currentCategoryId);
-      _apiService.loadCategoryCounts();
+      if (_apiService.categoryCounts.isEmpty) {
+        _apiService.loadCategoryCounts();
+      }
+      await _autoExpandCurrentCategory();
     });
   }
 
@@ -107,9 +135,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 900;
 
-    return ChangeNotifierProvider.value(
-      value: _apiService,
-      child: Scaffold(
+    return Scaffold(
         body: Column(
           children: [
             const CommonHeader(),
@@ -135,8 +161,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
             if (isMobile) const CommonBottomBar(currentIndex: 1),
           ],
         ),
-      ),
-    );
+      );
   }
 
   // ============= CATEGORY HEADER =============

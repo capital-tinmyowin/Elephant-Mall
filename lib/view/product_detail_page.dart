@@ -30,6 +30,9 @@ bool mobile(BuildContext context) {
 }
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
+  final ScrollController _leftScrollController = ScrollController();
+  final ScrollController _rightScrollController = ScrollController();
+
   late ApiService _apiService;
   int _selectedImageIndex = 0;
   bool _isMobile = false;
@@ -39,6 +42,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   bool _showContacts = false;
   bool _isFollowing = false;
   bool _followLoading = false;
+
+  @override
+  void dispose() {
+    _leftScrollController.dispose();
+    _rightScrollController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -85,6 +95,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
       _apiService.setProductFromJson(json);
       final product = _apiService.selectedProduct;
+
+      _apiService.loadRecentlyViewedTrendingProducts();
+
       final uid = product?.userId;
       if (uid != null) {
         if (auth.isLoggedIn) {
@@ -1231,124 +1244,217 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   // ============= MORE FROM SELLER =============
   Widget _buildMoreFromStore(Product product) {
-    // final int? userId = product.userId;
-    final String? userName = product.userName;
-    final String sellerName = userName != null
-        ? 'Seller $userName'
+    final String sellerName = product.userName != null
+        ? 'Seller ${product.userName}'
         : 'this seller';
-
-    if (_sellerProducts.isEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'More from $sellerName\'s Store',
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-          ),
-          // const SizedBox(height: 16),
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(40),
-              child: Text('No other items from this seller'),
-            ),
-          ),
-        ],
-      );
-    }
 
     return Padding(
       padding: _isMobile
           ? const EdgeInsets.all(1)
-          : const EdgeInsets.only(left: 100, right: 100),
-      child: Column(
+          : const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // LEFT SIDE: More from Seller
+          Expanded(
+            child: _buildProductSlider(
+              title: 'More from $sellerName\'s Store',
+              products: _sellerProducts,
+              controller: _leftScrollController,
+            ),
+          ),
+          
+          // Add spacing between the two sections
+          const SizedBox(width: 20),
+
+          // RIGHT SIDE: Recently Viewed / Trending
+          Expanded(
+            child: _buildProductSlider(
+              title: 'Recently Viewed & Trending',
+              products: _apiService.recentlyViewedProducts,
+              controller: _rightScrollController,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============= HELPER FOR HORIZONTAL SLIDER WITH ARROWS =============
+  Widget _buildProductSlider({
+    required String title,
+    required List<Product> products,
+    required ScrollController controller,
+  }) {
+    if (products.isEmpty) {
+      return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'More from $sellerName\'s Store',
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            title,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 10),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: _isMobile ? 4 : 12,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 5,
-              childAspectRatio: 0.50,
+          const SizedBox(height: 16),
+          const Center(child: Text('No products available')),
+        ],
+      );
+    }
+
+    return Container(
+      padding: EdgeInsetsDirectional.symmetric(horizontal: 8,vertical: 8),
+      decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: Colors.grey[400]!),
+      ),
+      child: Center(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            itemCount: _sellerProducts.length,
-            itemBuilder: (context, index) {
-              final sellerProduct = _sellerProducts[index];
-              return GestureDetector(
-                onTap: () {
-                  context.pushReplacement(
-                    '/product/${sellerProduct.productId}',
-                  );
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 4,
-                        spreadRadius: 1,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: const BorderRadius.all(
-                            Radius.circular(16),
+            const SizedBox(height: 12),
+            
+            Stack(
+              children: [
+                // The Horizontal List
+                SizedBox(
+                  height: _isMobile ? 180 : 220, // Height of the card
+                  child: ListView.builder(
+                    controller: controller,
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: products.length,
+                    itemBuilder: (context, index) {
+                      final p = products[index];
+                      return GestureDetector(
+                        onTap: () {
+                          context.pushReplacement('/product/${p.productId}');
+                        },
+                        child: Container(
+                          width: _isMobile ? 110 : 140,
+                          margin: const EdgeInsets.only(right: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey[200]!),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 4,
+                              ),
+                            ],
                           ),
-                          child: _buildImage(
-                            sellerProduct.image,
-                            double.infinity,
-                            double.infinity,
+                          child: Column(
+                            children: [
+                              Expanded(
+                                child: ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(12),
+                                  ),
+                                  child: _buildImage(
+                                    p.image,
+                                    double.infinity,
+                                    double.infinity,
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(6.0),
+                                child: Text(
+                                  p.productName.length > 15
+                                      ? '${p.productName.substring(0, 15)}...'
+                                      : p.productName,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: Text(
+                                  'MMK${NumberFormat('#,##0').format(p.price)}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFD68247),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6.0,
-                          vertical: 6.0,
-                        ),
-                        child: Text(
-                          sellerProduct.productName.length > 18
-                              ? '${sellerProduct.productName.substring(0, 15)}...'
-                              : sellerProduct.productName,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Text(
-                          'MMK${NumberFormat('#,##0').format(sellerProduct.price)}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFD68247),
-                          ),
-                          maxLines: 1,
-                        ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
                 ),
-              );
-            },
-          ),
-        ],
+        
+                // LEFT ARROW
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: InkWell(
+                      onTap: () {
+                        controller.animateTo(
+                          controller.offset - 300,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 4),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(4),
+                        child: const Icon(Icons.chevron_left, color: Colors.black),
+                      ),
+                    ),
+                  ),
+                ),
+        
+                // RIGHT ARROW
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: InkWell(
+                      onTap: () {
+                        controller.animateTo(
+                          controller.offset + 300,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 4),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(4),
+                        child: const Icon(Icons.chevron_right, color: Colors.black),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
