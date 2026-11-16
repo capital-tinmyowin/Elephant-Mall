@@ -534,7 +534,7 @@ class ApiService extends ChangeNotifier {
       for (var category in _categories) {
         await _fetchRecursiveCounts(category.categoryId);
       }
-
+       _sortedCategories = _sortCategoriesByOrder(_categories);
       notifyListeners();
     } catch (e) {
       print('category counts error: $e');
@@ -1221,5 +1221,39 @@ class ApiService extends ChangeNotifier {
       description: null,
       userId: null,
     );
+  }
+
+  List<Product> _recentlyViewedProducts = [];
+  List<Product> get recentlyViewedProducts => _recentlyViewedProducts;
+
+  Future<void> loadRecentlyViewedTrendingProducts() async {
+    try {
+      final url = Uri.parse(
+        'https://www.capital-sys.net/CKMMallAPI/api/trending/GetTrendingProducts',
+      );
+      final response = await http
+          .get(url, headers: {'Content-Type': 'application/json'})
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        List<dynamic> list = [];
+        
+        if (data is List) {
+          list = data;
+        } else if (data is Map<String, dynamic> && data['data'] is List) {
+          list = data['data'];
+        }
+
+        _recentlyViewedProducts = list
+            .whereType<Map<String, dynamic>>()
+            .map((j) => _parseProductFromJson(j))
+            .toList();
+            
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error loading recently viewed: $e');
+    }
   }
 }
