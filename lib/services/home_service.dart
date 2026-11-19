@@ -4,7 +4,9 @@ import 'dart:convert';
 
 import 'package:elephant_mall/models/product.dart';
 import 'package:elephant_mall/services/Category_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:http/browser_client.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/Category.dart';
@@ -513,5 +515,56 @@ class HomeService {
       return 'https://www.capital-sys.net/$raw';
     }
     return 'https://www.capital-sys.net/CKMMallImages/CategoryImages/$raw';
+  }
+
+  static const String _recommendedUrl =
+      'https://www.capital-sys.net/CKMMallAPI/api/Search/UserRecentlyViewedTrendingProducts';
+
+  Future<List<Product>> getRecommendedProducts() async {
+    try {
+      http.Response response;
+      final headers = <String, String>{'Content-Type': 'application/json'};
+
+      if (kIsWeb) {
+        // FORCE THE BROWSER TO SEND THE AUTH COOKIE 👇
+        final client = BrowserClient()..withCredentials = true;
+        response = await client.get(
+          Uri.parse(_recommendedUrl),
+          headers: headers,
+        ).timeout(const Duration(seconds: 15));
+      } else {
+        // Mobile fallback (if you add cookie handling later)
+        response = await http.get(
+          Uri.parse(_recommendedUrl),
+          headers: headers,
+        ).timeout(const Duration(seconds: 15));
+      }
+
+      if (response.statusCode == 401) {
+        debugPrint('Unauthorized. Please login again.');
+        return [];
+      }
+
+      if (response.statusCode != 200) {
+        debugPrint('Recommended products status: ${response.statusCode}');
+        return [];
+      }
+
+      final dynamic data = json.decode(response.body);
+      List<dynamic> list = [];
+      if (data is List) {
+        list = data;
+      } else if (data is Map<String, dynamic> && data['data'] is List) {
+        list = data['data'];
+      }
+
+      return list
+          .whereType<Map<String, dynamic>>()
+          .map(_parseTrendingProduct)
+          .toList();
+    } catch (e) {
+      debugPrint('Recommended products error: $e');
+      return [];
+    }
   }
 }

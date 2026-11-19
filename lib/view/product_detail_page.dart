@@ -53,7 +53,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   @override
   void initState() {
     super.initState();
-    _apiService = ApiService();
+    _apiService = Provider.of<ApiService>(context, listen: false);
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadProduct());
   }
 
@@ -96,7 +96,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       _apiService.setProductFromJson(json);
       final product = _apiService.selectedProduct;
 
-      _apiService.loadRecentlyViewedTrendingProducts();
+      await _apiService.loadRecentlyViewedTrendingProducts();
 
       final uid = product?.userId;
       if (uid != null) {
@@ -1255,23 +1255,20 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // LEFT SIDE: More from Seller
-          Expanded(
-            child: _buildProductSlider(
-              title: 'More from $sellerName\'s Store',
-              products: _sellerProducts,
-              controller: _leftScrollController,
-            ),
-          ),
-          
-          // Add spacing between the two sections
-          const SizedBox(width: 20),
-
-          // RIGHT SIDE: Recently Viewed / Trending
+          // LEFT SIDE: Recently Viewed / Trending
           Expanded(
             child: _buildProductSlider(
               title: 'Recently Viewed & Trending',
               products: _apiService.recentlyViewedProducts,
+              controller: _leftScrollController,
+            ),
+          ),
+          const SizedBox(width: 20),
+          // Right SIDE: More from Seller
+          Expanded(
+            child: _buildProductSlider(
+              title: 'More from $sellerName\'s Store',
+              products: _sellerProducts,
               controller: _rightScrollController,
             ),
           ),

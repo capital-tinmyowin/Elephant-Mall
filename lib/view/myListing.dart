@@ -386,6 +386,8 @@ class _SellerStorePageState extends State<SellerStorePage> {
               onPressed: () {
                 Navigator.pop(dialogContext);
                 if (!mounted) return;
+                final auth = context.read<AuthService>();
+                auth.logout(); 
                 context.go('/login'); // same as FavoriteHelper
               },
               child: const Text(
@@ -2035,8 +2037,7 @@ class _SellerStorePageState extends State<SellerStorePage> {
               height: mobile ? 22 : 28,
               child: ElevatedButton(
                 onPressed: () {
-                  // Add product-detail navigation when the
-                  // NewInModel product ID is confirmed.
+                  context.go('/product/${product.productId}');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xffF28C00),
@@ -2214,11 +2215,9 @@ class _SellerStorePageState extends State<SellerStorePage> {
 
   void viewAllProducts(String section) {
     if (section == 'Newest Arrivals') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const NewInPage()),
-      );
+      context.go('/new-in');
     } else {
+      context.go('/sale');
       debugPrint('View all: $section');
     }
   }

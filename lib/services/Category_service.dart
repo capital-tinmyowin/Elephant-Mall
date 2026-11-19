@@ -1227,13 +1227,36 @@ class ApiService extends ChangeNotifier {
   List<Product> get recentlyViewedProducts => _recentlyViewedProducts;
 
   Future<void> loadRecentlyViewedTrendingProducts() async {
+    
     try {
-      final url = Uri.parse(
-        'https://www.capital-sys.net/CKMMallAPI/api/trending/GetTrendingProducts',
-      );
-      final response = await http
-          .get(url, headers: {'Content-Type': 'application/json'})
-          .timeout(const Duration(seconds: 15));
+      final bool isUserLoggedIn = _authCookie != null;
+      // 2. Choose the URL based on login state
+      final String urlStr = isUserLoggedIn
+          ? 'https://www.capital-sys.net/CKMMallAPI/api/Search/UserRecentlyViewedTrendingProducts'
+          : 'https://www.capital-sys.net/CKMMallAPI/api/trending/GetTrendingProducts';
+      final url = Uri.parse(urlStr);
+      final headers = <String, String>{'Content-Type': 'application/json'};
+      if (!kIsWeb && _authCookie != null) {
+        headers['Cookie'] = _authCookie!;
+      }
+
+      print('--- FETCHING RIGHT SLIDER ---');
+      print('URL: $url');
+      print('Is Logged In: $isUserLoggedIn');
+
+      // 4. Fetch
+      http.Response response;
+      if (kIsWeb) {
+        final browserClient = BrowserClient();
+        browserClient.withCredentials = true; 
+        response = await browserClient
+            .get(url, headers: headers)
+            .timeout(const Duration(seconds: 15));
+      } else {
+        response = await http
+            .get(url, headers: headers)
+            .timeout(const Duration(seconds: 15));
+      }
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -1250,10 +1273,13 @@ class ApiService extends ChangeNotifier {
             .map((j) => _parseProductFromJson(j))
             .toList();
             
+        print(' Loaded ${_recentlyViewedProducts.length} products for right slider');
         notifyListeners();
+      } else {
+        debugPrint(' Failed to load. Status: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error loading recently viewed: $e');
+      debugPrint('Error loading trending products: $e');
     }
   }
 }

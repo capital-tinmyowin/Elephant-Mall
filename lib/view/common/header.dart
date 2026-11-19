@@ -1,4 +1,5 @@
 import 'package:elephant_mall/services/auth_service.dart';
+import 'package:elephant_mall/view/recommand.dart';
 import 'package:go_router/go_router.dart';
 import '../profile.dart';
 import 'package:elephant_mall/view/category_page.dart';
@@ -34,7 +35,7 @@ class _CommonHeaderState extends State<CommonHeader> {
 
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 800;
-    final authService = Provider.of<AuthService>(context);
+    final authService = context.watch<AuthService>();
     final isLoggedIn = authService.isLoggedIn;
     if (isMobile) {
       if (!widget.showMobileHeader) {
@@ -86,6 +87,7 @@ class _CommonHeaderState extends State<CommonHeader> {
                               ),
                               _menuItem(context, "SALE", const SalePage()),
                               _menuItem(context, "NEW IN", const NewInPage()),
+                              if(isLoggedIn)_menuItem(context, "FOR YOU", const RecommendedPage()),
                               // _menuItem(
                               //   context,
                               //   "ABOUT US",
@@ -121,32 +123,30 @@ class _CommonHeaderState extends State<CommonHeader> {
                         textAlignVertical: TextAlignVertical.center,
                         onSubmitted: (value) {
                           if (value.trim().isNotEmpty) {
+                            //  CALL THE API HERE 
+                            final authService = Provider.of<AuthService>(
+                              context,
+                              listen: false,
+                            );
+                            authService.recordUserSearch(
+                              value.trim(),
+                            ); // Fire-and-forget
+
+                            // --- Your existing navigation logic below ---
                             final currentUri = GoRouterState.of(context).uri;
                             final currentPath = currentUri.path;
-
-                            // 1. Keep context if already on search page
-                            if (currentPath == '/search') {
-                              final existingPage =
-                                  currentUri.queryParameters['page'] ?? 'Home';
-                              final existingCatId =
-                                  currentUri.queryParameters['categoryId'];
-                              String extraParams = existingCatId != null
-                                  ? '&categoryId=$existingCatId'
-                                  : '';
-
-                              context.pushReplacement(
-                                '/search?q=${Uri.encodeComponent(value.trim())}&page=$existingPage$extraParams',
-                              );
-                              _searchController.clear();
-                              FocusScope.of(context).unfocus();
-                              return;
-                            }
-
-                            // 2. Set context based on current page
                             String relatedPage = 'Home';
                             String queryParams = '';
 
-                            if (currentPath == '/category') {
+                            if (currentPath == '/search') {
+                              relatedPage =
+                                  currentUri.queryParameters['page'] ?? 'Home';
+                              final existingCatId =
+                                  currentUri.queryParameters['categoryId'];
+                              if (existingCatId != null) {
+                                queryParams = '&categoryId=$existingCatId';
+                              }
+                            } else if (currentPath == '/category') {
                               relatedPage = 'Categories';
                             } else if (currentPath.startsWith('/category/')) {
                               relatedPage = 'CategoryDetails';
@@ -162,13 +162,10 @@ class _CommonHeaderState extends State<CommonHeader> {
                               relatedPage = 'Favorites';
                             }
 
-                            context.pushReplacement(
-                              '/search?q=${Uri.encodeComponent(value.trim())}&page=$relatedPage$queryParams',
-                            );
                             _searchController.clear();
                             FocusScope.of(context).unfocus();
 
-                            // 2. Delay the navigation by 100ms to let the current frame finish
+                            // Delay slightly to prevent "deactivated widget" crash
                             Future.delayed(const Duration(milliseconds: 100), () {
                               if (!context.mounted) return;
 
@@ -223,16 +220,9 @@ class _CommonHeaderState extends State<CommonHeader> {
                     ),
 
                     const SizedBox(width: 10),
-                    Consumer<AuthService>(
-                      builder: (context, auth, child) {
-                        final isLoggedIn = auth.isLoggedIn;
-                        return Row(
-                          children: [
                             if (!isLoggedIn)
                               GestureDetector(
-                                onTap: () {
-                                  context.go('/login');
-                                },
+                                onTap: () => context.go('/login'),
                                 child: const Text(
                                   "Sign In",
                                   style: TextStyle(
@@ -244,10 +234,7 @@ class _CommonHeaderState extends State<CommonHeader> {
                             const SizedBox(width: 10),
                             // PROFILE BUTTON - Shows Login/Logout based on state
                             if (isLoggedIn) _buildProfileButton(context, true),
-                          ],
-                        );
-                      },
-                    ),
+                          
                   ],
                 ),
               ),
@@ -267,7 +254,8 @@ class _CommonHeaderState extends State<CommonHeader> {
                       _menuItem(context, "CATEGORIES", const CategoryPage()),
                       _menuItem(context, "SALE", const SalePage()),
                       _menuItem(context, "NEW IN", const NewInPage()),
-                      _menuItem(context, "MY ORDERS", const MyFavouritePage()),
+                      _menuItem(context, "MY FAVOURITES", const MyFavouritePage()),
+                      if(isLoggedIn)_menuItem(context, "FOR YOU", const RecommendedPage()),
                       // _menuItem(context, "ABOUT US", const NewSellerPage()),
                     ],
                   ),
@@ -295,6 +283,8 @@ class _CommonHeaderState extends State<CommonHeader> {
 
       case "/new-in":
         return menuName == "NEW IN";
+      case "/foryou":
+        return menuName == "FOR YOU";
 
       // case "/about":
       //   return menuName == "ABOUT US";
@@ -592,7 +582,9 @@ class _CommonHeaderState extends State<CommonHeader> {
             case "NEW IN":
               routeName = "/new-in";
               break;
-
+            case "FOR YOU":
+              routeName = "/foryou";
+              break;
             // case "ABOUT US":
             //   routeName = "/about";
             //   break;

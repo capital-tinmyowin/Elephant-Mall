@@ -961,7 +961,7 @@ class _NewInPageState extends State<NewInPage> {
                               ),
                               onSelected: (value) {
                                 if (value == 'edit') {
-                                  context.push(
+                                  context.go(
                                     '/sell?productId=${product.productId}',
                                   );
                                 } else if (value == 'delete') {
