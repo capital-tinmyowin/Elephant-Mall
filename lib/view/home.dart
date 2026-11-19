@@ -39,6 +39,8 @@ class _HomePageState extends State<HomePage> {
   List<Promo> promos = [];
   bool loading = true;
   String? errorMessage;
+  List<Product> recommendedProducts = [];
+
   // final Set<int> _favoriteProductIds = {};
   int _currentPage = 1;
   final int _itemsPerPage = 10;
@@ -59,6 +61,7 @@ class _HomePageState extends State<HomePage> {
   void _onAuthChanged() {
     final auth = Provider.of<AuthService>(context, listen: false);
     // When user transitions to logged-in and we don't have favourites yet
+    loadHome();
     if (auth.isLoggedIn && auth.favoriteProductIds.isEmpty) {
       auth.getUserFavorites();
     }
@@ -71,18 +74,35 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      final result = await Future.wait([
+      final auth = Provider.of<AuthService>(context, listen: false);
+
+      // Conditionally add the recommended products call
+      final futures = <Future>[
         _service.getBanners(),
         _service.getCategories(),
         _service.getProducts(),
         _service.getPromos(),
-      ]);
+      ];
+
+      if (auth.isLoggedIn) {
+        futures.add(_service.getRecommendedProducts());
+      }
+
+      final result = await Future.wait(futures);
+
       if (!mounted) return;
       setState(() {
         banners = result[0] as List<BannerModel>;
         categories = result[1] as List<Category>;
         products = result[2] as List<Product>;
         promos = result[3] as List<Promo>;
+
+        if (auth.isLoggedIn && result.length > 4) {
+          recommendedProducts = result[4] as List<Product>;
+        } else {
+          recommendedProducts = [];
+        }
+
         _currentPage = 1;
         loading = false;
         errorMessage = null;
@@ -140,6 +160,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final isMobile = mobile(context);
     const sectionGap = SizedBox(height: 10);
+    final auth = Provider.of<AuthService>(context, listen: false);
     return Scaffold(
       backgroundColor: const Color(0xffFFFFFF),
       body: Column(
@@ -159,6 +180,15 @@ class _HomePageState extends State<HomePage> {
                         buildHero(),
                         sectionGap,
                         if (isMobile) ...[buildPromotions(), sectionGap],
+                        if (auth.isLoggedIn &&
+                            recommendedProducts.isNotEmpty) ...[
+                          buildTitle("RECOMMENDED FOR YOU", onViewAll: () {
+                              context.go('/foryou'); // or wherever you want to go
+                            },),
+                          sectionGap,
+                          buildRecommendedProducts(),
+                          sectionGap, // Add some space before the next section
+                        ],
                         buildTitle("TRENDING CATEGORIES"),
                         sectionGap,
                         if (loading)
@@ -199,6 +229,34 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       bottomNavigationBar: isMobile ? CommonBottomBar(currentIndex: 0) : null,
+    );
+  }
+
+  final ScrollController _recommendedController = ScrollController();
+  bool _showRecommendedLeft = false;
+  bool _showRecommendedRight = false;
+
+  void _scrollRecommendedLeft() {
+    final width = MediaQuery.of(context).size.width;
+    _recommendedController.animateTo(
+      (_recommendedController.offset - width * 0.6).clamp(
+        0.0,
+        _recommendedController.position.maxScrollExtent,
+      ),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _scrollRecommendedRight() {
+    final width = MediaQuery.of(context).size.width;
+    _recommendedController.animateTo(
+      (_recommendedController.offset + width * 0.6).clamp(
+        0.0,
+        _recommendedController.position.maxScrollExtent,
+      ),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
     );
   }
 
@@ -338,14 +396,31 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget buildTitle(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.bold,
-        color: Colors.black,
-      ),
+   Widget buildTitle(String text, {VoidCallback? onViewAll}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          text,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+        if (onViewAll != null)
+          TextButton(
+            onPressed: onViewAll,
+            child: const Text(
+              'View All >> ',
+              style: TextStyle(
+                fontSize: 13,
+                color: Color(0xff6c8855), // Matches your theme color
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -798,7 +873,6 @@ class _HomePageState extends State<HomePage> {
                         Consumer<AuthService>(
                           builder: (context, authService, child) {
                             final isFav = authService.isFavorite(p.productId);
-                            final isLoggedIn = authService.isLoggedIn;
 
                             return SizedBox(
                               width: 32,
@@ -1094,5 +1168,133 @@ class _HomePageState extends State<HomePage> {
         ),
       );
     }
+  }
+
+  Widget buildRecommendedProducts() {
+    if (recommendedProducts.isEmpty) return const SizedBox.shrink();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Update arrow visibility when the list changes
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!_recommendedController.hasClients) return;
+
+          final position = _recommendedController.position;
+          final canScroll = position.maxScrollExtent > 0;
+
+          if (mounted) {
+            setState(() {
+              _showRecommendedLeft = position.pixels > 0;
+              _showRecommendedRight = canScroll;
+            });
+          }
+        });
+
+        return SizedBox(
+          height: 150, //  INCREASED HEIGHT for better card view
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Product List
+              ListView.builder(
+                controller: _recommendedController,
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: recommendedProducts.length,
+                itemBuilder: (context, index) {
+                  final p = recommendedProducts[index];
+                  return Container(
+                    width: 90, // INCREASED WIDTH
+                    margin: const EdgeInsets.only(right: 12),
+                    child: Card(
+                      elevation: 2,
+                      clipBehavior: Clip.antiAlias,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // IMAGE
+                          AppImage(
+                            imageUrl: p.image,
+                            height: 90,
+                            width: 80,
+                            fit: BoxFit.cover,
+                          ),
+                          // INFO
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    p.productName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${NumberFormat('#,##0').format(p.price)} MMK',
+                                    style: const TextStyle(
+                                      color: Color(0xFF2B6E3B),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                    maxLines: 1,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+
+              // LEFT ARROW
+              if (_showRecommendedLeft)
+                Positioned(
+                  left: 0,
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Colors.white,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      color: Colors.black,
+                      icon: const Icon(Icons.chevron_left, size: 35),
+                      onPressed: _scrollRecommendedLeft,
+                    ),
+                  ),
+                ),
+
+              // RIGHT ARROW
+              if (_showRecommendedRight)
+                Positioned(
+                  right: 0,
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Colors.white,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      color: Colors.black,
+                      icon: const Icon(Icons.chevron_right, size: 35),
+                      onPressed: _scrollRecommendedRight,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

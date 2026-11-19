@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'package:elephant_mall/services/Category_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -9,7 +11,6 @@ import '../models/product.dart';
 
 class AuthService extends ChangeNotifier {
   static const String _baseUrl = 'https://www.capital-sys.net/CKMMallAPI/api';
-
   //  Platform-aware HTTP client
   // Web: BrowserClient with cookies enabled
   // Mobile: standard http.Client (cookies handled manually if needed)
@@ -28,12 +29,11 @@ class AuthService extends ChangeNotifier {
   User? _currentUser;
   bool _isLoading = false;
   String? _errorMessage;
-
+  bool _isLoggingOut = false;
   User? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-
   final Set<int> _favoriteProductIds = {};
   Set<int> get favoriteProductIds => _favoriteProductIds;
 
@@ -42,17 +42,66 @@ class AuthService extends ChangeNotifier {
   static const _kUserIdKey = 'user_id';
   static const _kUserEmailKey = 'user_email';
   static const _kAuthCookieKey = 'auth_cookie';
+  Timer? _sessionCheckTimer;
+  static const Duration _sessionCheckInterval = Duration(seconds: 60);
+  // void _addFavoriteId(int id) {
+  //   _favoriteProductIds.add(id);
+  //   notifyListeners();
+  // }
 
-  void _addFavoriteId(int id) {
-    _favoriteProductIds.add(id);
-    notifyListeners();
+  // void _removeFavoriteId(int id) {
+  //   _favoriteProductIds.remove(id);
+  //   notifyListeners();
+  // }
+  void _startSessionHeartbeat() {
+    _stopSessionHeartbeat();
+    _sessionCheckTimer = Timer.periodic(_sessionCheckInterval, (_) async {
+      if (_currentUser == null) {
+        _stopSessionHeartbeat();
+        return;
+      }
+      await _checkSessionAlive();
+    });
   }
 
-  void _removeFavoriteId(int id) {
-    _favoriteProductIds.remove(id);
-    notifyListeners();
+  void _stopSessionHeartbeat() {
+    _sessionCheckTimer?.cancel();
+    _sessionCheckTimer = null;
   }
 
+  /// Ping a lightweight protected endpoint.
+  /// If it 401s, `_handleSessionExpired` fires and the header updates.
+  Future<void> _checkSessionAlive() async {
+    if (_currentUser == null) return;
+
+    try {
+      final headers = <String, String>{'Content-Type': 'application/json'};
+      if (!kIsWeb && _authCookie != null) headers['Cookie'] = _authCookie!;
+
+      final response = await _client
+          .get(
+            Uri.parse('$_baseUrl/productshowcase/GetFavouriteProductList'),
+            headers: headers,
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 401) {
+        debugPrint('[Heartbeat] 401 — session expired, logging out');
+        await handleSessionExpired();
+      }
+      // 200 → still alive. Do nothing.
+      // Other errors → ignore (network blip, don't kick user out).
+    } catch (e) {
+      // Network error → don't log the user out. Retry next tick.
+      debugPrint('[Heartbeat] network error, will retry: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _stopSessionHeartbeat();
+    super.dispose();
+  }
   // ============= REGISTER =============
   Future<bool> register(
     String fullName,
@@ -101,6 +150,7 @@ class AuthService extends ChangeNotifier {
           _isLoading = false;
           notifyListeners();
           await getUserFavorites();
+          _startSessionHeartbeat();
           return true;
         } else {
           _errorMessage = message.isNotEmpty ? message : 'Registration failed';
@@ -175,8 +225,10 @@ class AuthService extends ChangeNotifier {
           }
           _isLoading = false;
           notifyListeners();
+          ApiService.setAuthCookie('is_logged_in_marker');
           // Pre-load favourites so the button state is correct on any screen
           await getUserFavorites();
+          _startSessionHeartbeat();
           return true;
         } else {
           _errorMessage = 'Login failed';
@@ -205,17 +257,46 @@ class AuthService extends ChangeNotifier {
 
   // ============= LOGOUT =============
   Future<void> logout() async {
-    _currentUser = null;
-    _token = null;
-    _authCookie = null;
-    _favoriteProductIds.clear();
+    await _doLogout(notifyBackend: true);
+  }
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_kLoggedInKey);
-    await prefs.remove(_kUserIdKey);
-    await prefs.remove(_kUserEmailKey);
-    await prefs.remove(_kAuthCookieKey);
-    notifyListeners();
+  /// Internal: called both by user-initiated logout and by 401 handlers.
+  /// When triggered by a 401, we skip the backend call (session is already dead).
+  Future<void> _doLogout({required bool notifyBackend}) async {
+    if (_isLoggingOut) return; // prevent double execution from concurrent 401s
+    _isLoggingOut = true;
+
+    try {
+      _stopSessionHeartbeat();
+      // 1) Tell the backend (best-effort, non-blocking on failure)
+      if (notifyBackend) {
+        try {
+          await _client
+              .post(Uri.parse('$_baseUrl/auth/logout-web'))
+              .timeout(const Duration(seconds: 10));
+        } catch (e) {
+          debugPrint('Backend logout failed (ignored): $e');
+        }
+      }
+
+      // 2) Wipe local state IMMEDIATELY so the header flips to "Sign In"
+      _currentUser = null;
+      _token = null;
+      _authCookie = null;
+      _favoriteProductIds.clear();
+      ApiService.setAuthCookie(null);
+      notifyListeners(); // <-- header rebuilds NOW
+
+      // 3) Wipe persistent storage (await AFTER notify so UI updates fast)
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_kLoggedInKey);
+      await prefs.remove(_kUserIdKey);
+      await prefs.remove(_kUserEmailKey);
+      await prefs.remove(_kAuthCookieKey);
+      // No second notify needed — nothing visually changed since step 2.
+    } finally {
+      _isLoggingOut = false;
+    }
   }
 
   void clearError() {
@@ -223,14 +304,11 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _handleSessionExpired() {
-    _currentUser = null;
-    _token = null;
-    _authCookie = null;
-    _favoriteProductIds.clear();
-    notifyListeners(); // This forces the Header to rebuild
-    debugPrint("Session expired. User logged out.");
+  Future<void> handleSessionExpired() async {
+    debugPrint('[AuthService] Session expired — auto logout');
+    await _doLogout(notifyBackend: false);
   }
+  Future<void> _handleSessionExpired() => handleSessionExpired();
 
   // ============= FAVORITES =============
   Future<Map<String, dynamic>?> getProductDetail(int id) async {
@@ -244,7 +322,10 @@ class AuthService extends ChangeNotifier {
 
       // print('📡 Product detail status: ${response.statusCode}');
       // print('📡 Product detail body: ${response.body}');
-
+      if (response.statusCode == 401) {
+        await _handleSessionExpired();
+        return null;
+      }
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data is Map<String, dynamic>) return data;
@@ -288,7 +369,7 @@ class AuthService extends ChangeNotifier {
       // print('======================');
 
       if (response.statusCode == 401) {
-        _handleSessionExpired(); // Trigger logout
+        await _handleSessionExpired(); // Trigger logout
         return [];
       }
       if (response.statusCode == 200) {
@@ -384,9 +465,8 @@ class AuthService extends ChangeNotifier {
           )
           .timeout(const Duration(seconds: 15));
       if (response.statusCode == 401) {
-        await logout(); // Force logout locally
+        await handleSessionExpired();
         _errorMessage = 'Session has expired (401)';
-        notifyListeners();
         return false;
       }
 
@@ -398,12 +478,6 @@ class AuthService extends ChangeNotifier {
 
       print('Add favorite status: ${response.statusCode}');
       print('Add favorite body: ${response.body}');
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        _favoriteProductIds.add(productId); // 🔥 update cache
-        notifyListeners();
-        return true;
-      }
 
       //  Show exact backend message + status code inline
       String backendMsg = '';
@@ -460,22 +534,8 @@ class AuthService extends ChangeNotifier {
           .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 401) {
-        await logout(); // Force logout locally
-        _errorMessage = 'Session has expired (401)';
-        notifyListeners();
-        return false;
-      }
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        _favoriteProductIds.add(productId);
-        notifyListeners();
-        return true;
-      }
-
-      if (response.statusCode == 401) {
-        await logout(); // Force logout locally
+        await handleSessionExpired();
         _errorMessage = 'Your session has expired. Please log in again.';
-        notifyListeners();
         return false;
       }
       debugPrint('========== REMOVE FAVOURITE RESPONSE ==========');
@@ -525,13 +585,11 @@ class AuthService extends ChangeNotifier {
 
     final userId = prefs.getInt(_kUserIdKey);
     final email = prefs.getString(_kUserEmailKey) ?? '';
-
+    if (userId == null) return false;
     // restore mobile cookie
     if (!kIsWeb) {
       _authCookie = prefs.getString(_kAuthCookieKey);
     }
-
-    if (userId == null) return false;
 
     _currentUser = User(
       id: userId,
@@ -539,10 +597,16 @@ class AuthService extends ChangeNotifier {
       email: email,
       fullName: '',
     );
-
-    notifyListeners();
     // now actually rehydrate favorites from the server
     await getUserFavorites();
+    if (_currentUser == null) {
+      // Cookie was stale. We're now logged out. Nothing to restore.
+      debugPrint('[AuthService] restoreSession: cookie stale, logged out');
+      return false;
+    }
+    // Valid session — notify the header now.
+    notifyListeners();
+    _startSessionHeartbeat();
     return true;
   }
 
@@ -637,6 +701,54 @@ class AuthService extends ChangeNotifier {
     } catch (e) {
       debugPrint('Search Error: $e');
       return null;
+    }
+  }
+
+  Future<void> recordUserSearch(String searchTerm) async {
+    // Don't record empty searches
+    if (searchTerm.trim().isEmpty) return;
+
+    try {
+      final url = Uri.parse('$_baseUrl/Search/UserSearchValueRecord');
+
+      final headers = <String, String>{
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      };
+
+      // Mobile cookie fallback
+      if (!kIsWeb && _authCookie != null) {
+        headers['Cookie'] = _authCookie!;
+      }
+
+      final body = json.encode({"searchTerm": searchTerm.trim()});
+
+      //  THE CRITICAL FIX FOR WEB COOKIES
+      http.Response response;
+      if (kIsWeb) {
+        final browserClient = BrowserClient();
+        browserClient.withCredentials = true;
+
+        response = await browserClient
+            .post(url, headers: headers, body: body)
+            .timeout(const Duration(seconds: 10));
+      } else {
+        response = await _client
+            .post(url, headers: headers, body: body)
+            .timeout(const Duration(seconds: 10));
+      }
+
+      //  ONLY PRINT TO CONSOLE, NO UI CHANGES
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        debugPrint(' Search Recorded: ${response.body}');
+      } else {
+        debugPrint(
+          ' Failed to record search. Status: ${response.statusCode}, Body: ${response.body}',
+        );
+      }
+    } catch (e) {
+      // Catch errors silently so it doesn't crash the search flow
+      debugPrint(' Error recording search: $e');
     }
   }
 }

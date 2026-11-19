@@ -746,7 +746,7 @@ class _SalePageState extends State<SalePage> {
                               ),
                               onSelected: (value) {
                                 if (value == 'edit') {
-                                  context.push(
+                                  context.go(
                                     '/sell?productId=${product.productId}',
                                   );
                                 } else if (value == 'delete') {

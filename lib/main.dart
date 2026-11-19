@@ -4,6 +4,7 @@ import 'package:elephant_mall/view/favourite_page.dart';
 import 'package:elephant_mall/view/home.dart';
 import 'package:elephant_mall/view/myListing.dart';
 import 'package:elephant_mall/view/profile.dart';
+import 'package:elephant_mall/view/recommand.dart';
 import 'package:elephant_mall/view/sale.dart';
 import 'package:elephant_mall/view/search_page.dart';
 import 'package:elephant_mall/view/sellerListing.dart';
@@ -210,6 +211,12 @@ class MyApp extends StatelessWidget {
               ),
             );
           },
+        ),
+
+        GoRoute(
+          path: '/foryou',
+          pageBuilder: (context, state) =>
+              NoTransitionPage(child: const RecommendedPage()),
         ),
       ],
     );
