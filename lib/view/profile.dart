@@ -24,11 +24,11 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   int selectedMenu = 0;
   final ImagePicker _imagePicker = ImagePicker();
-
+  bool _isAccountSettingsExpanded = false;
   String? _avatarUrl;
   String? _coverUrl;
   bool _isLoadingProfile = false;
-
+  
   // Profile data starts empty and is populated from the profile API.
   // About Me remains local and is intentionally not bound to the API.
   Map<String, dynamic> profileData = {
@@ -144,7 +144,8 @@ class _ProfilePageState extends State<ProfilePage> {
   final List<Map<String, dynamic>> profileMenus = [
     {"title": "Profile", "icon": Icons.person_outline},
     // {"title": "Account Settings", "icon": Icons.settings_outlined},
-    {"title": "Security", "icon": Icons.lock_outline},
+    {"title": "Account Settings", "icon": Icons.lock_outline},
+    {"title": "Banner Settings", "icon": Icons.image_outlined, "adminOnly": true},
     // {"title": "Communication Preferences", "icon": Icons.mail_outline},
     // {"title": "Addresses", "icon": Icons.location_on_outlined},
     {"title": "Favourite", "icon": Icons.star_border},
@@ -788,17 +789,30 @@ class _ProfilePageState extends State<ProfilePage> {
           Divider(color: Colors.grey.shade200),
 
           // MENU
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: profileMenus.length,
-            itemBuilder: (context, index) {
-              final item = profileMenus[index];
+          Consumer<AuthService>(
+            builder: (context, authService, child) {
+              // 1. Check if current user is Admin
+              // (Adjust this if your role field is named differently)
+              final isAdmin = authService.currentUser?.role?.toLowerCase().contains('admin') ?? false;
 
-              return buildProfileMenuItem(
-                index: index,
-                title: item["title"],
-                icon: item["icon"],
+              // 2. Filter menus based on role
+              final visibleMenus = profileMenus.where((menu) {
+                if (menu["adminOnly"] == true) return isAdmin;
+                return true;
+              }).toList();
+
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: visibleMenus.length,
+                itemBuilder: (context, index) {
+                  final item = visibleMenus[index];
+                  return buildProfileMenuItem(
+                    index: profileMenus.indexOf(item), 
+                    title: item["title"],
+                    icon: item["icon"],
+                  );
+                },
               );
             },
           ),
@@ -904,10 +918,78 @@ class _ProfilePageState extends State<ProfilePage> {
     final isSelected = selectedMenu == index;
     final authService = Provider.of<AuthService>(context, listen: false);
     final currentUser = authService.currentUser;
+
+    if (title == "Account Settings") {
+      return Column(
+        children: [
+          // Main Menu Item
+          InkWell(
+            onTap: () {
+              setState(() {
+                selectedMenu = index;
+                _isAccountSettingsExpanded = !_isAccountSettingsExpanded;
+              });
+            },
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xffFFF9F3) : Colors.transparent,
+                border: Border(
+                  left: BorderSide(
+                    color: isSelected ? Colors.orange : Colors.transparent,
+                    width: 3,
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    icon,
+                    size: 23,
+                    color: isSelected ? Colors.orange : Colors.grey.shade700,
+                  ),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected ? Colors.orange : Colors.black87,
+                      ),
+                    ),
+                  ),
+                  // The arrow icon shown in your screenshot
+                  Icon(
+                    _isAccountSettingsExpanded ? Icons.expand_more : Icons.chevron_right,
+                    color: isSelected ? Colors.orange : Colors.grey.shade400,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Sub-Items (Shown when expanded)
+          if (_isAccountSettingsExpanded) ...[
+            buildSubMenuItem(
+              title: "Change Password",
+              icon: Icons.key_outlined, // Or Icons.lock_reset
+              onTap: () {
+                // TODO: Navigate to Change Password page
+                showUpdateMessage("Change Password page coming soon.");
+              },
+            ),
+          ],
+          Divider(color: Colors.grey.shade200, height: 1),
+        ],
+      );
+    }
     return InkWell(
       onTap: () {
         setState(() {
           selectedMenu = index;
+          _isAccountSettingsExpanded = false;
         });
         if (title == "Favourite") {
           if (currentUser == null) {
@@ -967,6 +1049,12 @@ class _ProfilePageState extends State<ProfilePage> {
           );
           return;
         }
+        if (title == "Banner Settings") {
+          // TODO: Navigate to Banner Settings page
+          // context.go('/banner-settings');
+          showUpdateMessage("Banner Settings page coming soon.");
+          return;
+        }
       },
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 2),
@@ -1006,6 +1094,36 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Widget buildSubMenuItem({
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 54, right: 16, top: 12, bottom: 12),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: Colors.grey.shade600,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade800,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
   // RIGHT PROFILE CONTENT
   Widget buildProfileContent() {
     return Column(

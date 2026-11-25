@@ -141,11 +141,14 @@ class AuthService extends ChangeNotifier {
 
         if (isSuccess) {
           _token = data['token'];
+          final rawRole = data['name'] ?? data['userName'];
+          final parsedRole = rawRole is List ? rawRole.join(', ') : rawRole?.toString();
           _currentUser = User(
             id: userId is int ? userId : int.tryParse(userId.toString()) ?? 0,
             username: data['userName'] ?? generatedUsername,
             email: data['email'] ?? email,
             fullName: fullName,
+            role: parsedRole,
           );
           _isLoading = false;
           notifyListeners();
@@ -177,7 +180,7 @@ class AuthService extends ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
-
+    
     try {
       final response = await _client
           .post(
@@ -208,18 +211,23 @@ class AuthService extends ChangeNotifier {
             loginId != null && message.toLowerCase().contains('success');
 
         if (isSuccess) {
+          final rawRole = data['name'] ?? data['userName'];
+          final parsedRole = rawRole is List ? rawRole.join(', ') : rawRole?.toString();
           _currentUser = User(
             id: loginId is int
                 ? loginId
                 : int.tryParse(loginId.toString()) ?? 0,
             username: email.split('@').first,
             email: email,
-            fullName: '',
+            fullName: data['name'] ?? '',
+            role: parsedRole,
           );
           final prefs = await SharedPreferences.getInstance();
           await prefs.setBool(_kLoggedInKey, true);
           await prefs.setInt(_kUserIdKey, _currentUser!.id);
           await prefs.setString(_kUserEmailKey, email);
+          await prefs.setString('user_role', parsedRole ?? ''); // Always save, even if empty
+          await prefs.setString('user_name', data['name'] ?? '');
           if (_authCookie != null) {
             await prefs.setString(_kAuthCookieKey, _authCookie!);
           }
@@ -227,6 +235,7 @@ class AuthService extends ChangeNotifier {
           notifyListeners();
           ApiService.setAuthCookie('is_logged_in_marker');
           // Pre-load favourites so the button state is correct on any screen
+          await _syncUserRoleFromProfile();
           await getUserFavorites();
           _startSessionHeartbeat();
           return true;
@@ -293,6 +302,7 @@ class AuthService extends ChangeNotifier {
       await prefs.remove(_kUserIdKey);
       await prefs.remove(_kUserEmailKey);
       await prefs.remove(_kAuthCookieKey);
+      await prefs.remove('user_role');
       // No second notify needed — nothing visually changed since step 2.
     } finally {
       _isLoggingOut = false;
@@ -576,6 +586,44 @@ class AuthService extends ChangeNotifier {
       return false;
     }
   }
+  Future<void> _syncUserRoleFromProfile() async {
+    if (_currentUser == null) return;
+
+    try {
+      final response = await _client
+          .get(
+            Uri.parse('$_baseUrl/User/profile'),
+            headers: {'Content-Type': 'application/json'},
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        // The profile response has "name": "Administrator"
+        final rawRole = data['name'] ?? data['role'] ?? data['userName'];
+        final parsedRole = rawRole is List ? rawRole.join(', ') : rawRole?.toString();
+        final userName = data['name'] ?? data['userName'] ?? '';
+
+        _currentUser = User(
+          id: _currentUser!.id,
+          username: _currentUser!.username,
+          email: _currentUser!.email,
+          fullName: userName,
+          role: parsedRole, // Now it will be "Administrator"
+        );
+
+        // Save the new role to prefs
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_role', parsedRole ?? '');
+        await prefs.setString('user_name', userName);
+        
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Failed to sync role from profile: $e');
+    }
+  }
 
   Future<bool> restoreSession() async {
     final prefs = await SharedPreferences.getInstance();
@@ -585,6 +633,8 @@ class AuthService extends ChangeNotifier {
 
     final userId = prefs.getInt(_kUserIdKey);
     final email = prefs.getString(_kUserEmailKey) ?? '';
+    final savedRole = prefs.getString('user_role');
+    final savedName = prefs.getString('user_name') ?? '';
     if (userId == null) return false;
     // restore mobile cookie
     if (!kIsWeb) {
@@ -595,9 +645,11 @@ class AuthService extends ChangeNotifier {
       id: userId,
       username: email.split('@').first,
       email: email,
-      fullName: '',
+      fullName: savedName,
+      role: savedRole,
     );
     // now actually rehydrate favorites from the server
+    await _syncUserRoleFromProfile();
     await getUserFavorites();
     if (_currentUser == null) {
       // Cookie was stale. We're now logged out. Nothing to restore.
