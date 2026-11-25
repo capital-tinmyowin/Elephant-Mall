@@ -3,6 +3,7 @@ import 'package:elephant_mall/services/auth_service.dart';
 import 'package:elephant_mall/view/common/favorite_helper.dart';
 import 'package:elephant_mall/view/common/loading_widget.dart';
 import 'package:elephant_mall/widgets/app_image.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
@@ -29,13 +30,14 @@ class CategoryDetailPage extends StatefulWidget {
 
 class _CategoryDetailPageState extends State<CategoryDetailPage> {
   late ApiService _apiService;
+  final ScrollController _chipScrollController = ScrollController();
   String _selectedSort = 'Newest First';
-  String _selectedSize = 'All';
-  String _selectedColor = 'All';
-  bool _isSizeExpanded = true;
-  bool _isColorExpanded = true;
+  // String _selectedSize = 'All';
+  // String _selectedColor = 'All';
+  // bool _isSizeExpanded = true;
+  // bool _isColorExpanded = true;
   bool _isPriceExpanded = true;
-  RangeValues _priceRange = const RangeValues(10, 200);
+  // RangeValues _priceRange = const RangeValues(10, 200);
   bool _isFilterOpen = false;
   int _currentPage = 1;
   final int _itemsPerPage = 8;
@@ -44,6 +46,10 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   late String _currentCategoryName;
   Set<int> _expandedCategories = {}; // Tracks which parent categories are open
   Map<int, List<Category>> _loadedSubcategories = {};
+  double _priceMin = 0;
+  double _priceMax = 1000000;
+  RangeValues _priceRange = const RangeValues(0, 1000000);
+  bool _priceInitialized = false;
 
   int get totalPages {
     final total = _sortedProducts(
@@ -57,31 +63,6 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
     if (total == 0) return 1;
     return (total / _itemsPerPage).ceil();
   }
-  Future<void> _autoExpandCurrentCategory() async {
-    if (!mounted) return;
-
-    final topCategories = _apiService.categories;
-    
-    // Loop through top-level categories to see if our current ID is inside their subcategories
-    for (var parentCat in topCategories) {
-      // Skip if it's the exact same category (top level)
-      if (parentCat.categoryId == _currentCategoryId) continue;
-
-      // Fetch subcategories for this parent
-      final subs = await _apiService.fetchSubcategories(parentCat.categoryId);
-      
-      // Check if our current category is in the list of subs
-      final isSub = subs.any((s) => s.categoryId == _currentCategoryId);
-      
-      if (isSub) {
-        setState(() {
-          _expandedCategories.add(parentCat.categoryId);
-          _loadedSubcategories[parentCat.categoryId] = subs;
-        });
-        break; // Stop searching once found
-      }
-    }
-  }
 
   final List<String> _sortOptions = [
     'Newest First',
@@ -89,16 +70,16 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
     'Price: High to Low',
   ];
 
-  final List<String> _sizeOptions = ['All', 'S', 'M', 'L', 'XL', 'XXL'];
-  final List<String> _colorOptions = [
-    'Black',
-    'White',
-    'Gray',
-    'Blue',
-    'Green',
-    'Red',
-    'Brown',
-  ];
+  // final List<String> _sizeOptions = ['All', 'S', 'M', 'L', 'XL', 'XXL'];
+  // final List<String> _colorOptions = [
+  //   'Black',
+  //   'White',
+  //   'Gray',
+  //   'Blue',
+  //   'Green',
+  //   'Red',
+  //   'Brown',
+  // ];
 
   @override
   void initState() {
@@ -106,9 +87,9 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
     _currentCategoryId = widget.categoryId;
     _currentCategoryName = widget.categoryName;
 
-     _apiService = Provider.of<ApiService>(context, listen: false);
+    _apiService = Provider.of<ApiService>(context, listen: false);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      _apiService.loadProductsByCategory(_currentCategoryId);
+      await _loadAndInitProducts();
       if (_apiService.categoryCounts.isEmpty) {
         _apiService.loadCategoryCounts();
       }
@@ -117,18 +98,91 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   }
 
   @override
+  void dispose() {
+    _chipScrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   void didUpdateWidget(covariant CategoryDetailPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // If the URL changed to a new category ID, fetch the new products
     if (oldWidget.categoryId != widget.categoryId) {
       setState(() {
         _currentCategoryId = widget.categoryId;
         _currentCategoryName = widget.categoryName;
         _currentPage = 1;
         _selectedSort = 'Newest First';
+        _priceInitialized = false;
+        _priceMin = 0;
+        _priceMax = 1000000;
+        _priceRange = const RangeValues(0, 1000000);
       });
-      _apiService.loadProductsByCategory(_currentCategoryId);
+      _loadAndInitProducts();
     }
+  }
+
+  Future<void> _loadAndInitProducts() async {
+    await _apiService.loadProductsByCategory(_currentCategoryId);
+    if (!mounted) return;
+
+    final rawProducts = _apiService.getProductsWithColorVariations(
+      _apiService.products,
+    );
+
+    if (rawProducts.isNotEmpty) {
+      final prices = rawProducts
+          .map((p) => p.price.isFinite ? p.price : 0.0)
+          .where((p) => p > 0)
+          .toList();
+
+      if (prices.isNotEmpty) {
+        final minP = prices.reduce((a, b) => a < b ? a : b).floorToDouble();
+        final maxP = prices.reduce((a, b) => a > b ? a : b).ceilToDouble();
+        setState(() {
+          _priceMin = minP;
+          _priceMax = maxP;
+          _priceRange = RangeValues(minP, maxP);
+          _priceInitialized = true;
+        });
+      }
+    }
+  }
+
+  Future<void> _autoExpandCurrentCategory() async {
+    if (!mounted) return;
+    final topCategories = _apiService.categories;
+    for (var parentCat in topCategories) {
+      if (parentCat.categoryId == _currentCategoryId) continue;
+      final subs = await _apiService.fetchSubcategories(parentCat.categoryId);
+      final isSub = subs.any((s) => s.categoryId == _currentCategoryId);
+      if (isSub) {
+        setState(() {
+          _expandedCategories.add(parentCat.categoryId);
+          _loadedSubcategories[parentCat.categoryId] = subs;
+        });
+        break;
+      }
+    }
+  }
+
+  List<Product> _getFilteredAndSortedProducts(List<Product> allProducts) {
+    var list = allProducts.where((p) {
+      if (!_priceInitialized) return true;
+      return p.price >= (_priceRange.start - 0.01) &&
+          p.price <= (_priceRange.end + 0.01);
+    }).toList();
+
+    switch (_selectedSort) {
+      case 'Price: Low to High':
+        list.sort((a, b) => a.price.compareTo(b.price));
+        break;
+      case 'Price: High to Low':
+        list.sort((a, b) => b.price.compareTo(a.price));
+        break;
+      default:
+        break;
+    }
+    return list;
   }
 
   @override
@@ -136,33 +190,75 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
     final isMobile = MediaQuery.of(context).size.width < 900;
 
     return Scaffold(
-        body: Column(
-          children: [
-            const CommonHeader(),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    _buildCategoryHeader(isMobile),
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isMobile ? 16 : 40,
-                      ),
-                      child: isMobile
-                          ? _buildMobileLayout()
-                          : _buildDesktopLayout(),
+      body: Column(
+        children: [
+          const CommonHeader(),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildCategoryHeader(isMobile),
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 16 : 40,
                     ),
-                    const SizedBox(height: 40),
-                    if (!isMobile) const CommonFooter(),
-                  ],
-                ),
+                    child: isMobile
+                        ? _buildMobileLayout()
+                        : _buildDesktopLayout(),
+                  ),
+                  const SizedBox(height: 40),
+                  if (!isMobile) const CommonFooter(),
+                ],
               ),
             ),
-            if (isMobile) const CommonBottomBar(currentIndex: 1),
-          ],
-        ),
-      );
+          ),
+          if (isMobile) const CommonBottomBar(currentIndex: 1),
+        ],
+      ),
+    );
   }
+
+  // bool _syncPriceBounds(List<Product> products) {
+  //   if (products.isEmpty) return false;
+
+  //   final prices = products
+  //       .map((p) => p.price.isFinite ? p.price : 0.0)
+  //       .where((p) => p > 0)
+  //       .toList();
+  //   if (prices.isEmpty) return false;
+
+  //   final minP = prices.reduce((a, b) => a < b ? a : b).floorToDouble();
+  //   final maxP = prices.reduce((a, b) => a > b ? a : b).ceilToDouble();
+
+  //   // 1. If we are already initialized AND the bounds haven't changed, do nothing.
+  //   if (_priceInitialized && minP == _priceMin && maxP == _priceMax) {
+  //     return false;
+  //   }
+
+  //   // 2. Otherwise, we need to update state.
+  //   bool changed = false;
+
+  //   if (!_priceInitialized) {
+  //     _priceMin = minP;
+  //     _priceMax = maxP;
+  //     _priceRange = RangeValues(_priceMin, _priceMax);
+  //     _priceInitialized = true;
+  //     changed = true;
+  //   } else {
+  //     // If bounds changed, update them
+  //     if (_priceMin != minP || _priceMax != maxP) {
+  //       _priceMin = minP;
+  //       _priceMax = maxP;
+  //       // Clamp current selection to new bounds to prevent crash
+  //       _priceRange = RangeValues(
+  //         _priceRange.start.clamp(_priceMin, _priceMax),
+  //         _priceRange.end.clamp(_priceMin, _priceMax),
+  //       );
+  //       changed = true;
+  //     }
+  //   }
+  //   return changed;
+  // }
 
   // ============= CATEGORY HEADER =============
   Widget _buildCategoryHeader(bool isMobile) {
@@ -383,8 +479,14 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   }
 
   List<Product> _sortedProducts(List<Product> products) {
-    final list = List<Product>.from(products);
-
+    // final list = List<Product>.from(products);
+    var list = products.where((p) {
+      // Only filter when the user has actually narrowed the range
+      if (!_priceInitialized) return true;
+      final inRange =
+          p.price >= _priceRange.start && p.price <= _priceRange.end;
+      return inRange;
+    }).toList();
     switch (_selectedSort) {
       case 'Price: Low to High':
         list.sort((a, b) => a.price.compareTo(b.price));
@@ -405,8 +507,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   }
 
   Future<void> _switchCategory(int newId, String newName) async {
-    if (newId == _currentCategoryId) return; // already on this category
-
+    if (newId == _currentCategoryId) return;
     context.go('/category/$newId?name=${Uri.encodeComponent(newName)}');
   }
 
@@ -418,6 +519,11 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
 
   // ============= DESKTOP LAYOUT =============
   Widget _buildDesktopLayout() {
+    final safeMax = _priceMax > _priceMin ? _priceMax : _priceMin + 1;
+    final safeRange = RangeValues(
+      _priceRange.start.clamp(_priceMin, safeMax),
+      _priceRange.end.clamp(_priceMin, safeMax),
+    );
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: MediaQuery.of(context).size.width * 0.04,
@@ -425,16 +531,103 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Left Sidebar - Filters
+          // Left Sidebar - Only Categories
           SizedBox(
             width: MediaQuery.of(context).size.width * 0.18,
-            child: _buildFilters(),
+            child: _buildCategoriesOnlySidebar(),
           ),
           const SizedBox(width: 32),
-          // Right - Products Grid
+
+          // Right - Products Grid with Price Filter at Top
           Expanded(
             child: Column(
               children: [
+                // NEW: Price Slider at the top in Desktop View
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[200]!),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title + Clear Filters Row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Price Range',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _priceRange = RangeValues(
+                                  _priceMin,
+                                  _priceMax > _priceMin
+                                      ? _priceMax
+                                      : _priceMin + 1,
+                                );
+                                _currentPage = 1;
+                              });
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor: const Color(
+                                0xFF2B6E3B,
+                              ), // Match desktop theme
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text(
+                              'Clear Filters',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      RangeSlider(
+                        values: safeRange,
+                        min: _priceMin,
+                        max: safeMax,
+                        activeColor: const Color(0xFF2B6E3B),
+                        inactiveColor: Colors.grey[300],
+                        labels: RangeLabels(
+                          NumberFormat('#,##0').format(safeRange.start),
+                          NumberFormat('#,##0').format(safeRange.end),
+                        ),
+                        onChanged: (values) {
+                          setState(() {
+                            _priceRange = values;
+                            _currentPage = 1;
+                          });
+                        },
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${NumberFormat('#,##0').format(safeRange.start)} MMK',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                          Text(
+                            '${NumberFormat('#,##0').format(safeRange.end)} MMK',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
                 _buildSortBar(),
                 const SizedBox(height: 12),
                 _buildProductGrid(),
@@ -452,52 +645,61 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   Widget _buildMobileLayout() {
     return Column(
       children: [
-        //  Scrollable category chips
+        // FIX: Category chips wrapped in a bounded SizedBox with horizontal ListView
         Consumer<ApiService>(
           builder: (context, api, _) {
             final cats = api.categories;
-            if (cats.isEmpty) {
-              return const SizedBox(height: 8);
-            }
-            return SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: cats.map((cat) {
-                  final isSelected = _currentCategoryId == cat.categoryId;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: Text(cat.categoryName),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        if (selected) {
-                          //  URL change + data reload
-                          _switchCategory(cat.categoryId, cat.categoryName);
-                        }
-                      },
-                      backgroundColor: Colors.grey[100],
-                      selectedColor: const Color(0xFF2B6E3B).withOpacity(0.2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+            if (cats.isEmpty) return const SizedBox.shrink();
+            return SizedBox(
+              height: 50,
+              width: double.infinity,
+              // NEW: ScrollConfiguration forces web browsers to allow drag-scrolling
+              child: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(context).copyWith(
+                  dragDevices: {
+                    PointerDeviceKind.touch,
+                    PointerDeviceKind.mouse,
+                  },
+                ),
+                child: ListView.separated(
+                  controller: _chipScrollController,
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: cats.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) {
+                    final cat = cats[index];
+                    final isSelected = _currentCategoryId == cat.categoryId;
+                    return Center(
+                      child: FilterChip(
+                        label: Text(cat.categoryName),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          if (selected)
+                            _switchCategory(cat.categoryId, cat.categoryName);
+                        },
+                        backgroundColor: Colors.grey[100],
+                        selectedColor: const Color(0xFF2B6E3B).withOpacity(0.2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        labelStyle: TextStyle(
+                          fontSize: 13,
+                          color: isSelected
+                              ? const Color(0xFF2B6E3B)
+                              : Colors.black87,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
                       ),
-                      labelStyle: TextStyle(
-                        fontSize: 13,
-                        color: isSelected
-                            ? const Color(0xFF2B6E3B)
-                            : Colors.black87,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.normal,
-                      ),
-                    ),
-                  );
-                }).toList(),
+                    );
+                  },
+                ),
               ),
             );
           },
         ),
-        // const SizedBox(height: 8),
         const SizedBox(height: 12),
         if (_isFilterOpen)
           Container(
@@ -508,7 +710,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.grey[200]!),
             ),
-            child: _buildMobileFilters(),
+            child: _buildPriceSlider(),
           ),
         _buildProductGrid(),
         const SizedBox(height: 20),
@@ -518,9 +720,8 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   }
 
   // ============= FILTERS =============
-  Widget _buildFilters() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallDesktop = screenWidth < 1100;
+  Widget _buildCategoriesOnlySidebar() {
+    final isSmallDesktop = MediaQuery.of(context).size.width < 1100;
 
     return Container(
       padding: EdgeInsets.all(isSmallDesktop ? 12 : 20),
@@ -539,230 +740,25 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
           const SizedBox(height: 12),
           Consumer<ApiService>(
             builder: (context, api, _) {
-              final cats = api.categories; // from _sortedCategories
-              if (cats.isEmpty) {
+              final cats = api.categories;
+              if (cats.isEmpty)
                 return const Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
                   child: Text('No categories'),
                 );
-              }
               return Column(
-                children: cats.map((c) {
-                  final count = api.categoryCounts[c.categoryId] ?? 0;
-                  return _buildExpandableCategoryItem(
-                    api,
-                    c,
-                    count,
-                    0,
-                  ); // Call new recursive method
-                }).toList(),
+                children: cats
+                    .map(
+                      (c) => _buildExpandableCategoryItem(
+                        api,
+                        c,
+                        api.categoryCounts[c.categoryId] ?? 0,
+                        0,
+                      ),
+                    )
+                    .toList(),
               );
             },
-          ),
-          const Divider(height: 24),
-
-          // const Text(
-          //   'Filter By',
-          //   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          // ),
-          // const SizedBox(height: 16),
-
-          // // Size Section with Toggle
-          // _buildExpandableSection(
-          //   title: 'Size',
-          //   isExpanded: _isSizeExpanded,
-          //   onToggle: () {
-          //     setState(() {
-          //       _isSizeExpanded = !_isSizeExpanded;
-          //     });
-          //   },
-          //   child: Column(
-          //     children: _sizeOptions.map((size) {
-          //       final isSelected = _selectedSize == size;
-          //       return GestureDetector(
-          //         onTap: () {
-          //           setState(() {
-          //             _selectedSize = isSelected ? 'All' : size;
-          //           });
-          //         },
-          //         child: Padding(
-          //           padding: const EdgeInsets.symmetric(vertical: 4),
-          //           child: Row(
-          //             children: [
-          //               Container(
-          //                 width: 18,
-          //                 height: 18,
-          //                 decoration: BoxDecoration(
-          //                   shape: BoxShape.rectangle,
-          //                   borderRadius: BorderRadius.circular(3),
-          //                   border: Border.all(
-          //                     color: isSelected
-          //                         ? const Color(0xFF2B6E3B)
-          //                         : Colors.grey[400]!,
-          //                     width: 2,
-          //                   ),
-          //                   color: isSelected
-          //                       ? const Color(0xFF2B6E3B)
-          //                       : Colors.transparent,
-          //                 ),
-          //                 child: isSelected
-          //                     ? const Icon(
-          //                         Icons.check,
-          //                         size: 14,
-          //                         color: Colors.white,
-          //                       )
-          //                     : null,
-          //               ),
-          //               const SizedBox(width: 10),
-          //               Expanded(
-          //                 child: Text(
-          //                   size,
-          //                   style: TextStyle(
-          //                     fontSize: 14,
-          //                     color: isSelected
-          //                         ? const Color(0xFF2B6E3B)
-          //                         : Colors.black87,
-          //                     fontWeight: isSelected
-          //                         ? FontWeight.w600
-          //                         : FontWeight.normal,
-          //                   ),
-          //                 ),
-          //               ),
-          //               if (size != 'All')
-          //                 Text(
-          //                   '(${_getSizeCount(size)})',
-          //                   style: TextStyle(
-          //                     fontSize: 13,
-          //                     color: Colors.grey[500],
-          //                   ),
-          //                 ),
-          //             ],
-          //           ),
-          //         ),
-          //       );
-          //     }).toList(),
-          //   ),
-          // ),
-          const SizedBox(height: 8),
-
-          // Color Section with Toggle
-          // _buildExpandableSection(
-          //   title: 'Color',
-          //   isExpanded: _isColorExpanded,
-          //   onToggle: () {
-          //     setState(() {
-          //       _isColorExpanded = !_isColorExpanded;
-          //     });
-          //   },
-          //   child: Wrap(
-          //     spacing: 8,
-          //     runSpacing: 8,
-          //     children: _colorOptions.map((color) {
-          //       final isSelected = _selectedColor == color;
-          //       return GestureDetector(
-          //         onTap: () {
-          //           setState(() {
-          //             _selectedColor = color;
-          //           });
-          //         },
-          //         child: Container(
-          //           width: 20,
-          //           height: 20,
-          //           decoration: BoxDecoration(
-          //             shape: BoxShape.circle,
-          //             color: _getColorValue(color),
-          //             border: Border.all(
-          //               color: isSelected
-          //                   ? const Color(0xFF2B6E3B)
-          //                   : Colors.grey[300]!,
-          //               width: isSelected ? 3 : 1,
-          //             ),
-          //           ),
-          //           child: color == 'All'
-          //               ? Center(
-          //                   child: Text(
-          //                     'A',
-          //                     style: TextStyle(
-          //                       fontSize: 12,
-          //                       fontWeight: FontWeight.bold,
-          //                       color: Colors.black,
-          //                     ),
-          //                   ),
-          //                 )
-          //               : null,
-          //         ),
-          //       );
-          //     }).toList(),
-          //   ),
-          // ),
-          // const SizedBox(height: 8),
-          // Price Range Section with Toggle
-          _buildExpandableSection(
-            title: 'Price Range',
-            isExpanded: _isPriceExpanded,
-            onToggle: () {
-              setState(() {
-                _isPriceExpanded = !_isPriceExpanded;
-              });
-            },
-            child: Column(
-              children: [
-                // Remove the Row with Expanded and use full width
-                RangeSlider(
-                  values: _priceRange,
-                  min: 10,
-                  max: 200,
-                  divisions: 20,
-                  activeColor: const Color(0xFFC77C2E),
-                  inactiveColor: Colors.grey[300],
-                  labels: RangeLabels(
-                    '\$${_priceRange.start.toStringAsFixed(0)}',
-                    '\$${_priceRange.end.toStringAsFixed(0)}',
-                  ),
-                  onChanged: (values) {
-                    setState(() {
-                      _priceRange = values;
-                    });
-                  },
-                ),
-                // Show min and max values below the slider
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '\$${_priceRange.start.toStringAsFixed(0)}',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                    ),
-                    Text(
-                      '\$${_priceRange.end.toStringAsFixed(0)}',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          // const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _selectedSize = 'All';
-                  _selectedColor = 'All';
-                  _priceRange = const RangeValues(10, 200);
-                });
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey[200],
-                foregroundColor: Colors.black87,
-                padding: const EdgeInsets.symmetric(vertical: 1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text('Clear Filters'),
-            ),
           ),
         ],
       ),
@@ -976,153 +972,58 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   }
 
   // ============= MOBILE FILTERS =============
-  Widget _buildMobileFilters() {
+  Widget _buildPriceSlider() {
+    final safeMax = _priceMax > _priceMin ? _priceMax : _priceMin + 1;
+    final safeRange = RangeValues(
+      _priceRange.start.clamp(_priceMin, safeMax),
+      _priceRange.end.clamp(_priceMin, safeMax),
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 16),
-
-        // Mobile Size Filter - Checkbox style
-        const Text(
-          'Size',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 8),
-        ..._sizeOptions.map((size) {
-          final isSelected = _selectedSize == size;
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedSize = isSelected ? 'All' : size;
-              });
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  Container(
-                    width: 18,
-                    height: 18,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.rectangle,
-                      borderRadius: BorderRadius.circular(3),
-                      border: Border.all(
-                        color: isSelected
-                            ? const Color(0xFF2B6E3B)
-                            : Colors.grey[400]!,
-                        width: 2,
-                      ),
-                      color: isSelected
-                          ? const Color(0xFF2B6E3B)
-                          : Colors.transparent,
-                    ),
-                    child: isSelected
-                        ? const Icon(Icons.check, size: 14, color: Colors.white)
-                        : null,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      size,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: isSelected
-                            ? const Color(0xFF2B6E3B)
-                            : Colors.black87,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                  if (size != 'All')
-                    Text(
-                      '(${_getSizeCount(size)})',
-                      style: TextStyle(fontSize: 13, color: Colors.grey[500]),
-                    ),
-                ],
-              ),
+        // CHANGED: Wrapped title and button in a Row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Price Range',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
-          );
-        }).toList(),
-
-        const SizedBox(height: 16),
-
-        // Mobile Color Filter - Color circles (like desktop)
-        const Text(
-          'Color',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _colorOptions.map((color) {
-            final isSelected = _selectedColor == color;
-            return GestureDetector(
-              onTap: () {
+            TextButton(
+              onPressed: () {
                 setState(() {
-                  _selectedColor = color;
+                  _priceRange = RangeValues(_priceMin, safeMax);
+                  _currentPage = 1;
                 });
               },
-              child: Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _getColorValue(color),
-                  border: Border.all(
-                    color: isSelected
-                        ? const Color(0xFF2B6E3B)
-                        : Colors.grey[300]!,
-                    width: isSelected ? 3 : 1,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: const Color(0xFF2B6E3B).withOpacity(0.3),
-                            blurRadius: 4,
-                          ),
-                        ]
-                      : null,
-                ),
-                child: color == 'All'
-                    ? Center(
-                        child: Text(
-                          'A',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      )
-                    : null,
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF2B6E3B), // Match your theme
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 16),
-
-        // Price Range
-        const Text(
-          'Price Range',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              child: const Text(
+                'Clear Filters',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+            ),
+          ],
         ),
         RangeSlider(
-          values: _priceRange,
-          min: 10,
-          max: 200,
-          divisions: 20,
+          values: safeRange,
+          min: _priceMin,
+          max: safeMax,
           activeColor: const Color(0xFF2B6E3B),
           inactiveColor: Colors.grey[300],
           labels: RangeLabels(
-            '\$${_priceRange.start.toStringAsFixed(0)}',
-            '\$${_priceRange.end.toStringAsFixed(0)}',
+            NumberFormat('#,##0').format(safeRange.start),
+            NumberFormat('#,##0').format(safeRange.end),
           ),
           onChanged: (values) {
             setState(() {
               _priceRange = values;
+              _currentPage = 1;
             });
           },
         ),
@@ -1130,11 +1031,11 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '\$${_priceRange.start.toStringAsFixed(0)}',
+              '${NumberFormat('#,##0').format(safeRange.start)} MMK',
               style: TextStyle(color: Colors.grey[600]),
             ),
             Text(
-              '\$${_priceRange.end.toStringAsFixed(0)}',
+              '${NumberFormat('#,##0').format(safeRange.end)} MMK',
               style: TextStyle(color: Colors.grey[600]),
             ),
           ],
@@ -1165,9 +1066,12 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
               const SizedBox(width: 2),
               DropdownButton<String>(
                 value: _selectedSort,
-                items: _sortOptions.map((option) {
-                  return DropdownMenuItem(value: option, child: Text(option));
-                }).toList(),
+                items: _sortOptions
+                    .map(
+                      (option) =>
+                          DropdownMenuItem(value: option, child: Text(option)),
+                    )
+                    .toList(),
                 onChanged: (value) {
                   setState(() {
                     _selectedSort = value!;
@@ -1186,13 +1090,8 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
           ),
           Row(
             children: [
-              // Grid View Button
               IconButton(
-                onPressed: () {
-                  setState(() {
-                    _isGridView = true;
-                  });
-                },
+                onPressed: () => setState(() => _isGridView = true),
                 icon: Icon(
                   Icons.grid_view,
                   color: _isGridView
@@ -1203,13 +1102,8 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 32),
               ),
-              // List View Button
               IconButton(
-                onPressed: () {
-                  setState(() {
-                    _isGridView = false;
-                  });
-                },
+                onPressed: () => setState(() => _isGridView = false),
                 icon: Icon(
                   Icons.view_list,
                   color: _isGridView
@@ -1220,12 +1114,10 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 32),
               ),
-              // Showing results count (only on desktop)
               if (!isMobile)
-                // Showing results count
                 Consumer<ApiService>(
                   builder: (context, productController, child) {
-                    final totalProducts = _sortedProducts(
+                    final totalProducts = _getFilteredAndSortedProducts(
                       productController.getProductsWithColorVariations(
                         productController.products,
                       ),
@@ -1268,18 +1160,16 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
           );
         }
 
-        //  Replace the empty state with CommonError when the API errored
         if (productController.errorMessage != null) {
           return CommonError(
             height: 300,
             title: 'Failed to load products',
             message: productController.errorMessage!,
-            onRetry: () =>
-                _apiService.loadProductsByCategory(_currentCategoryId),
+            onRetry: () => _loadAndInitProducts(),
           );
         }
 
-        final allProducts = _sortedProducts(
+        final allProducts = _getFilteredAndSortedProducts(
           productController.getProductsWithColorVariations(
             productController.products,
           ),
@@ -1294,19 +1184,15 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
           );
         }
 
-        // Calculate pagination
         final int totalProducts = allProducts.length;
         final int totalPages = (totalProducts / _itemsPerPage).ceil();
         final int safePage = _currentPage.clamp(
           1,
           totalPages == 0 ? 1 : totalPages,
         );
-        // Ensure current page is valid
-        if (_currentPage > totalPages) {
-          _currentPage = totalPages;
-        }
 
-        // Get products for current page
+        if (_currentPage > totalPages) _currentPage = totalPages;
+
         final int startIndex = (safePage - 1) * _itemsPerPage;
         final int endIndex = startIndex + _itemsPerPage > totalProducts
             ? totalProducts
@@ -1317,34 +1203,27 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
         );
 
         final bool isMobile = MediaQuery.of(context).size.width < 768;
-        // If List View
         if (!_isGridView) {
           return ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: products.length,
-            itemBuilder: (context, index) {
-              final product = products[index];
-              return _buildListProductCard(product, isMobile);
-            },
+            itemBuilder: (context, index) =>
+                _buildListProductCard(products[index], isMobile),
           );
         }
-        // Single solution: Auto-adjusts columns and aspect ratio
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            // 4 columns on desktop, 2 on mobile
-            crossAxisCount: isMobile ? 2 : 4, 
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: isMobile ? 2 : 4,
             crossAxisSpacing: 16,
             mainAxisSpacing: 20,
-            mainAxisExtent: isMobile ? 270 : 340, // Keep your current heights
+            mainAxisExtent: isMobile ? 270 : 340,
           ),
           itemCount: products.length,
-          itemBuilder: (context, index) {
-            final product = products[index];
-            return _buildProductCard(product, isMobile);
-          },
+          itemBuilder: (context, index) =>
+              _buildProductCard(products[index], isMobile),
         );
       },
     );
@@ -2003,16 +1882,14 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   Widget _buildPagination() {
     return Consumer<ApiService>(
       builder: (context, productController, child) {
-        final totalProducts = _sortedProducts(
+        final totalProducts = _getFilteredAndSortedProducts(
           productController.getProductsWithColorVariations(
             productController.products,
           ),
         ).length;
         final total = (totalProducts / _itemsPerPage).ceil();
 
-        if (totalProducts == 0 || total <= 1) {
-          return const SizedBox.shrink();
-        }
+        if (totalProducts == 0 || total <= 1) return const SizedBox.shrink();
 
         final pages = _visiblePageNumbers(current: _currentPage, total: total);
 
@@ -2027,7 +1904,6 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                 onTap: () => setState(() => _currentPage--),
               ),
               const SizedBox(width: 4),
-
               ...pages.map((page) {
                 if (page == null) {
                   return const Padding(
@@ -2042,16 +1918,14 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                     ),
                   );
                 }
-
                 final isSelected = page == _currentPage;
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 2),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(6),
                     onTap: () {
-                      if (page != _currentPage) {
+                      if (page != _currentPage)
                         setState(() => _currentPage = page);
-                      }
                     },
                     child: Container(
                       width: 40,
@@ -2080,7 +1954,6 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                   ),
                 );
               }),
-
               const SizedBox(width: 4),
               _pageArrow(
                 icon: Icons.chevron_right,
@@ -2122,31 +1995,19 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   }
 
   List<int?> _visiblePageNumbers({required int current, required int total}) {
-    if (total <= 7) {
-      return List<int?>.generate(total, (i) => i + 1);
-    }
-
+    if (total <= 7) return List<int?>.generate(total, (i) => i + 1);
     final Set<int> set = {1, total, current};
-
     for (int i = current - 1; i <= current + 1; i++) {
       if (i >= 1 && i <= total) set.add(i);
     }
-
-    if (current <= 3) {
-      set.addAll([1, 2, 3, 4]);
-    }
-    if (current >= total - 2) {
+    if (current <= 3) set.addAll([1, 2, 3, 4]);
+    if (current >= total - 2)
       set.addAll([total - 3, total - 2, total - 1, total]);
-    }
-
     final sorted = set.where((p) => p >= 1 && p <= total).toList()..sort();
-
     final List<int?> result = [];
     int? prev;
     for (final p in sorted) {
-      if (prev != null && p - prev > 1) {
-        result.add(null);
-      }
+      if (prev != null && p - prev > 1) result.add(null);
       result.add(p);
       prev = p;
     }
